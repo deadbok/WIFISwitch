@@ -28,10 +28,10 @@ ESPTOOL		?= esptool.py
 ESPPORT		?= /dev/ttyAMA0
 
 # name for the target project
-TARGET		= app
+TARGET		= wifiswitch
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= driver user
+MODULES		= spiffs/src user
 EXTRA_INCDIR    = include
 
 # libraries used in this project, mainly provided by the SDK
