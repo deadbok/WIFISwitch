@@ -34,3 +34,4 @@
 # Binaries
 firmware
 build
+*.bin
