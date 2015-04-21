@@ -5,12 +5,14 @@
 # - Jeroen Domburg (Sprite_tm)
 # - Christian Klippel (mamalala)
 # - Tommie Gannert (tommie)
+# - Martin Bo Kristensen Grønholdt
 #
 # Changelog:
 # - 2014-10-06: Changed the variables to include the header file directory
 # - 2014-10-06: Added global var for the Xtensa tool root
 # - 2014-11-23: Updated for SDK 0.9.3
 # - 2014-12-25: Replaced esptool by esptool.py
+# - 2015-04-21: Maxed out verbosity for religious reasons.
 
 # Output directors to store intermediate compiled files
 # relative to the project directory
@@ -87,21 +89,11 @@ MODULE_INCDIR	:= $(addsuffix /include,$(INCDIR))
 FW_FILE_1	:= $(addprefix $(FW_BASE)/,$(FW_FILE_1_ADDR).bin)
 FW_FILE_2	:= $(addprefix $(FW_BASE)/,$(FW_FILE_2_ADDR).bin)
 
-V ?= $(VERBOSE)
-ifeq ("$(V)","1")
-Q :=
-vecho := @true
-else
-Q := @
-vecho := @echo
-endif
-
 vpath %.c $(SRC_DIR)
 
 define compile-objects
 $1/%.o: %.c
-	$(vecho) "CC $$<"
-	$(Q) $(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS) -c $$< -o $$@
+	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS) -c $$< -o $$@
 endef
 
 .PHONY: all checkdirs flash clean
@@ -109,29 +101,26 @@ endef
 all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2)
 
 $(FW_BASE)/%.bin: $(TARGET_OUT) | $(FW_BASE)
-	$(vecho) "FW $(FW_BASE)/"
-	$(Q) $(ESPTOOL) elf2image -o $(FW_BASE)/ $(TARGET_OUT)
+	$(ESPTOOL) elf2image -o $(FW_BASE)/ $(TARGET_OUT)
 
 $(TARGET_OUT): $(APP_AR)
-	$(vecho) "LD $@"
-	$(Q) $(LD) -L$(SDK_LIBDIR) $(LD_SCRIPT) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group -o $@
+	$(LD) -L$(SDK_LIBDIR) $(LD_SCRIPT) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group -o $@
 
 $(APP_AR): $(OBJ)
-	$(vecho) "AR $@"
-	$(Q) $(AR) cru $@ $^
+	$(AR) cru $@ $^
 
 checkdirs: $(BUILD_DIR) $(FW_BASE)
 
 $(BUILD_DIR):
-	$(Q) mkdir -p $@
+	mkdir -p $@
 
 $(FW_BASE):
-	$(Q) mkdir -p $@
+	mkdir -p $@
 
 flash: all
 	$(ESPTOOL) --port $(ESPPORT) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_2_ADDR) $(FW_FILE_2)
 
 clean:
-	$(Q) rm -rf $(FW_BASE) $(BUILD_BASE)
+	rm -rf $(FW_BASE) $(BUILD_BASE)
 
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
