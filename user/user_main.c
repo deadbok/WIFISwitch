@@ -5,31 +5,44 @@
 #include "user_config.h"
 #include "user_interface.h"
 #include "wifi_connect.h"
+#include "int_flash.h"
+
+#define INTERNAL_FLASH_START_ADDRESS    0x40200000
+
+extern long _irom0_text_end;
+static __attribute__ ((used))	
+__attribute__((section(".firmware_end_marker"))) uint32_t flash_ends_here;
 
 /* Main entry point.
  */ 
 void ICACHE_FLASH_ATTR user_init()
 {
-    char ssid[32] = SSID;
-    char password[64] = SSID_PASSWORD;
-    struct station_config stationConf;
+    unsigned char   connection_status;
+    
+    //Turn on auto connect.
+    wifi_station_set_auto_connect(false);
     
     // Set baud rate of debug port
     uart_div_modify(0,UART_CLK_FREQ / 115200);
-
-    //Set station mode
-    wifi_set_opmode( STATION_MODE );
-
-    //Set ap settings
-    os_memcpy(&stationConf.ssid, ssid, 32);
-    os_memcpy(&stationConf.password, password, 64);
-    wifi_station_set_config(&stationConf);
     
+    os_delay_us(1000);
+    
+    //Print banner
+    os_printf("\nWIFISwitch version %s.\n", STRING_VERSION);
     system_print_meminfo();
-    os_printf("Free heap %u\n", system_get_free_heap_size());
+    os_printf("Free heap %u\n", system_get_free_heap_size());    
     
-    if (wifi_station_get_connect_status() != STATION_GOT_IP)
+    os_printf("\n\n\n\n");
+    
+    //flash_dump(0x07600, 65536);
+    
+    connection_status = connect_ap(SSID, SSID_PASSWORD);
+    if (connection_status != STATION_GOT_IP)
     {
+        scan_ap();
+        print_ap_list();
         no_ap();
     }
+    
+    connection_status = connect_ap(SSID, SSID_PASSWORD);
 }

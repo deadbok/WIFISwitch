@@ -20,10 +20,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */ 
- 
  #ifndef __WIFI_CONNECT_H
  #define __WIFI_CONNECT_H
  
+ extern unsigned char connect_ap(char *ssid, char *passwd);
+ extern unsigned char scan_ap(void);
+ extern void print_ap_list(void);
  extern void no_ap(void);
  
  #endif

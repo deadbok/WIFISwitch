@@ -1,11 +1,20 @@
 #ifndef __USER_CONFIG_H
 #define __USER_CONFIG_H
 
-#define SSID "esp8266"
-#define SSID_PASSWORD "1234567890"
+//Version string
+#define STRING_VERSION "0.0.1"
 
+//Values for default AP to try
+#define SSID "default"
+#define SSID_PASSWORD "password"
+
+//Try to connect for X seconds.
+#define CONNECT_DELAY_SEC   30
+
+//Print extra debug info on the serial port
 #define DEBUG
 
+//Macro for debugging. Prints the messag if debugging is enabled.
 #ifdef DEBUG
 #include "osapi.h"
 #define debug(...)     os_printf(__VA_ARGS__)

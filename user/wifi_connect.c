@@ -29,7 +29,183 @@
  */ 
 #include "os_type.h"
 #include "user_interface.h"
+#include "user_config.h"
 
+//AP list.
+struct bss_info *bss_list = NULL;
+
+//Internal function to set station mode.
+static unsigned char ICACHE_FLASH_ATTR set_opmode(unsigned char mode)
+{
+    debug("Setting WIFI mode: ");
+    
+#ifdef DEBUG
+    switch(mode)
+    {
+        case NULL_MODE:         
+            debug("NULL mode.");
+            break;
+                        
+        case STATION_MODE:      
+            debug("Station mode.");
+            break;
+
+        case SOFTAP_MODE:
+            debug("Soft AP mode.");
+            break;
+
+        case STATIONAP_MODE:    
+            debug("Station and soft AP mode.");
+            break;
+                        
+        default:                
+            debug("Unknown mode.");
+            break;
+    }
+    debug("\n");
+#endif
+    return(wifi_set_opmode(mode));
+}
+
+/* Connect to an Access Point.
+ * 
+ * Parameters:
+ *  - char *ssid: Pointer to the SSID for the AP.
+ *  - char *passwd: Pointer to the password for the AP.
+ * Returns:
+ *  Connection status from SDK API call to wifi_station_get_connect_status.
+ *   enum{
+ *      STATION_IDLE = 0,
+ *      STATION_CONNECTING,
+ *      STATION_WRONG_PASSWORD,
+ *      STATION_NO_AP_FOUND,
+ *      STATION_CONNECT_FAIL,
+ *      STATION_GOT_IP
+ *   };
+ */
+unsigned char ICACHE_FLASH_ATTR connect_ap(char *ssid, char *passwd)
+{
+    struct station_config station_conf = {0};
+    unsigned char   connect_status = 0;
+    unsigned char   i = 0;
+
+    //Set station mode
+    set_opmode(STATION_MODE);
+
+    //Get a pointer the configuration data.
+    if (!wifi_station_get_config(&station_conf))
+    {
+        os_printf("Can not get station configuration.");
+        return(255);
+    }
+    
+    os_memset(station_conf.ssid, 0, sizeof(station_conf.ssid));
+	os_memset(station_conf.password, 0, sizeof(station_conf.password));
+    //Set ap settings
+    os_strcpy(station_conf.ssid, ssid);
+    os_strcpy(station_conf.password, passwd);
+    //No BSSID
+    station_conf.bssid_set = 0;
+
+    debug("Connecting to SSID: %s, password: %s\n", station_conf.ssid, station_conf.password);
+    debug("Retries %d\n", CONNECT_DELAY_SEC);
+
+	wifi_station_disconnect();
+	wifi_station_dhcpc_stop();
+    
+    //Connect to AP.
+    if (!wifi_station_set_config(&station_conf))
+    {
+        os_printf("Failed to set station configuration.\n");
+        return(255);
+    }
+    
+    //Connect to AP if necessary.
+    connect_status = wifi_station_get_connect_status();
+    if ((connect_status != STATION_GOT_IP) ||
+        (connect_status != STATION_CONNECTING))
+    {
+        if (!wifi_station_connect())
+        {
+            os_printf("Failed to connect to AP.\n");
+            return(255);
+        }
+    }
+
+    //Wait a while for a connection.
+    while((connect_status != STATION_GOT_IP) && (i < CONNECT_DELAY_SEC))
+    {
+        os_delay_us(1000000);
+        connect_status = wifi_station_get_connect_status();
+        debug("Connection status: %d, attempt %d\n", connect_status, i);
+        i++;
+    }
+    
+    return(connect_status);
+}
+
+
+//Internal callback for scanning for AP's.
+static void ICACHE_FLASH_ATTR scan_done(void *arg, STATUS status)
+{
+    if (status == OK)
+    {
+        bss_list = (struct bss_info *)arg;
+        debug("AP scan completed successfully.\n");
+    }
+    debug("AP scan failed.\n");
+} 
+
+/* Scan for Access Points and return a list of available ones..
+ * 
+ * Parameters:
+ *  - char *ssid: Pointer to the SSID for the AP.
+ *  - char *passwd: Pointer to the password for the AP.
+ * Returns:
+ *  0 = fail, 1 = success.
+ */
+unsigned char ICACHE_FLASH_ATTR scan_ap(void)
+{
+    unsigned int    i = 0;
+    unsigned char   ret;
+    
+    debug("Scanning for AP's.\n");
+    wifi_station_disconnect();
+    
+    ret =wifi_station_scan(NULL, scan_done);
+    if (ret)
+    {
+        //Wait a for the scan_done callback.
+        while((bss_list == NULL) && (i < CONNECT_DELAY_SEC))
+        {
+            os_delay_us(1000000);
+            debug("Waiting for AP list...\n");
+            i++;
+        }
+        return(1);
+    }
+    debug("AP scan failed (%d).\n", ret);
+    return(0);
+}   
+
+/* Print list of Access Points.
+ * Parameters:
+ *  none
+ * Return:
+ * none
+ */
+void ICACHE_FLASH_ATTR print_ap_list(void)
+{
+    struct bss_info *bss = bss_list;
+    
+    os_printf("Access point list:\n");
+    while(bss != NULL)
+    {
+        os_printf("%s\n", bss->ssid);
+        bss = bss->next.stqe_next;
+    }
+}
+    
 /* Create an Access Point.
  * 
  * Parameters:
@@ -45,17 +221,17 @@ static void ICACHE_FLASH_ATTR create_softap(char *ssid, char *passwd, unsigned c
           channel);
           
     //Set AP mode.
-    wifi_set_opmode( SOFTAP_MODE );
+    set_opmode(SOFTAP_MODE);
               
     //Populate the struct, needed to configure the AP.
-    strcpy(ap_config.ssid, ssid);
-    strcpy(ap_config.password, passwd);
+    os_strcpy(ap_config.ssid, ssid);
+    os_strcpy(ap_config.password, passwd);
     ap_config.ssid_len = strlen(ap_config.ssid);
     ap_config.channel = channel;
     //WPA & WPA2 Pre Shared Key (e.g "home" networks).
     ap_config.authmode = AUTH_WPA_WPA2_PSK;
     ap_config.ssid_hidden = 0;
-    //We don't need a lot of connections for out purposes.
+    //We don't need a lot of connections for our purposes.
     ap_config.max_connection = 2;
     ap_config.beacon_interval = 100;
     
