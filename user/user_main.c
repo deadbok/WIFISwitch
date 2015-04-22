@@ -4,6 +4,7 @@
 #include "os_type.h"
 #include "user_config.h"
 #include "user_interface.h"
+#include "missing_dec.h"
 #include "wifi_connect.h"
 #include "int_flash.h"
 
@@ -18,9 +19,11 @@ __attribute__((section(".firmware_end_marker"))) uint32_t flash_ends_here;
 void ICACHE_FLASH_ATTR user_init()
 {
     unsigned char   connection_status;
-    
+    struct station_config station_conf = { "default", "password", 0, "000000"};
+
+    wifi_set_opmode(STATION_MODE);
     //Turn on auto connect.
-    wifi_station_set_auto_connect(false);
+    wifi_station_set_auto_connect(true);
     
     // Set baud rate of debug port
     uart_div_modify(0,UART_CLK_FREQ / 115200);
@@ -36,13 +39,25 @@ void ICACHE_FLASH_ATTR user_init()
     
     //flash_dump(0x07600, 65536);
     
-    connection_status = connect_ap(SSID, SSID_PASSWORD);
-    if (connection_status != STATION_GOT_IP)
+    //connection_status = connect_ap(SSID, SSID_PASSWORD);
+    if (!wifi_station_set_config(&station_conf))
     {
+//        ETS_UART_INTR_ENABLE();
+        os_printf("Failed to set station configuration.\n");
+    }
+        
+    if (!wifi_station_connect())
+        {
+            os_printf("Main: Failed to connect to AP.\n");
+        }
+        
+    /*if (connection_status != STATION_GOT_IP)
+    {
+        debug("Connection status: %d\n", connection_status);
         scan_ap();
         print_ap_list();
         no_ap();
     }
     
-    connection_status = connect_ap(SSID, SSID_PASSWORD);
+    connection_status = connect_ap(SSID, SSID_PASSWORD);*/
 }

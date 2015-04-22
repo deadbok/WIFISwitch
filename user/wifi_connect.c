@@ -30,6 +30,8 @@
 #include "os_type.h"
 #include "user_interface.h"
 #include "user_config.h"
+#include "itoa.h"
+#include "missing_dec.h"
 
 //AP list.
 struct bss_info *bss_list = NULL;
@@ -85,7 +87,7 @@ static unsigned char ICACHE_FLASH_ATTR set_opmode(unsigned char mode)
  */
 unsigned char ICACHE_FLASH_ATTR connect_ap(char *ssid, char *passwd)
 {
-    struct station_config station_conf = {0};
+    struct station_config station_conf = {{0}};
     unsigned char   connect_status = 0;
     unsigned char   i = 0;
 
@@ -102,8 +104,8 @@ unsigned char ICACHE_FLASH_ATTR connect_ap(char *ssid, char *passwd)
     os_memset(station_conf.ssid, 0, sizeof(station_conf.ssid));
 	os_memset(station_conf.password, 0, sizeof(station_conf.password));
     //Set ap settings
-    os_strcpy(station_conf.ssid, ssid);
-    os_strcpy(station_conf.password, passwd);
+    os_strcpy((char *)station_conf.ssid, ssid);
+    os_strcpy((char *)station_conf.password, passwd);
     //No BSSID
     station_conf.bssid_set = 0;
 
@@ -227,9 +229,9 @@ static void ICACHE_FLASH_ATTR create_softap(char *ssid, char *passwd, unsigned c
     set_opmode(SOFTAP_MODE);
               
     //Populate the struct, needed to configure the AP.
-    os_strcpy(ap_config.ssid, ssid);
-    os_strcpy(ap_config.password, passwd);
-    ap_config.ssid_len = strlen(ap_config.ssid);
+    os_strcpy((char *)ap_config.ssid, ssid);
+    os_strcpy((char *)ap_config.password, passwd);
+    ap_config.ssid_len = os_strlen((char *)ap_config.ssid);
     ap_config.channel = channel;
     //WPA & WPA2 Pre Shared Key (e.g "home" networks).
     ap_config.authmode = AUTH_WPA_WPA2_PSK;
