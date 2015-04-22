@@ -96,7 +96,7 @@ unsigned char ICACHE_FLASH_ATTR connect_ap(char *ssid, char *passwd)
     if (!wifi_station_get_config(&station_conf))
     {
         os_printf("Can not get station configuration.");
-        return(255);
+        return(8);
     }
     
     os_memset(station_conf.ssid, 0, sizeof(station_conf.ssid));
@@ -114,11 +114,14 @@ unsigned char ICACHE_FLASH_ATTR connect_ap(char *ssid, char *passwd)
 	wifi_station_dhcpc_stop();
     
     //Connect to AP.
+//    ETS_UART_INTR_DISABLE();
     if (!wifi_station_set_config(&station_conf))
     {
+//        ETS_UART_INTR_ENABLE();
         os_printf("Failed to set station configuration.\n");
-        return(255);
+        return(9);
     }
+    //ETS_UART_INTR_ENABLE();
     
     //Connect to AP if necessary.
     connect_status = wifi_station_get_connect_status();
@@ -128,7 +131,7 @@ unsigned char ICACHE_FLASH_ATTR connect_ap(char *ssid, char *passwd)
         if (!wifi_station_connect())
         {
             os_printf("Failed to connect to AP.\n");
-            return(255);
+            return(10);
         }
     }
 
@@ -172,7 +175,7 @@ unsigned char ICACHE_FLASH_ATTR scan_ap(void)
     debug("Scanning for AP's.\n");
     wifi_station_disconnect();
     
-    ret =wifi_station_scan(NULL, scan_done);
+    ret = wifi_station_scan(NULL, scan_done);
     if (ret)
     {
         //Wait a for the scan_done callback.
@@ -184,7 +187,7 @@ unsigned char ICACHE_FLASH_ATTR scan_ap(void)
         }
         return(1);
     }
-    debug("AP scan failed (%d).\n", ret);
+    debug("AP scan failed.\n");
     return(0);
 }   
 
