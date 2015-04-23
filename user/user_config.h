@@ -19,6 +19,7 @@
 
 //Macro for debugging. Prints the messag if debugging is enabled.
 #ifdef DEBUG
+#include "missing_dec.h"
 #include "osapi.h"
 #define debug(...)     os_printf(__VA_ARGS__)
 #else

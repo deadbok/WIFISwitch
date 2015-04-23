@@ -6,18 +6,12 @@
 #include "user_interface.h"
 #include "missing_dec.h"
 #include "wifi_connect.h"
-#include "int_flash.h"
-
-#define INTERNAL_FLASH_START_ADDRESS    0x40200000
-
-extern long _irom0_text_end;
-static __attribute__ ((used))	
-__attribute__((section(".firmware_end_marker"))) uint32_t flash_ends_here;
+#include "tcp.h"
 
 //This functions is called when a WIFI connection has been established.
 void connected_cb(void)
 {
-    os_printf("Connected.");
+    init_tcp(80);
 }
 
 // Main entry point and init code.
