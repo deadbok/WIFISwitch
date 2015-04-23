@@ -33,5 +33,4 @@ extern unsigned char         connect_status;
 //Connect to WIFI.
 extern void wifi_connect(void (*connect_cb)());
 
- 
 #endif

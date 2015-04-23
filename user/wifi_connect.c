@@ -107,6 +107,9 @@ static void ICACHE_FLASH_ATTR print_status(unsigned char status)
 //Internal task to connect to an AP
 static void connect(void *arg)
 {
+    struct ip_info  ipinfo;
+    unsigned char   ret;
+    
     //Get connection status
     connect_status = wifi_station_get_connect_status();
     switch(connect_status)
@@ -141,11 +144,21 @@ static void connect(void *arg)
     retries--;
     if (retries == 0)
     {
+        //Reset retries.
         retries = CONNECT_DELAY_SEC;
         
-        //Stop calling me
+        //Stop calling me.
         os_timer_disarm(&connected_timer);
         
+        //Print IP address
+        ret = wifi_get_ip_info(STATION_IF, &ipinfo);
+        if (!ret)
+        {
+            os_printf("Failed get IP address (%d).\n", ret);
+            return;
+        }
+        os_printf("Got IP address: %d.%d.%d.%d.", IP2STR(&ipinfo.ip) );
+        //Call the timeout callback.
         int_timeout_cb();
     }
 }
