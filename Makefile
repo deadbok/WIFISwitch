@@ -91,9 +91,10 @@ FW_FILE_1	:= $(addprefix $(FW_BASE)/,$(FW_FILE_1_ADDR).bin)
 FW_FILE_2	:= $(addprefix $(FW_BASE)/,$(FW_FILE_2_ADDR).bin)
 
 vpath %.c $(SRC_DIR)
+vpath %.h $(SRC_DIR)
 
 define compile-objects
-$1/%.o: %.c
+$1/%.o: %.c $(DEPS)
 	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS) -c $$< -o $$@
 endef
 
