@@ -115,9 +115,17 @@ static void connect(void *arg)
     switch(connect_status)
     {
         case STATION_GOT_IP:
-             print_status(connect_status);
+            print_status(connect_status);
             //Stop calling me
             os_timer_disarm(&connected_timer);
+            //Print IP address
+            ret = wifi_get_ip_info(STATION_IF, &ipinfo);
+            if (!ret)
+            {
+                os_printf("Failed get IP address (%d).\n", ret);
+                return;
+            }
+            os_printf("Got IP address: %d.%d.%d.%d.\n", IP2STR(&ipinfo.ip) );
             //Call callback.
             wifi_connected_cb();
             break;
@@ -150,14 +158,6 @@ static void connect(void *arg)
         //Stop calling me.
         os_timer_disarm(&connected_timer);
         
-        //Print IP address
-        ret = wifi_get_ip_info(STATION_IF, &ipinfo);
-        if (!ret)
-        {
-            os_printf("Failed get IP address (%d).\n", ret);
-            return;
-        }
-        os_printf("Got IP address: %d.%d.%d.%d.", IP2STR(&ipinfo.ip) );
         //Call the timeout callback.
         int_timeout_cb();
     }
@@ -263,6 +263,8 @@ void ICACHE_FLASH_ATTR wifi_connect(void (*connect_cb)())
     //Set callback
     wifi_connected_cb = connect_cb;
     int_timeout_cb = timeout_cb;
+    
+    debug("Connecting to SSID: %s, password: %s\n", station_conf.ssid, station_conf.password);
     //Set station mode
     ret = wifi_set_opmode(STATION_MODE);
     if (!ret)
@@ -277,8 +279,6 @@ void ICACHE_FLASH_ATTR wifi_connect(void (*connect_cb)())
         os_printf("Cannot get station configuration (%d).", ret);
         return;
     }
-    
-    debug("Connecting to SSID: %s, password: %s\n", station_conf.ssid, station_conf.password);
 
     ret = wifi_disconnect();
     if (!ret)
