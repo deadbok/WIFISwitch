@@ -93,7 +93,7 @@ static void ICACHE_FLASH_ATTR print_status(unsigned char status)
             os_printf("Could not find an AP...\n");
             break;
         case STATION_CONNECT_FAIL:
-            os_printf("Idle...\n");
+            os_printf("Connection failed...\n");
             break;
         case STATION_GOT_IP:
             os_printf("Connected.\n");
@@ -252,7 +252,8 @@ void timeout_cb(void)
 /* Connect to the configured Access Point.
  * 
  * Parameters:
- *  none.
+ *  connect_cb()
+ *   Callback function, when a connection has been established.
  * Returns:
  *  none.
  */
@@ -287,7 +288,7 @@ void ICACHE_FLASH_ATTR wifi_connect(void (*connect_cb)())
         return;
     }
     
-    //Connect to AP.
+    //Set connections config.
     ret = wifi_station_set_config(&station_conf);
     if (!ret)
     {
