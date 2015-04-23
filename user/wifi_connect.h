@@ -20,17 +20,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */ 
- #ifndef __WIFI_CONNECT_H
- #define __WIFI_CONNECT_H
+#ifndef __WIFI_CONNECT_H
+#define __WIFI_CONNECT_H
  
- //The current station config.
- extern struct station_config station_conf;
- //The current AP configuration
- extern struct softap_config  ap_config;
- //Connection status
- extern unsigned char         connect_status;
- 
- extern unsigned char connect_ap(void (*connect_cb)());
+//The current station config.
+extern struct station_config station_conf;
+//The current AP configuration.
+extern struct softap_config  ap_config;
+//Connection status.
+extern unsigned char         connect_status;
+
+//Connect to WIFI.
+extern void wifi_connect(void (*connect_cb)());
 
  
- #endif
+#endif

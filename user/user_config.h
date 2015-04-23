@@ -8,6 +8,9 @@
 #define SSID "default"
 #define SSID_PASSWORD "password"
 
+//Password for the configuration AP
+#define SOFTAP_PASSWORD "0123456789"
+
 //Try to connect for X seconds.
 #define CONNECT_DELAY_SEC   30
 
