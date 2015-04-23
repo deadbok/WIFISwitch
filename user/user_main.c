@@ -14,16 +14,17 @@ extern long _irom0_text_end;
 static __attribute__ ((used))	
 __attribute__((section(".firmware_end_marker"))) uint32_t flash_ends_here;
 
-/* Main entry point.
- */ 
+//This functions is called when a WIFI connection has been established.
+void connected_cb(void)
+{
+    os_printf("Connected.");
+}
+
+// Main entry point and init code.
 void ICACHE_FLASH_ATTR user_init()
 {
-    unsigned char   connection_status;
-    struct station_config station_conf = { "default", "password", 0, "000000"};
-
-    wifi_set_opmode(STATION_MODE);
-    //Turn on auto connect.
-    wifi_station_set_auto_connect(true);
+    //Turn off auto connect.
+    wifi_station_set_auto_connect(false);
     
     // Set baud rate of debug port
     uart_div_modify(0,UART_CLK_FREQ / 115200);
@@ -33,31 +34,11 @@ void ICACHE_FLASH_ATTR user_init()
     //Print banner
     os_printf("\nWIFISwitch version %s.\n", STRING_VERSION);
     system_print_meminfo();
-    os_printf("Free heap %u\n", system_get_free_heap_size());    
-    
-    os_printf("\n\n\n\n");
-    
+    os_printf("Free heap %u\n\n", system_get_free_heap_size());    
+           
     //flash_dump(0x07600, 65536);
     
-    //connection_status = connect_ap(SSID, SSID_PASSWORD);
-    if (!wifi_station_set_config(&station_conf))
-    {
-//        ETS_UART_INTR_ENABLE();
-        os_printf("Failed to set station configuration.\n");
-    }
-        
-    if (!wifi_station_connect())
-        {
-            os_printf("Main: Failed to connect to AP.\n");
-        }
-        
-    /*if (connection_status != STATION_GOT_IP)
-    {
-        debug("Connection status: %d\n", connection_status);
-        scan_ap();
-        print_ap_list();
-        no_ap();
-    }
+    wifi_connect(connected_cb);
     
-    connection_status = connect_ap(SSID, SSID_PASSWORD);*/
+    os_printf("\nLeaving user_init...\n");
 }
