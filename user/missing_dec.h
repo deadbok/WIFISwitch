@@ -5,8 +5,8 @@
 //Missing function prototypes in include folders. Gcc will warn on these if we don't define 'em anywhere.
 //MOST OF THESE ARE GUESSED! but they seem to swork and shut up the compiler.
 
-#ifndef __MISSING_DEC_H
-#define __MISSING_DEC_H
+#ifndef MISSING_DEC_H
+#define MISSING_DEC_H
 
 #include "ets_sys.h"
 #include "c_types.h"

@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */ 
-#ifndef __WIFI_CONNECT_H
-#define __WIFI_CONNECT_H
+#ifndef WIFI_CONNECT_H
+#define WIFI_CONNECT_H
  
 //The current station config.
 extern struct station_config station_conf;

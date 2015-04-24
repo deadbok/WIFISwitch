@@ -1,5 +1,5 @@
-#ifndef __USER_CONFIG_H
-#define __USER_CONFIG_H
+#ifndef USER_CONFIG_H
+#define USER_CONFIG_H
 
 //Version string
 #define STRING_VERSION "0.0.1"

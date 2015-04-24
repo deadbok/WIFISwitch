@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */ 
-#ifndef __TCP_H
-#define __TCP_H
+#ifndef TCP_H
+#define TCP_H
 
 void init_tcp(int port);
 
