@@ -265,7 +265,6 @@ void ICACHE_FLASH_ATTR wifi_connect(void (*connect_cb)())
     wifi_connected_cb = connect_cb;
     int_timeout_cb = timeout_cb;
     
-    debug("Connecting to SSID: %s, password: %s\n", station_conf.ssid, station_conf.password);
     //Set station mode
     ret = wifi_set_opmode(STATION_MODE);
     if (!ret)
@@ -280,6 +279,8 @@ void ICACHE_FLASH_ATTR wifi_connect(void (*connect_cb)())
         os_printf("Cannot get station configuration (%d).", ret);
         return;
     }
+
+    debug("Connecting to SSID: %s, password: %s\n", station_conf.ssid, station_conf.password);
 
     ret = wifi_disconnect();
     if (!ret)
