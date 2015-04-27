@@ -28,6 +28,7 @@ SDK_BASE	?= /home/oblivion/esp-open-sdk/sdk/
 # esptool.py path and port
 ESPTOOL		?= esptool.py
 ESPPORT		?= /dev/ttyAMA0
+ESPSPEED	?= 921600
 
 # name for the target project
 TARGET		= wifiswitch
@@ -120,10 +121,10 @@ $(FW_BASE):
 	mkdir -p $@
 
 flash: all
-	$(ESPTOOL) --port $(ESPPORT) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_2_ADDR) $(FW_FILE_2)
+	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_2_ADDR) $(FW_FILE_2)
 	
 flashblank:
-	$(ESPTOOL) --port $(ESPPORT) write_flash 0x7E000 bin/blank.bin
+	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash 0x7E000 bin/blank.bin
 
 clean:
 	rm -rf $(FW_BASE) $(BUILD_BASE)
