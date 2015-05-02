@@ -6,7 +6,7 @@
  * - If unsuccessful create an AP presenting a HTTP to configure the 
  *   connection values.
  * 
- * What works.
+ * What works:
  * - Try to connect to the AP.
  * 
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
@@ -25,7 +25,8 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
- */ 
+ */
+#include "osapi.h"
 #include "os_type.h"
 #include "user_interface.h"
 #include "user_config.h"
