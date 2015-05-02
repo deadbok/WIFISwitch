@@ -88,18 +88,30 @@ void ICACHE_FLASH_ATTR tcp_write_finish_cb(void)
 
 static void ICACHE_FLASH_ATTR parseGET(void)
 {
-    char    *response = HTTP_200_OK;
+    char    *response;
     char    *html;
     char    html_length[6];
     unsigned short  i;
     
-    //Check in static uris
+    //Check in static uris, go through and stop if URIs match.
     for (i = 0; 
          ((i < n_static_uris) && (os_strcmp(current_request.uri, static_uris[i].uri) != 0)); 
          i++);
-   
-    html = static_uris[i].callback(current_request.uri);
-   
+    
+    //Send response if URI is found
+    if (i < n_static_uris)
+    {
+        response = HTTP_200_OK;
+        
+        html = static_uris[i].callback(current_request.uri);
+    }
+    else
+    {
+        //Send 404
+        response = HTTP_404_NOT_FOUND;
+        
+        html = HTTP_404_NOT_FOUND_HTML;
+    }
     tcp_send(response);
     os_sprintf(html_length, "%d", os_strlen(html));
     tcp_send(html_length);

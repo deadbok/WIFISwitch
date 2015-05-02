@@ -32,6 +32,12 @@
 #define HTTP_200_OK                 "HTTP/" HTTP_SERVER_HTTP_VERSION \
                                     " 200 OK\r\nContent-Type: text/html\
                                     \r\nConnection: close\r\nContent-Length: "
+#define HTTP_404_NOT_FOUND          "HTTP/" HTTP_SERVER_HTTP_VERSION \
+                                    " 404 Not Found\r\nContent-Type: text/html\
+                                    \r\nConnection: close\r\nContent-Length: "
+#define HTTP_404_NOT_FOUND_HTML     "<!DOCTYPE html><head><title>Resource not found.\
+                                    </title></head><body><h1>404 Not Found</h1>\
+                                    <br /><br />Resource not found.</body></html>"                                    
 
 /* Callback function for static URIs, that are served if no other way is
  * found of generating the response.
