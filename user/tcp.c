@@ -20,13 +20,19 @@
  * MA 02110-1301, USA.
  */
 #include "missing_dec.h"
+#include "osapi.h"
 #include "ip_addr.h"
 #include "espconn.h"
 #include "user_config.h"
+#include "tcp.h"
 
 //Active connection.
 static struct espconn tcp_conn;
 static esp_tcp tcp;
+
+//TCP data & callbacks
+struct tcp_callback_data    tcp_cb_data;
+struct tcp_callback_funcs   tcp_cb_funcs;
 
 //Internal function to print espconn errors.
 static void print_status(int status)
@@ -72,33 +78,114 @@ static void print_status(int status)
     }
 }
 
-static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short length)
+static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
 {
-    char    *response = "HTTP/1.0 200 OK\r\nContent-Type: text/html\
-                         \r\nContent-Length: ";
-    char    *html = "<!DOCTYPE html><head><title>Web server test.</title></head>\
-                     <body>Hello world.</body></html>";
-    char    html_length[6];
+    debug("TCP connected.\n");
     
-    debug("TCP recieved:\n");
-    debug("%s\n", data);
-
-    if(os_strncmp(data,"GET ",4) && os_strncmp(data,"get ",4))
-    {
-        os_printf("Unknown request.\n");
-    }
-    else
-    {
-        debug("GET request.\n");
-        espconn_sent(&tcp_conn, (unsigned char *)response, os_strlen(response));
-        os_sprintf(html_length, "%d", os_strlen(html));
-        espconn_sent(&tcp_conn, (unsigned char *)html_length, os_strlen(html_length));
-        espconn_sent(&tcp_conn, (unsigned char *)"\r\n\r\n", 4);
-        espconn_sent(&tcp_conn, (unsigned char *)html, os_strlen(html));
-    }
+    //Clear previous data.
+    os_memset(&tcp_cb_data, 0, sizeof(struct tcp_callback_data));
+    //Set new data
+    tcp_cb_data.arg = arg;
 }
 
-void ICACHE_FLASH_ATTR init_tcp(int port)
+static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err)
+{
+    debug("TCP reconnected.\n");
+    
+    //Clear previous data.
+    os_memset(&tcp_cb_data, 0, sizeof(struct tcp_callback_data));
+    //Set new data
+    tcp_cb_data.arg = arg;
+    tcp_cb_data.err = err;
+}
+
+static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
+{
+    debug("TCP disconnected.\n");
+    
+    //Clear previous data.
+    os_memset(&tcp_cb_data, 0, sizeof(struct tcp_callback_data));
+    //Set new data
+    tcp_cb_data.arg = arg;
+}
+
+static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg)
+{
+    debug("TCP write done.\n");
+
+    //Clear previous data.
+    os_memset(&tcp_cb_data, 0, sizeof(struct tcp_callback_data));
+    //Set new data
+    tcp_cb_data.arg = arg;
+}
+
+static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short length)
+{
+    debug("TCP recieved:\n");
+    debug("%s\n", data);
+    
+    //Clear previous data.
+    os_memset(&tcp_cb_data, 0, sizeof(struct tcp_callback_data));
+    //Set new data
+    tcp_cb_data.arg = arg;
+    tcp_cb_data.data = data;
+    tcp_cb_data.length = length;
+    
+    tcp_cb_funcs.recv_callback();
+}
+
+static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
+{
+    debug("TCP sent.\n");
+
+    //Clear previous data.
+    os_memset(&tcp_cb_data, 0, sizeof(struct tcp_callback_data));
+    //Set new data
+    tcp_cb_data.arg = arg;
+}
+
+/* Send TCP data to the current connection.
+ * 
+ * Parameters:
+ *  data
+ *   Pointer to the data to send
+ * 
+ * Returns:
+ *  espconn error status
+ */
+char ICACHE_FLASH_ATTR tcp_send(char *data)
+{
+    debug("Sending TCP: %s\n", data);
+    return(espconn_sent(&tcp_conn, (unsigned char *)data, os_strlen(data)));
+}
+
+/* Disconnect the current TCP connection.
+ * 
+ * Parameters:
+ *  none
+ * 
+ * Returns:
+ *  espconn error status
+ */
+char ICACHE_FLASH_ATTR tcp_disconnect(void)
+{
+    return(espconn_disconnect(&tcp_conn));
+}
+
+
+/* Initialise TCP networking.
+ * 
+ * Parameters:
+ *  port
+ *   The TCP port to bind to.
+ * 
+ * Returns:
+ *  none
+ */
+void ICACHE_FLASH_ATTR init_tcp(int port, tcp_callback connect_cb, 
+                                tcp_callback reconnect_cb, tcp_callback disconnect_cb,
+                                tcp_callback write_finish_cb, tcp_callback recv_cb,
+                                tcp_callback sent_cb)
 {
     int ret;
     
@@ -115,8 +202,22 @@ void ICACHE_FLASH_ATTR init_tcp(int port)
     tcp_conn.state = ESPCONN_NONE;
     //TCP setup
     tcp_conn.proto.tcp = &tcp;
-    //
+    
+    //Setup internal callbacks
+    tcp.connect_callback = tcp_connect_cb;
+    tcp.reconnect_callback = tcp_reconnect_cb;
+    tcp.disconnect_callback = tcp_disconnect_cb;
+	tcp.write_finish_fn = tcp_write_finish_cb;
     tcp_conn.recv_callback = tcp_recv_cb;
+    tcp_conn.sent_callback = tcp_sent_cb;
+
+    //Setup user callbacks
+    tcp_cb_funcs.connect_callback = connect_cb;
+    tcp_cb_funcs.reconnect_callback = reconnect_cb;
+    tcp_cb_funcs.disconnect_callback = disconnect_cb;
+    tcp_cb_funcs.write_finish_fn = write_finish_cb;
+    tcp_cb_funcs.recv_callback = recv_cb;
+    tcp_cb_funcs.sent_callback = sent_cb;
     
     debug("Accepting connections on port %d...", port);
     ret = espconn_accept(&tcp_conn);

@@ -12,6 +12,7 @@
  * OMITTED.
  * 
  * Missing functionality:
+ * - Most header field.
  * - 
  *
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
@@ -33,6 +34,7 @@
  */
 #include <stdlib.h>
 #include "missing_dec.h"
+#include "osapi.h"
 #include "ip_addr.h"
 #include "espconn.h"
 #include "user_config.h"
@@ -65,6 +67,8 @@ struct http_request
 };
 
 static struct http_request current_request;
+static struct http_builtin_uri *static_uris;
+static unsigned short n_static_uris;
 
 void ICACHE_FLASH_ATTR tcp_connect_cb(void)
 {
@@ -84,7 +88,23 @@ void ICACHE_FLASH_ATTR tcp_write_finish_cb(void)
 
 static void ICACHE_FLASH_ATTR parseGET(void)
 {
+    char    *response = HTTP_200_OK;
+    char    *html;
+    char    html_length[6];
+    unsigned short  i;
     
+    //Check in static uris
+    for (i = 0; 
+         ((i < n_static_uris) && (os_strcmp(current_request.uri, static_uris[i].uri) != 0)); 
+         i++);
+   
+    html = static_uris[i].callback(current_request.uri);
+   
+    tcp_send(response);
+    os_sprintf(html_length, "%d", os_strlen(html));
+    tcp_send(html_length);
+    tcp_send("\r\n\r\n");
+    tcp_send(html);
 }
 
 static void ICACHE_FLASH_ATTR parsePOST(void)
@@ -93,21 +113,19 @@ static void ICACHE_FLASH_ATTR parsePOST(void)
 
 static void ICACHE_FLASH_ATTR parseHEAD(void)
 {
-    /* I'm sorry about the following code, but all in all it looks much nicer,
-     * than doing the same for each struct member, unrolled. */
-
-    //Counter for running through the request line.
     unsigned int    i;
     unsigned char   request_entry = 0;
     char            *request_data[REQUEST_ENTRIES];
+    char            *current_request_header;
     
-    //Set all pointers to NULL
-    for (i = 0; i < REQUEST_ENTRIES; i++)
-    {
-        request_data[i] = NULL;
-    }
-    
-    //Parse th whole request line
+    //Set all pointers to NULL (kills a compiler warning).
+    for (i = 0; i < REQUEST_ENTRIES; request_data[i++] = NULL);
+
+    /* I'm sorry about the following code, but all in all it looks much nicer,
+     * than doing the same for each struct member, unrolled. 
+     */
+         
+    //Parse the whole request line.
     debug("Parsing request line:\n");
     //Start after the method.
     i = current_request.start_offset;
@@ -136,23 +154,50 @@ static void ICACHE_FLASH_ATTR parseHEAD(void)
             for(; tcp_cb_data.data[i] == ' '; tcp_cb_data.data[i++] = '\0');
         }
     }
-    
-    //End the version string.
+    //End the last string.
     tcp_cb_data.data[i] = '\0';
     
     //Save URI
     current_request.uri = request_data[0];
     debug(" URI: %s\n", current_request.uri);  
     
-    //Skip 'HTTP/' an save version.
+    //Skip 'HTTP/' and save version.
     current_request.version = &request_data[1][5];
     debug(" Version: %s\n", current_request.version);
-     
-    current_request.message = request_data[1];
+    
+    //Run through the response headers.
+    debug("Parsing headers:\n");
+    //Save the position skipping the line feed.
+    i++;
+    current_request_header = &tcp_cb_data.data[++i];
+    while(tcp_cb_data.data[i] != '\0')
+    {
+        if (tcp_cb_data.data[i] == '\r')
+        {
+#ifdef DEBUG
+            tcp_cb_data.data[i] = '\0';
+            debug(" %s\n", current_request_header);
+#endif
+            //Tell that we re not spying on a Do Not Track header.
+            if (os_strncmp(current_request_header, "DNT: 1", 6) == 0)
+            {
+                os_printf("I am no spy. NSA connection closed.\n");
+            }
+            //Save the position skipping the line feed.
+            i++;
+            current_request_header = &tcp_cb_data.data[++i];
+        }
+        i++;
+    }
 }
 
 void ICACHE_FLASH_ATTR tcp_recv_cb(void)
 {
+    if ((tcp_cb_data.data == NULL) || (os_strlen(tcp_cb_data.data) == 0))
+    {
+        os_printf("Emtpy request recieved.\n");
+        return;
+    }
     //Parse the request header
 	if (os_strncmp(tcp_cb_data.data, "GET ", 4) == 0)
     {
@@ -196,7 +241,7 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(void)
     }
         
     /*char    *response = "HTTP/1.0 200 OK\r\nContent-Type: text/html\
-                         \r\nContent-Length: ";
+                         \r\nConnection: close\r\nContent-Length: ";
     char    *html = "<!DOCTYPE html><head><title>Web server test.</title></head>\
                      <body>Hello world.</body></html>";
     char    html_length[6];
@@ -221,8 +266,11 @@ void ICACHE_FLASH_ATTR tcp_sent_cb(void)
 {
 }
 
-void ICACHE_FLASH_ATTR init_http(void)
+void ICACHE_FLASH_ATTR init_http(struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris)
 {
+    n_static_uris = n_builtin_uris;
+    static_uris = builtin_uris;
+    
     init_tcp(80, tcp_connect_cb, tcp_reconnect_cb, tcp_disconnect_cb, 
              tcp_write_finish_cb, tcp_recv_cb, tcp_sent_cb);
 }

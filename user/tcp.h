@@ -22,6 +22,34 @@
 #ifndef TCP_H
 #define TCP_H
 
-void init_tcp(int port);
+struct tcp_callback_data
+{
+    void            *arg;
+    char            *data;
+    unsigned short  length;
+    err_t            err;
+};
+
+typedef void (*tcp_callback)(void);
+
+struct tcp_callback_funcs
+{
+    tcp_callback connect_callback;
+    tcp_callback reconnect_callback;
+    tcp_callback disconnect_callback;
+	tcp_callback write_finish_fn;
+    tcp_callback recv_callback;
+    tcp_callback sent_callback;
+};
+
+extern struct tcp_callback_data     tcp_cb_data;
+extern struct tcp_callback_funcs    tcp_cb_funcs;
+
+char tcp_send(char *data);
+char tcp_disconnect(void);
+void init_tcp(int port, tcp_callback connect_cb, 
+                                tcp_callback reconnect_cb, tcp_callback disconnect_cb,
+                                tcp_callback write_finish_cb, tcp_callback recv_cb,
+                                tcp_callback sent_cb);
 
 #endif

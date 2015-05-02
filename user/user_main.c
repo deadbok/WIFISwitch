@@ -7,11 +7,37 @@
 #include "missing_dec.h"
 #include "wifi_connect.h"
 #include "tcp.h"
+#include "http.h"
+
+#define N_BUILTIN_URIS  2
+
+char *hello(char *uri);
+char *idx(char *uri);
+
+struct http_builtin_uri g_builtin_uris[N_BUILTIN_URIS] =
+{
+    {"/", idx},
+    {"/hello", hello}
+};
+
+char *hello(char *uri)
+{
+    char    *html = "<!DOCTYPE html><head><title>Web server test.</title></head>\
+                     <body>Hello world.</body></html>";
+    return(html);
+}
+
+char *idx(char *uri)
+{
+    char    *html = "<!DOCTYPE html><head><title>Index.</title></head>\
+                     <body>It works.</body></html>";
+    return(html);
+}
 
 //This functions is called when a WIFI connection has been established.
-void connected_cb(void)
+void ICACHE_FLASH_ATTR connected_cb(void)
 {
-    init_tcp(80);
+    init_http(g_builtin_uris, N_BUILTIN_URIS);
 }
 
 // Main entry point and init code.

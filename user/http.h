@@ -28,6 +28,22 @@
 //Version of HTTP that is supported.
 #define HTTP_SERVER_HTTP_VERSION    "1.1"
 
-void init_http(void);
+//Responses
+#define HTTP_200_OK                 "HTTP/" HTTP_SERVER_HTTP_VERSION \
+                                    " 200 OK\r\nContent-Type: text/html\
+                                    \r\nConnection: close\r\nContent-Length: "
+
+/* Callback function for static URIs, that are served if no other way is
+ * found of generating the response.
+ */
+typedef char *(*uri_callback)(char *uri);
+
+struct  http_builtin_uri
+{
+	const char      *uri;
+	uri_callback    callback;
+};
+
+void init_http(struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris);
 
 #endif
