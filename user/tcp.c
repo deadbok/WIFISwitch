@@ -31,7 +31,7 @@
 #define TCP_MAX_CONNECTIONS 10
 //Active connections.
 static unsigned char n_tcp_connections;
-struct tcp_connection *tcp_connections;
+struct tcp_connection *tcp_connections = NULL;
 
 //Listening connection
 struct tcp_connection *listening_connection;
@@ -128,7 +128,7 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
         }
         else
         {
-            debug(" Connection number %d.\n", n_tcp_connections);
+            debug(" Connection number %d.\n", n_tcp_connections + 1);
             DL_LIST_ADD_END(connection, tcp_connections);
         }
         //Increase number of connections.        
@@ -378,13 +378,13 @@ void ICACHE_FLASH_ATTR init_tcp(void)
     if (tcp_connections != NULL)
     {
         debug("TCP init already called once.n");
+        return;
         //TODO: Close and deallocate connection.
     }
-    n_tcp_connections = 0;
-    tcp_connections = NULL;
-
     //Listening connection
     listening_connection = NULL;
     
+    //No open connections.
     n_tcp_connections = 0;
+    tcp_connections = NULL;
 }

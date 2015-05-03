@@ -34,9 +34,9 @@
 #define DL_LIST_END(NODE)   while(NODE->next != NULL)\
                                 NODE = NODE->next
 //Unlink a node from hte list.
-#define DL_LIST_UNLINK(NODE)    if (NODE->next != NULL)\
+#define DL_LIST_UNLINK(NODE)    if (NODE->prev != NULL)\
                                     NODE->prev->next = NODE->next;\
-                                if (NODE->prev != NULL)\
+                                if (NODE->next != NULL)\
                                     NODE->next->prev = NODE->prev
 //Insert a node into a list.
 #define DL_LIST_INSERT(NODE, PREV, NEXT)    NEXT->prev = NODE;\
