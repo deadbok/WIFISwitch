@@ -14,6 +14,8 @@
 # - 2014-12-25: Replaced esptool by esptool.py
 # - 2015-04-21: Maxed out verbosity for religious reasons.
 # - 2015-05-03: Auto dependency generation.
+# - 2015-05-03: debugflash target, that flashes firmware and immediately 
+#				starts minicom.
 
 # Output directors to store intermediate compiled files
 # relative to the project directory
