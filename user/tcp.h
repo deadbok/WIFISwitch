@@ -22,6 +22,9 @@
 #ifndef TCP_H
 #define TCP_H
 
+#include "espconn.h"
+#include "dl_list.h"
+
 struct tcp_callback_data
 {
     void            *arg;
@@ -30,7 +33,8 @@ struct tcp_callback_data
     err_t            err;
 };
 
-typedef void (*tcp_callback)(void);
+struct tcp_connection;
+typedef void (*tcp_callback)(struct tcp_connection *);
 
 struct tcp_callback_funcs
 {
@@ -42,14 +46,26 @@ struct tcp_callback_funcs
     tcp_callback sent_callback;
 };
 
+struct tcp_connection
+{
+    struct espconn              *conn;
+    struct tcp_callback_funcs   callbacks;
+    struct tcp_callback_data    callback_data;
+    DL_LIST_CREATE(struct tcp_connection);
+};
+    
+
 extern struct tcp_callback_data     tcp_cb_data;
 extern struct tcp_callback_funcs    tcp_cb_funcs;
 
-char tcp_send(char *data);
-char tcp_disconnect(void);
-void init_tcp(int port, tcp_callback connect_cb, 
-                                tcp_callback reconnect_cb, tcp_callback disconnect_cb,
-                                tcp_callback write_finish_cb, tcp_callback recv_cb,
+struct tcp_connection *tcp_listen(int port, tcp_callback connect_cb, 
+                                tcp_callback reconnect_cb, 
+                                tcp_callback disconnect_cb, 
+                                tcp_callback write_finish_cb, 
+                                tcp_callback recv_cb, 
                                 tcp_callback sent_cb);
+char tcp_send(struct tcp_connection *connection, char *data);
+char tcp_disconnect(struct tcp_connection *connection);
+void init_tcp(void);
 
 #endif

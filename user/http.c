@@ -69,24 +69,26 @@ struct http_request
 static struct http_request current_request;
 static struct http_builtin_uri *static_uris;
 static unsigned short n_static_uris;
+//Listening connection.
+static struct tcp_connection *current_connection = NULL;
 
-void ICACHE_FLASH_ATTR tcp_connect_cb(void)
+void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
 {
 }
 
-void ICACHE_FLASH_ATTR tcp_reconnect_cb(void)
+void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
 {
 }
 
-void ICACHE_FLASH_ATTR tcp_disconnect_cb(void)
+void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
 {
 }
 
-void ICACHE_FLASH_ATTR tcp_write_finish_cb(void)
+void ICACHE_FLASH_ATTR tcp_write_finish_cb(struct tcp_connection *connection)
 {
 }
 
-static void ICACHE_FLASH_ATTR parseGET(void)
+static void ICACHE_FLASH_ATTR parseGET(struct tcp_connection *connection)
 {
     char    *response;
     char    *html;
@@ -112,18 +114,18 @@ static void ICACHE_FLASH_ATTR parseGET(void)
         
         html = HTTP_404_NOT_FOUND_HTML;
     }
-    tcp_send(response);
+    tcp_send(connection, response);
     os_sprintf(html_length, "%d", os_strlen(html));
-    tcp_send(html_length);
-    tcp_send("\r\n\r\n");
-    tcp_send(html);
+    tcp_send(connection, html_length);
+    tcp_send(connection, "\r\n\r\n");
+    tcp_send(connection, html);
 }
 
-static void ICACHE_FLASH_ATTR parsePOST(void)
+static void ICACHE_FLASH_ATTR parsePOST(struct tcp_connection *connection)
 {
 }
 
-static void ICACHE_FLASH_ATTR parseHEAD(void)
+static void ICACHE_FLASH_ATTR parseHEAD(struct tcp_connection *connection)
 {
     unsigned int    i;
     unsigned char   request_entry = 0;
@@ -142,32 +144,33 @@ static void ICACHE_FLASH_ATTR parseHEAD(void)
     //Start after the method.
     i = current_request.start_offset;
     //Save the pointer to the start of the data (URI)
-    request_data[request_entry++] = tcp_cb_data.data + i;
-    while (tcp_cb_data.data[i] != '\r')
+    request_data[request_entry++] = connection->callback_data.data + i;
+    while (connection->callback_data.data[i] != '\r')
     {
         /* To save space, keep the original data, but replace all spaces, separating
          * data, with a zero byte, so that we can just point at each entity.
          */            
         i++;
-        if (tcp_cb_data.data[i] == ' ')
+        if (connection->callback_data.data[i] == ' ')
         {
             //Don't go beyond the entries we expect
             if (request_entry == REQUEST_ENTRIES)
             {
-                os_printf("Request line contains to many entries.");
+                os_printf("ERROR: Request line contains to many entries.");
                 break;
             }
             //Seperate the enries.
-            tcp_cb_data.data[i] = '\0';
+            connection->callback_data.data[i] = '\0';
             //Save a pointer to the current entry.
-            request_data[request_entry++] = &tcp_cb_data.data[++i];
+            request_data[request_entry++] = &connection->callback_data.data[++i];
             
             //Eat spaces to be tolerant, like spec says.
-            for(; tcp_cb_data.data[i] == ' '; tcp_cb_data.data[i++] = '\0');
+            for(; connection->callback_data.data[i] == ' ';
+                connection->callback_data.data[i++] = '\0');
         }
     }
     //End the last string.
-    tcp_cb_data.data[i] = '\0';
+    connection->callback_data.data[i] = '\0';
     
     //Save URI
     current_request.uri = request_data[0];
@@ -181,13 +184,13 @@ static void ICACHE_FLASH_ATTR parseHEAD(void)
     debug("Parsing headers:\n");
     //Save the position skipping the line feed.
     i++;
-    current_request_header = &tcp_cb_data.data[++i];
-    while(tcp_cb_data.data[i] != '\0')
+    current_request_header = &connection->callback_data.data[++i];
+    while(connection->callback_data.data[i] != '\0')
     {
-        if (tcp_cb_data.data[i] == '\r')
+        if (connection->callback_data.data[i] == '\r')
         {
 #ifdef DEBUG
-            tcp_cb_data.data[i] = '\0';
+            connection->callback_data.data[i] = '\0';
             debug(" %s\n", current_request_header);
 #endif
             //Tell that we re not spying on a Do Not Track header.
@@ -197,59 +200,60 @@ static void ICACHE_FLASH_ATTR parseHEAD(void)
             }
             //Save the position skipping the line feed.
             i++;
-            current_request_header = &tcp_cb_data.data[++i];
+            current_request_header = &connection->callback_data.data[++i];
         }
         i++;
     }
 }
 
-void ICACHE_FLASH_ATTR tcp_recv_cb(void)
+void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 {
-    if ((tcp_cb_data.data == NULL) || (os_strlen(tcp_cb_data.data) == 0))
+    if ((connection->callback_data.data == NULL) || 
+        (os_strlen(connection->callback_data.data) == 0))
     {
-        os_printf("Emtpy request recieved.\n");
+        os_printf("ERROR: Emtpy request recieved.\n");
         return;
     }
     //Parse the request header
-	if (os_strncmp(tcp_cb_data.data, "GET ", 4) == 0)
+	if (os_strncmp(connection->callback_data.data, "GET ", 4) == 0)
     {
         debug("GET request.\n");
         current_request.start_offset = 4;
-        parseHEAD();
-		parseGET();
+        parseHEAD(connection);
+		parseGET(connection);
 	}
-    else if(os_strncmp(tcp_cb_data.data, "POST ", 5) == 0)
+    else if(os_strncmp(connection->callback_data.data, "POST ", 5) == 0)
     {
         debug("POST request.\n");
         current_request.start_offset = 5;
-        parseHEAD();
-		parsePOST();
+        parseHEAD(connection);
+		parsePOST(connection);
 	}
-    else if(os_strncmp(tcp_cb_data.data, "HEAD ", 5) == 0)
+    else if(os_strncmp(connection->callback_data.data, "HEAD ", 5) == 0)
     {
         debug("HEAD request.\n");
         current_request.start_offset = 5;
-        parseHEAD();
+        parseHEAD(connection);
 	}
-    else if(os_strncmp(tcp_cb_data.data, "PUT ", 4) == 0)
+    else if(os_strncmp(connection->callback_data.data, "PUT ", 4) == 0)
     {
         debug("PUT request.\n");        
 	}
-    else if(os_strncmp(tcp_cb_data.data, "DELETE ", 7) == 0)
+    else if(os_strncmp(connection->callback_data.data, "DELETE ", 7) == 0)
     {
         debug("DELETE request.\n");        
 	}
-    else if(os_strncmp(tcp_cb_data.data, "TRACE ", 6) == 0)
+    else if(os_strncmp(connection->callback_data.data, "TRACE ", 6) == 0)
     {
         debug("TRACE request.\n");        
 	}
-    else if(os_strncmp(tcp_cb_data.data, "CONECT ", 5) == 0)
+    else if(os_strncmp(connection->callback_data.data, "CONECT ", 5) == 0)
     {
         debug("CONNECT request.\n");        
 	}
     else
     {
-        os_printf("Unknown request: %s\n", tcp_cb_data.data);
+        os_printf("ERROR: Unknown request: %s\n", connection->callback_data.data);
     }
         
     /*char    *response = "HTTP/1.0 200 OK\r\nContent-Type: text/html\
@@ -271,10 +275,10 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(void)
         tcp_send("\r\n\r\n");
         tcp_send(html);
     }*/
-    tcp_disconnect();
+    tcp_disconnect(connection);
 }
 
-void ICACHE_FLASH_ATTR tcp_sent_cb(void)
+void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
 {
 }
 
@@ -283,6 +287,7 @@ void ICACHE_FLASH_ATTR init_http(struct http_builtin_uri *builtin_uris, unsigned
     n_static_uris = n_builtin_uris;
     static_uris = builtin_uris;
     
-    init_tcp(80, tcp_connect_cb, tcp_reconnect_cb, tcp_disconnect_cb, 
+    init_tcp();
+    current_connection = tcp_listen(80, tcp_connect_cb, tcp_reconnect_cb, tcp_disconnect_cb, 
              tcp_write_finish_cb, tcp_recv_cb, tcp_sent_cb);
 }
