@@ -13,6 +13,7 @@
 # - 2014-11-23: Updated for SDK 0.9.3
 # - 2014-12-25: Replaced esptool by esptool.py
 # - 2015-04-21: Maxed out verbosity for religious reasons.
+# - 2015-05-03: Auto dependency generation.
 
 # Output directors to store intermediate compiled files
 # relative to the project directory
@@ -75,8 +76,6 @@ SDK_LIBDIR	:= $(addprefix $(SDK_BASE)/,$(SDK_LIBDIR))
 SDK_INCDIR	:= $(addprefix -I$(SDK_BASE)/,$(SDK_INCDIR))
 
 SRC		:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.c))
-##Added dependencies
-DEPS	:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.h))
 OBJ		:= $(patsubst %.c,$(BUILD_BASE)/%.o,$(SRC))
 LIBS		:= $(addprefix -l,$(LIBS))
 APP_AR		:= $(addprefix $(BUILD_BASE)/,$(TARGET)_app.a)
@@ -95,11 +94,11 @@ vpath %.c $(SRC_DIR)
 vpath %.h $(SRC_DIR)
 
 define compile-objects
-$1/%.o: %.c $(DEPS)
-	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS) -c $$< -o $$@
+$1/%.o: %.c
+	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS) -MD -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs flash clean
+.PHONY: all checkdirs flash flashblank clean
 
 all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2)
 
@@ -128,5 +127,8 @@ flashblank:
 
 clean:
 	rm -rf $(FW_BASE) $(BUILD_BASE)
-
+	
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
+
+#Include .d files with targets and dependencies.
+-include $(patsubst %.c,$(BUILD_BASE)/%.d,$(SRC))
