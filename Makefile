@@ -101,6 +101,7 @@ endef
 .PHONY: all checkdirs flash flashblank clean
 
 all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2)
+	@./mem_usage.sh $(TARGET_OUT) 81920
 
 $(FW_BASE)/%.bin: $(TARGET_OUT) | $(FW_BASE)
 	$(ESPTOOL) elf2image -o $(FW_BASE)/ $(TARGET_OUT)
