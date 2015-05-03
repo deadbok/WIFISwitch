@@ -98,7 +98,7 @@ $1/%.o: %.c
 	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS) -MD -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs flash flashblank clean
+.PHONY: all checkdirs flash flashblank clean debugflash
 
 all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2)
 	@./mem_usage.sh $(TARGET_OUT) 81920
@@ -128,6 +128,10 @@ flashblank:
 
 clean:
 	rm -rf $(FW_BASE) $(BUILD_BASE)
+
+debugflash: flash	
+	minicom -D $(ESPPORT) -o -b 115200 -C ./log.txt
+
 	
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
 
