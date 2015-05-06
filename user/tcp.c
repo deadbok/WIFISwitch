@@ -3,6 +3,10 @@
  * TCP Routines for the ESP8266.
  * 
  * Abstract the espconn interface and manage multiply connection.
+ * 
+ * NOTES:
+ *  - From glancing at the AT code, I have concluded that the member `reverse`
+ *    in `struct espconn`, is there to be abused.
  *
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
  * 
@@ -28,13 +32,19 @@
 #include "user_config.h"
 #include "tcp.h"
 
-#define TCP_MAX_CONNECTIONS 10
+#define TCP_MAX_CONNECTIONS 5
 //Active connections.
 static unsigned char n_tcp_connections;
 struct tcp_connection *tcp_connections = NULL;
 
 //Listening connection
-struct tcp_connection *listening_connection;
+static struct tcp_connection *listening_connection;
+
+//Forward declaration of callback functions.
+static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg);
+static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err);
+static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg);
+static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg);
 
 //Internal function to print espconn errors.
 static void ICACHE_FLASH_ATTR print_status(int status)
@@ -80,29 +90,49 @@ static void ICACHE_FLASH_ATTR print_status(int status)
     }
 }
 
-//Find connection data from a pointer to struct espconn.
-static struct tcp_connection ICACHE_FLASH_ATTR *tcp_find_conn(void *arg)
+/* Free up data structures used by a connection.
+ * 
+ * Parameters:
+ *  connection
+ *   Pointer to the connection data.
+ * 
+ * Returns:
+ *  none
+ */
+void ICACHE_FLASH_ATTR tcp_free(struct tcp_connection *connection)
 {
-	struct tcp_connection   *connections = tcp_connections;
+    debug("Freeing up connection (%p).\n", connection);
+    //Remove connection from, the list of active connections.
+    DL_LIST_UNLINK(connection);
+    debug(" Unlinked.\n");
     
-    debug("TCP finding connection %p\n", arg);
-
-	do
+    debug(  "TCP pointer: %p. Size :%d...", connection->conn->proto.tcp, sizeof(*connection->conn->proto.tcp));
+    //Free up connection data
+    if (connection->conn->proto.tcp != NULL)
     {
-        debug(" Trying %p, %p\n", connections, connections->conn);
-		if (connections->conn == arg)
-        {
-            debug(" Found %p\n", connections);
-            return(connections);
-        }
-        
-        if (connections->next != NULL)
-        {
-            connections = connections->next;
-        }
-	} while (connections->next != NULL);
-	os_printf("ERROR: Could not find connection for: %p\n", arg);
-	return NULL;
+        os_free(connection->conn->proto.tcp);
+        debug("Freed.");
+    }
+    debug(  "\nTCP espconn: %p. Size :%d...", connection->conn, sizeof(*connection->conn));
+    if (connection->conn != NULL)
+    {
+        os_free(connection->conn);
+        debug("Freed.");
+    }
+    debug(  "\nTCP connection data: %p. Size :%d...", connection, sizeof(*connection));
+    if (connection != NULL)
+    {
+        os_free(connection);
+        debug("Freed.");
+    }
+    debug("\n");
+    n_tcp_connections--;
+    //Emtpy list, if this was the last connection.
+    if (n_tcp_connections == 0)
+    {
+        tcp_connections = NULL;
+    }
+    debug(" Memory deallocated.\n");
 }
 
 static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
@@ -115,8 +145,26 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
         connection = (struct tcp_connection *)os_zalloc(sizeof(struct tcp_connection));
         connection->conn = arg;
         
+        //Set internal callbacks.
+        connection->conn->proto.tcp->connect_callback = tcp_connect_cb;
+        connection->conn->proto.tcp->reconnect_callback = tcp_reconnect_cb;
+        connection->conn->proto.tcp->disconnect_callback = tcp_disconnect_cb;
+        connection->conn->proto.tcp->write_finish_fn = tcp_write_finish_cb;
+        
+        //Set user callbacks.
+        os_memcpy(&connection->callbacks, &listening_connection->callbacks, 
+                  sizeof(struct tcp_callback_funcs));
+        //Save our connection data
+        connection->conn->reverse = connection;
+        
         debug("TCP connected (%p).\n", connection);
+        debug(" espconn pointer %p.\n", arg);
+        debug(" Allocated memory for connection %p.\n", connection);
         debug("  espconn data: %p.\n", connection->conn);
+        debug("  TCP data: %p.\n", connection->conn->proto.tcp);
+        debug("  Callbacks: %p.\n", &connection->callbacks);
+        debug("  Callback data: %p.\n", &connection->callback_data);
+        debug("  Reverse pointer to connection: %p.\n", connection->conn->reverse);
 
         //Add connection to the list.
         if (tcp_connections == NULL)
@@ -129,7 +177,9 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
         else
         {
             debug(" Connection number %d.\n", n_tcp_connections + 1);
-            DL_LIST_ADD_END(connection, tcp_connections);
+            struct tcp_connection  *connections = tcp_connections;
+            
+            DL_LIST_ADD_END(connection, connections);
         }
         //Increase number of connections.        
         n_tcp_connections++;
@@ -145,11 +195,11 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
 
 static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err)
 {
-    struct tcp_connection   *connection;
-    
-    connection = tcp_find_conn(arg);
-    
-    debug("TCP resconnected (%p).\n", connection);
+    struct espconn *conn = arg;
+    struct tcp_connection   *connection = conn->reverse;
+        
+    debug("TCP reconnected (%p).\n", connection);
+    debug(" espconn pointer (arg) %p.\n", arg);
     
     //Clear previous data.
     os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
@@ -162,25 +212,38 @@ static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err)
 
 static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
 {
+    /* espconn puts a pointer to the LISTENING connection in arg,
+     * I would have expected a pointer to the closing connection.*/
+    struct espconn *conn = arg;
+    struct tcp_connection *connection = conn->reverse;
     
-    debug("TCP disconnected (%p).\n", arg);
-    //~ 
-    //~ //Clear previous data.
-    //~ os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
-    //~ //Set new data
-    //~ connection->callback_data.arg = arg;
-    //~ //Call call back.
-    //~ listening_connection->callbacks.disconnect_callback(connection);
+    debug("TCP disconnected (%p).\n", connection);
+    debug(" espconn pointer (arg) %p.\n", arg);
+    debug(" espconn reverse pointer %p.\n", conn->reverse);
+    debug(" espconn pointer %p.\n", connection->conn);
+    debug(" TCP data: %p.\n", connection->conn->proto.tcp);
+    debug(" Callbacks: %p.\n", &connection->callbacks);
+    debug(" Callback data: %p.\n", &connection->callback_data);
+    debug(" Reverse pointer to connection: %p.\n", connection->conn->reverse);    
+    
+    //Clear previous data.
+    os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
+    //Set new data
+    connection->callback_data.arg = arg;
+    //Call call back.
+    listening_connection->callbacks.disconnect_callback(connection);
+    //Free the connection
+    tcp_free(connection);
 }
 
 static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg)
 {
-    struct tcp_connection   *connection;
-    
-    connection = tcp_find_conn(arg);
+    struct espconn *conn = arg;
+    struct tcp_connection   *connection = conn->reverse;
     
     debug("TCP write done (%p).\n", connection);
-    
+    debug(" espconn pointer (arg) %p.\n", arg);
+        
     //Clear previous data.
     os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
     //Set new data
@@ -191,11 +254,11 @@ static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg)
 
 static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short length)
 {
-    struct tcp_connection   *connection;
-    
-    connection = tcp_find_conn(arg);
+    struct espconn  *conn = arg;
+    struct tcp_connection   *connection = conn->reverse;
     
     debug("TCP received (%p).\n", connection);
+    debug(" espconn pointer (arg) %p.\n", arg);
     debug("%s\n", data);
     
     //Clear previous data.
@@ -210,11 +273,11 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short 
 
 static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
 {
-    struct tcp_connection   *connection;
-    
-    connection = tcp_find_conn(arg);
+    struct espconn *conn = arg;
+    struct tcp_connection   *connection = conn->reverse;
     
     debug("TCP sent (%p).\n", connection);
+    debug(" espconn pointer (arg) %p.\n", arg);
     
     //Clear previous data.
     os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
@@ -262,8 +325,7 @@ char ICACHE_FLASH_ATTR tcp_disconnect(struct tcp_connection *connection)
     //Free up connection data
     //connection->conn is left for the sdk to handle.
     debug(" Freeing memory.\n");
-    os_free(connection);
-    n_tcp_connections--;
+    tcp_free(connection);
     debug(" Open connections: %d\n", n_tcp_connections);
     if (n_tcp_connections == 0)
     {
@@ -271,25 +333,6 @@ char ICACHE_FLASH_ATTR tcp_disconnect(struct tcp_connection *connection)
     }
     
     return(ret);
-}
-
-/* Free up data structures used by a connection.
- * 
- * Parameters:
- *  connection
- *   Pointer to the connection data.
- * 
- * Returns:
- *  none
- */
-void ICACHE_FLASH_ATTR tcp_free(struct tcp_connection *connection)
-{
-    //Unlink connection from list
-    DL_LIST_UNLINK(connection);
-    //Free up connection data
-    os_free(connection->conn->proto.tcp);
-    os_free(connection->conn);
-    os_free(connection);
 }
 
 /* Open a TCP connection.
@@ -318,10 +361,17 @@ struct tcp_connection ICACHE_FLASH_ATTR *tcp_listen(int port, tcp_callback conne
         //Allocate memory for the new connection.
         connection = (struct tcp_connection *)os_zalloc(sizeof(struct tcp_connection));
         connection->conn = (struct espconn *)os_zalloc(sizeof(struct espconn));
+        connection->conn->proto.tcp = (esp_tcp *)os_zalloc(sizeof(esp_tcp));
+        //Save our connection data
+        connection->conn->reverse = NULL;
+        
         debug(" Allocated memory for connection %p.\n", connection);
-        debug("  espconn data: %p.\n", &connection->conn);
+        debug("  espconn data: %p.\n", connection->conn);
+        debug("  TCP data: %p.\n", connection->conn->proto.tcp);
         debug("  Callbacks: %p.\n", &connection->callbacks);
         debug("  Callback data: %p.\n", &connection->callback_data);
+        debug("  Reverse pointer to connection: %p.\n", connection->conn->reverse);
+        
         conn = connection->conn;
         callbacks = &connection->callbacks;
         
@@ -331,7 +381,6 @@ struct tcp_connection ICACHE_FLASH_ATTR *tcp_listen(int port, tcp_callback conne
         //No state.
         conn->state = ESPCONN_NONE;
         //TCP setup.
-        conn->proto.tcp = (esp_tcp *)os_zalloc(sizeof(esp_tcp));
         //Set port.
         conn->proto.tcp->local_port = port;
         //Setup internal callbacks.
@@ -374,10 +423,12 @@ struct tcp_connection ICACHE_FLASH_ATTR *tcp_listen(int port, tcp_callback conne
  */
 void ICACHE_FLASH_ATTR init_tcp(void)
 {
+    int ret;
+    
     debug("TCP init.\n");
     if (tcp_connections != NULL)
     {
-        debug("TCP init already called once.n");
+        debug("TCP init already called once.\n");
         return;
         //TODO: Close and deallocate connection.
     }
@@ -387,4 +438,11 @@ void ICACHE_FLASH_ATTR init_tcp(void)
     //No open connections.
     n_tcp_connections = 0;
     tcp_connections = NULL;
+    
+    //Set max connections
+    debug("Setting max. TCP connections: %d.\n", TCP_MAX_CONNECTIONS);
+    ret = espconn_tcp_set_max_con(TCP_MAX_CONNECTIONS);
+#ifdef DEBUG
+    print_status(ret);
+#endif
 }

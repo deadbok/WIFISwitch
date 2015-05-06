@@ -275,7 +275,7 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
         tcp_send("\r\n\r\n");
         tcp_send(html);
     }*/
-    tcp_disconnect(connection);
+    //tcp_disconnect(connection);
 }
 
 void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
