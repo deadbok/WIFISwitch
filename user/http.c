@@ -1,20 +1,25 @@
-/* http.c
+/** Simple HTTP server for the ESP8266.
+ * @file http.c
  *
- * Simple HTTP server for the ESP8266.
  * 
+ * Simple HTTP server, that only supports the most basic functionality, and is
+ * small.
+ * 
+ * Features:
  * - Does GET and POST requests.
  * - Read the served files from flash
  * 
  * What works:
  * - Almost nothing.
  * 
- * THIS SERVER IS NOT COMPLIANT WITH HTTP, TO SAVE SPACE, STUFF HAS BEEN
- * OMITTED.
+ * *THIS SERVER IS NOT COMPLIANT WITH HTTP, TO SAVE SPACE, STUFF HAS BEEN
+ * OMITTED.*
  * 
  * Missing functionality:
  * - Most header field.
  * - 
  *
+ * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
  * 
  * This program is free software; you can redistribute it and/or modify
@@ -41,10 +46,14 @@
 #include "tcp.h"
 #include "http.h"
 
-//Number of entries in the HTTP request line, excluding the method.
-#define REQUEST_ENTRIES     2
+/**
+ * Number of entries in the HTTP request line, excluding the method.
+ */
+#define HTPP_REQUEST_ENTRIES     2
 
-//Request methods
+/**
+ * HTTP request methods.
+ */
 enum request_type
 {
     OPTIONS,
@@ -57,12 +66,30 @@ enum request_type
     CONNECT
 };
 
+/**
+ * Structure to keep the data of a HTTP request.
+ */
 struct http_request
 {
+    /**
+     * Type of HTTP request.
+     */
     enum request_type   type;
+    /**
+     * Where to start parsing the request skipping the type.
+     */
     unsigned char       start_offset;
+    /**
+     * The URI of the HTTP request.
+     */
     char                *uri;
+    /**
+     * The version of the HTTP request.
+     */
     char                *version;
+    /**
+     * The message body of the HTTP request.
+     */
     char                *message;
 };
 
@@ -129,11 +156,11 @@ static void ICACHE_FLASH_ATTR parseHEAD(struct tcp_connection *connection)
 {
     unsigned int    i;
     unsigned char   request_entry = 0;
-    char            *request_data[REQUEST_ENTRIES];
+    char            *request_data[HTTP_REQUEST_ENTRIES];
     char            *current_request_header;
     
     //Set all pointers to NULL (kills a compiler warning).
-    for (i = 0; i < REQUEST_ENTRIES; request_data[i++] = NULL);
+    for (i = 0; i < HTTP_REQUEST_ENTRIES; request_data[i++] = NULL);
 
     /* I'm sorry about the following code, but all in all it looks much nicer,
      * than doing the same for each struct member, unrolled. 
@@ -154,7 +181,7 @@ static void ICACHE_FLASH_ATTR parseHEAD(struct tcp_connection *connection)
         if (connection->callback_data.data[i] == ' ')
         {
             //Don't go beyond the entries we expect
-            if (request_entry == REQUEST_ENTRIES)
+            if (request_entry == HTTP_REQUEST_ENTRIES)
             {
                 os_printf("ERROR: Request line contains to many entries.");
                 break;

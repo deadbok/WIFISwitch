@@ -16,6 +16,7 @@
 # - 2015-05-03: Auto dependency generation.
 # - 2015-05-03: debugflash target, that flashes firmware and immediately 
 #				starts minicom.
+# - 2015-05-07: docs: target, to create HTML documentation with Doxygen.
 
 # Output directors to store intermediate compiled files
 # relative to the project directory
@@ -100,7 +101,7 @@ $1/%.o: %.c
 	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS) -MD -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs flash flashblank clean debugflash
+.PHONY: all checkdirs flash flashblank clean debugflash docs
 
 all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2)
 	@./mem_usage.sh $(TARGET_OUT) 81920
@@ -133,7 +134,11 @@ clean:
 
 debugflash: flash	
 	minicom -D $(ESPPORT) -o -b 115200 -C ./log.txt
+	
+docs: doxygen
 
+doxygen: .doxyfile
+	doxygen .doxyfile
 	
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
 

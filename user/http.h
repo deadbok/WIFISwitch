@@ -1,7 +1,8 @@
-/* http.h
+/** Simple HTTP server for the ESP8266.
+ * @file http.h
  *
- * Simple HTTP server for the ESP8266.
  *
+ * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
  * 
  * This program is free software; you can redistribute it and/or modify
@@ -22,10 +23,17 @@
 #ifndef HTTP_H
 #define HTTP_H
 
-//Server name and version.
+/**
+ * Server name.
+ */
 #define HTTP_SERVER_NAME            "slimhttp"
+/**
+ * Server version.
+ */
 #define HTTP_SERVER_VERSION         "0.0.1"
-//Version of HTTP that is supported.
+/*
+ * Version of HTTP that is supported.
+ */
 #define HTTP_SERVER_HTTP_VERSION    "1.1"
 
 //Responses
@@ -39,15 +47,27 @@
                                     </title></head><body><h1>404 Not Found</h1>\
                                     <br /><br />Resource not found.</body></html>"                                    
 
-/* Callback function for static URIs, that are served if no other way is
+/**
+ * Callback function for static URIs, that are served if no other way is
  * found of generating the response.
  */
 typedef char *(*uri_callback)(char *uri);
 
+/** Structure to store information for a built in URI.
+ * 
+ * Used to build an array of built in URI's that has generated responses. The
+ * HTTP server will run through these URI's, when all other sources have failed.
+ */
 struct  http_builtin_uri
 {
+    /**
+     * The URI that the callback can answer.
+     */
 	const char      *uri;
-	uri_callback    callback;
+	/**
+     * A function pointer to a function, that renders the answer.
+     */
+    uri_callback    callback;
 };
 
 void init_http(struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris);

@@ -38,3 +38,8 @@ build
 
 # Serial log file
 log.txt
+
+# Doxygen log
+doxygen.log
+# Doxygen generated files
+docs/html
