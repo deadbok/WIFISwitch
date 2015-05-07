@@ -25,6 +25,11 @@
 #include "espconn.h"
 #include "dl_list.h"
 
+/**
+ * Maximum number of TCP connections supported.
+ */
+#define TCP_MAX_CONNECTIONS 5
+
 struct tcp_callback_data
 {
     void            *arg;
