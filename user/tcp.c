@@ -427,9 +427,9 @@ char ICACHE_FLASH_ATTR tcp_disconnect(struct tcp_connection *connection)
  *                     documentation, this should be considered an error
  *                     callback. If an error happens somewhere in the espconn 
  *                     code this is called.
- * @param diconnect_cb brief Callback when disconnected.
+ * @param disconnect_cb Callback when disconnected.
  * @param write_finish_cb Callback when a write has been done.
- * @param recv_callback Callback when something has been received.
+ * @param recv_cb Callback when something has been received.
  * @param sent_cb Callback when something has been sent.
  */
 void ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb, 

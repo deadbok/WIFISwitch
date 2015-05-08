@@ -3,7 +3,7 @@
  * @brief TCP server routines for the ESP8266.
  *
  * @copyright
- * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
+ * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
  * @license
  * This program is free software; you can redistribute it and/or modify
@@ -30,7 +30,7 @@
 /**
  * Maximum number of TCP connections supported.
  */
-#define TCP_MAX_CONNECTIONS 5
+#define TCP_MAX_CONNECTIONS 10
 
 /**
  * @brief Data used by the callback functions.
@@ -67,6 +67,12 @@ struct tcp_callback_data
 
 struct tcp_connection;
 
+/**
+ * @brief Define a type for the callback funbctions.
+ * 
+ * This is a function pointer to a callback function, that receives a pointer to 
+ * the TCP connection data of the connection, that initialised the callback. 
+ */
 typedef void (*tcp_callback)(struct tcp_connection *);
 
 
@@ -86,6 +92,9 @@ struct tcp_connection
      * @brief Pointer to the data meant for the current callback.
      */
     struct tcp_callback_data    callback_data;
+    /**
+     * @brief Pointers for the prev and next entry in the list.
+     */
     DL_LIST_CREATE(struct tcp_connection);
 };
 

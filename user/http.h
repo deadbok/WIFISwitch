@@ -40,22 +40,48 @@
 /**
  * @brief HTTP 200 OK response.
  */
-#define HTTP_200_OK                 "HTTP/" HTTP_SERVER_HTTP_VERSION \
+#define HTTP_200                    "HTTP/" HTTP_SERVER_HTTP_VERSION \
                                     " 200 OK\r\nContent-Type: text/html\
-                                    \r\nConnection: close\r\nContent-Length: "
+                                    \r\nConnection: close\r\n"
+/**
+ * @brief HTTP 400 bad request.
+ */
+#define HTTP_400                    "HTTP/" HTTP_SERVER_HTTP_VERSION \
+                                    " 400 Bad Request\r\nContent-Type: text/html\
+                                    \r\n"
 /**
  * @brief HTTP 404 not found response.
  */
-#define HTTP_404_NOT_FOUND          "HTTP/" HTTP_SERVER_HTTP_VERSION \
+#define HTTP_404                    "HTTP/" HTTP_SERVER_HTTP_VERSION \
                                     " 404 Not Found\r\nContent-Type: text/html\
-                                    \r\nConnection: close\r\nContent-Length: "
+                                    \r\nConnection: close\r\n"
+/**
+ * @brief HTTP 501 Noy implemented response.
+ */
+#define HTTP_501                    "HTTP/" HTTP_SERVER_HTTP_VERSION \
+                                    " 501 Not Implemented\r\nContent-Type: text/html\
+                                    \r\n"
+                                    /**
+* @brief HTTP 400 response HTML.
+ */
+#define HTTP_400_HTML               "<!DOCTYPE html><head><title>Resource not found.\
+                                    </title></head><body><h1>400 Bad Request</h1>\
+                                    <br />Sorry I didn't quite get that.</body></html>" 
 /**
  * @brief HTTP 404 response HTML.
  */
-#define HTTP_404_NOT_FOUND_HTML     "<!DOCTYPE html><head><title>Resource not found.\
+#define HTTP_404_HTML               "<!DOCTYPE html><head><title>Resource not found.\
                                     </title></head><body><h1>404 Not Found</h1>\
-                                    <br /><br />Resource not found.</body></html>"                                    
-
+                                    <br />Resource not found.</body></html>"                                    
+/**
+ * @brief HTTP 501 response HTML.
+ */
+#define HTTP_501_HTML               "<!DOCTYPE html><head><title>Resource not found.\
+                                    </title></head><body><h1>501 Not Implemented</h1>\
+                                    <br />Don't know what to say.</body></html>"
+                                    
+#define HTTP_RESPONSE(CODE)         HTTP_##CODE
+#define HTTP_RESPONSE_HTML(CODE)    HTTP_##CODE##_HTML
 /**
  * @brief Callback function for static URIs.
  * 

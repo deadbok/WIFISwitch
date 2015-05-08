@@ -17,7 +17,6 @@
  * 
  * Missing functionality:
  * - Most header field.
- * - 
  *
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -48,12 +47,12 @@
 #include "http.h"
 
 /**
- * Number of entries in the HTTP request line, excluding the method.
+ * @brief Number of entries in the HTTP request line, excluding the method.
  */
 #define HTTP_REQUEST_ENTRIES     2
 
 /**
- * HTTP request methods.
+ * @brief HTTP request methods.
  */
 enum request_type
 {
@@ -68,38 +67,46 @@ enum request_type
 };
 
 /**
- * Structure to keep the data of a HTTP request.
+ * @brief Structure to keep the data of a HTTP request.
  */
 struct http_request
 {
     /**
-     * Type of HTTP request.
+     * @brief Pointer to the connection data.
+     */
+    struct tcp_connection connection;
+    /**
+     * @brief Type of HTTP request.
      */
     enum request_type   type;
     /**
-     * Where to start parsing the request skipping the type.
+     * @brief Where to start parsing the request skipping the type.
      */
     unsigned char       start_offset;
     /**
-     * The URI of the HTTP request.
+     * @brief The URI of the HTTP request.
      */
     char                *uri;
     /**
-     * The version of the HTTP request.
+     * @brief The version of the HTTP request.
      */
     char                *version;
     /**
-     * The message body of the HTTP request.
+     * @brief The message body of the HTTP request.
      */
     char                *message;
 };
 
+/**
+ * @brief The data of the current HTTP request.
+ */
 static struct http_request current_request;
 static struct http_builtin_uri *static_uris;
 static unsigned short n_static_uris;
 
 static void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
 {
+    debug("HTTP new connection (%p).\n", connection);
 }
 
 static void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
@@ -114,11 +121,22 @@ static void ICACHE_FLASH_ATTR tcp_write_finish_cb(struct tcp_connection *connect
 {
 }
 
-static void ICACHE_FLASH_ATTR parseGET(struct tcp_connection *connection)
+static void ICACHE_FLASH_ATTR send_response(struct tcp_connection *connection,
+                                                   char *response, char *content)
 {
-    char    *response;
-    char    *html;
+    char *h_length = "Content-Length: ";
     char    html_length[6];
+    
+    tcp_send(connection, response);
+    tcp_send(connection, h_length);
+    os_sprintf(html_length, "%d", os_strlen(content));
+    tcp_send(connection, html_length);
+    tcp_send(connection, "\r\n\r\n");
+    tcp_send(connection, content);
+}
+
+static void ICACHE_FLASH_ATTR handle_GET(struct tcp_connection *connection)
+{
     unsigned short  i;
     
     //Check in static uris, go through and stop if URIs match.
@@ -129,29 +147,20 @@ static void ICACHE_FLASH_ATTR parseGET(struct tcp_connection *connection)
     //Send response if URI is found
     if (i < n_static_uris)
     {
-        response = HTTP_200_OK;
-        
-        html = static_uris[i].callback(current_request.uri);
+        send_response(connection, HTTP_RESPONSE(200), static_uris[i].callback(current_request.uri));
     }
     else
     {
         //Send 404
-        response = HTTP_404_NOT_FOUND;
-        
-        html = HTTP_404_NOT_FOUND_HTML;
+        send_response(connection, HTTP_RESPONSE(404), HTTP_RESPONSE_HTML(404));
     }
-    tcp_send(connection, response);
-    os_sprintf(html_length, "%d", os_strlen(html));
-    tcp_send(connection, html_length);
-    tcp_send(connection, "\r\n\r\n");
-    tcp_send(connection, html);
 }
 
-static void ICACHE_FLASH_ATTR parsePOST(struct tcp_connection *connection)
+static void ICACHE_FLASH_ATTR parse_POST(struct tcp_connection *connection)
 {
 }
 
-static void ICACHE_FLASH_ATTR parseHEAD(struct tcp_connection *connection)
+static void ICACHE_FLASH_ATTR parse_HEAD(struct tcp_connection *connection)
 {
     unsigned int    i;
     unsigned char   request_entry = 0;
@@ -234,10 +243,12 @@ static void ICACHE_FLASH_ATTR parseHEAD(struct tcp_connection *connection)
 
 static void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 {
+    debug("HTTP received (%p).\n", connection);
     if ((connection->callback_data.data == NULL) || 
         (os_strlen(connection->callback_data.data) == 0))
     {
         os_printf("ERROR: Emtpy request recieved.\n");
+        send_response(connection, HTTP_RESPONSE(400), HTTP_RESPONSE_HTML(400));
         return;
     }
     //Parse the request header
@@ -245,62 +256,50 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
     {
         debug("GET request.\n");
         current_request.start_offset = 4;
-        parseHEAD(connection);
-		parseGET(connection);
+        parse_HEAD(connection);
+		handle_GET(connection);
 	}
     else if(os_strncmp(connection->callback_data.data, "POST ", 5) == 0)
     {
         debug("POST request.\n");
         current_request.start_offset = 5;
-        parseHEAD(connection);
-		parsePOST(connection);
+        parse_HEAD(connection);
+		parse_POST(connection);
+        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501));
 	}
     else if(os_strncmp(connection->callback_data.data, "HEAD ", 5) == 0)
     {
         debug("HEAD request.\n");
         current_request.start_offset = 5;
-        parseHEAD(connection);
+        parse_HEAD(connection);
+        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501));
 	}
     else if(os_strncmp(connection->callback_data.data, "PUT ", 4) == 0)
     {
-        debug("PUT request.\n");        
+        debug("PUT request.\n");
+        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501));      
 	}
     else if(os_strncmp(connection->callback_data.data, "DELETE ", 7) == 0)
     {
-        debug("DELETE request.\n");        
+        debug("DELETE request.\n");
+        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501));
 	}
     else if(os_strncmp(connection->callback_data.data, "TRACE ", 6) == 0)
     {
-        debug("TRACE request.\n");        
+        debug("TRACE request.\n");
+        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501));
 	}
     else if(os_strncmp(connection->callback_data.data, "CONECT ", 5) == 0)
     {
-        debug("CONNECT request.\n");        
+        debug("CONNECT request.\n");
+        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501));
 	}
     else
     {
         os_printf("ERROR: Unknown request: %s\n", connection->callback_data.data);
+        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501));
     }
         
-    /*char    *response = "HTTP/1.0 200 OK\r\nContent-Type: text/html\
-                         \r\nConnection: close\r\nContent-Length: ";
-    char    *html = "<!DOCTYPE html><head><title>Web server test.</title></head>\
-                     <body>Hello world.</body></html>";
-    char    html_length[6];
-    
-    if(os_strncmp(tcp_cb_data.data,"GET ",4) && os_strncmp(tcp_cb_data.data,"get ",4))
-    {
-        os_printf("Unknown request.\n");
-    }
-    else
-    {
-        debug("GET request.\n");
-        tcp_send(response);
-        os_sprintf(html_length, "%d", os_strlen(html));
-        tcp_send(html_length);
-        tcp_send("\r\n\r\n");
-        tcp_send(html);
-    }*/
     //tcp_disconnect(connection);
 }
 
