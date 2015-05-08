@@ -1,15 +1,23 @@
-/** tcp.c
+/**
+ * @file tcp.c
  *
- * TCP Routines for the ESP8266.
+ * @brief TCP server routines for the ESP8266.
  * 
  * Abstract the espconn interface and manage multiply connection.
  * 
- * NOTES:
+ * Notes:
  *  - From glancing at the AT code, I have concluded that the member `reverse`
- *    in `struct espconn`, is there to be abused.
+ *    in `struct espconn`, is there for the user. This has proven to be almost
+ *    true, actually the only time it fails, it fails in a way that is really 
+ *    neat, but I dare not abuse.
+ *  - I have no idea how many connections are possible.
+ *  - It seems espconn works on top of lwip, and that it might be better to talk 
+ *    to lwip itself.
  *
- * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
+ * @copyright
+ * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
+ * @license
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -32,12 +40,71 @@
 #include "user_config.h"
 #include "tcp.h"
 
-//Active connections.
-static unsigned char n_tcp_connections;
-struct tcp_connection *tcp_connections = NULL;
+/**
+ * @brief Callback functions for handling TCP events.
+ * 
+ * Callback functions for TCP event handling. All callbacks are passed a pointer
+ * to the `struct tcp_connection` structure, associated with the event.
+ */
+struct tcp_callback_funcs
+{
+    /**
+     * @brief Callback when a connection is made.
+     */
+    tcp_callback connect_callback;
+    /**
+     * @brief Callback on a reconnect.
+     * 
+     * According to the SDK documentation, this should be considered an error
+     * callback. If an error happens somewhere in the espconn code this is 
+     * called.
+     */
+    tcp_callback reconnect_callback;
+    /**
+     * @brief Callback when disconnected.
+     */
+    tcp_callback disconnect_callback;
+    /**
+     * @brief Callback when a write has been done.
+     */
+	tcp_callback write_finish_fn;
+    /**
+     * @brief Callback when something has been received.
+     */
+    tcp_callback recv_callback;
+    /**
+     * @brief Callback when something has been sent.
+     */
+    tcp_callback sent_callback;
+};
 
-//Listening connection
-static struct tcp_connection *listening_connection;
+/**
+ * @brief Special case connection structure.
+ * 
+ * Structure used by the listening connection, which includes callback
+ * function pointers.
+ */
+struct tcp_cb_connection
+{
+    struct espconn              *conn;
+    struct tcp_callback_funcs   callbacks;
+    struct tcp_callback_data    callback_data;
+    DL_LIST_CREATE(struct tcp_connection);
+};
+
+/**
+ * @brief Number of active connections.
+ */
+static unsigned char n_tcp_connections;
+/**
+ * @brief Doubly-linked list of active connections.
+ */
+static struct tcp_connection *tcp_connections = NULL;
+
+/**
+ * @brief The listening connection.
+ */
+static struct tcp_cb_connection *listening_connection;
 
 //Forward declaration of callback functions.
 static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg);
@@ -46,7 +113,7 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg);
 static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg);
 
 //Internal function to print espconn errors.
-static void ICACHE_FLASH_ATTR print_status(int status)
+static void ICACHE_FLASH_ATTR print_status(const int status)
 {
     switch(status)
     {
@@ -89,14 +156,12 @@ static void ICACHE_FLASH_ATTR print_status(int status)
     }
 }
 
-/** Free up data structures used by a connection.
+/** 
+ * @brief Free up data structures used by a connection.
  * 
- * Parameters:
- *  connection
- *   Pointer to the connection data.
- * 
- * Returns:
- *  none
+ * Free up the data pointed to by @p connection. espconn is expected to clean up
+ * after itself.
+ * @param connection Pointer to the data to free.
  */
 void ICACHE_FLASH_ATTR tcp_free(struct tcp_connection *connection)
 {
@@ -122,6 +187,9 @@ void ICACHE_FLASH_ATTR tcp_free(struct tcp_connection *connection)
     debug(" Memory deallocated.\n");
 }
 
+/**
+ * @brief Internal callback for when a new connection has been made.
+ */
 static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
 {
     struct tcp_connection   *connection;
@@ -138,9 +206,6 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
         connection->conn->proto.tcp->disconnect_callback = tcp_disconnect_cb;
         connection->conn->proto.tcp->write_finish_fn = tcp_write_finish_cb;
         
-        //Set user callbacks.
-        os_memcpy(&connection->callbacks, &listening_connection->callbacks, 
-                  sizeof(struct tcp_callback_funcs));
         //Save our connection data
         connection->conn->reverse = connection;
         
@@ -173,13 +238,19 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
     }
 }
 
+/**
+ * @brief Internal error handler.
+ * 
+ * Called whenever an error has occurred.
+ */
 static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err)
 {
     struct espconn *conn = arg;
     struct tcp_connection   *connection = conn->reverse;
         
     debug("TCP reconnected (%p).\n", connection);
-    
+    os_printf("Error: ");
+    print_status(err);
     //Clear previous data.
     os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
     //Set new data
@@ -189,6 +260,9 @@ static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err)
     listening_connection->callbacks.reconnect_callback(connection);
 }
 
+/**
+ * @brief Internal callback for when someone disconnects.
+ */
 static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
 {
     /* espconn puts a pointer to the LISTENING connection in `arg`,
@@ -237,6 +311,9 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
     tcp_free(connection);
 }
 
+/**
+ * @brief Internal callback, called when a TCP write is done.
+ */
 static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg)
 {
     struct espconn *conn = arg;
@@ -252,6 +329,9 @@ static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg)
     listening_connection->callbacks.write_finish_fn(connection);
 }
 
+/**
+ * @brief Internal callback, called when data is received.
+ */
 static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short length)
 {
     struct espconn  *conn = arg;
@@ -270,6 +350,9 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short 
     listening_connection->callbacks.recv_callback(connection);
 }
 
+/*
+ * @brief INternal callback, called when TCP data has been sent.
+ */
 static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
 {
     struct espconn *conn = arg;
@@ -285,29 +368,27 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
     listening_connection->callbacks.sent_callback(connection);
 }
 
-/** Send TCP data to the current connection.
+/** 
+ * @brief Send TCP data.
  * 
- * Parameters:
- *  data
- *   Pointer to the data to send
+ * @param connection Connection used for sending the data.
+ * @param data Pointer to the data to send.
  * 
- * Returns:
- *  espconn error status
+ * @returns espconn error status.
  */
-char ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data)
+char ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char * const data)
 {
     debug("Sending TCP: %s\n", data);
 
     return(espconn_sent(connection->conn, (unsigned char *)data, os_strlen(data)));
 }
 
-/**Disconnect the current TCP connection.
+/**
+ * @brief Disconnect the TCP connection.
  * 
- * Parameters:
- *  none
+ * @param connection Connection to disconnect.
  * 
- * Returns:
- *  espconn error status
+ * @returns espconn error status.
  */
 char ICACHE_FLASH_ATTR tcp_disconnect(struct tcp_connection *connection)
 {
@@ -335,43 +416,44 @@ char ICACHE_FLASH_ATTR tcp_disconnect(struct tcp_connection *connection)
     return(ret);
 }
 
-/**Open a TCP connection.
+/**
+ * @brief Create a listening connection.
  * 
- * Parameters:
- *  port
- *   The TCP port to bind to.
+ * This creates a listening connection for the TCP server.
  * 
- * Returns:
- *  none
+ * @param port The port to bind listen to.
+ * @param connect_cb Callback when a connection is made.
+ * @param reconnect_cb Callback on a reconnect. According to the SDK 
+ *                     documentation, this should be considered an error
+ *                     callback. If an error happens somewhere in the espconn 
+ *                     code this is called.
+ * @param diconnect_cb brief Callback when disconnected.
+ * @param write_finish_cb Callback when a write has been done.
+ * @param recv_callback Callback when something has been received.
+ * @param sent_cb Callback when something has been sent.
  */
-struct tcp_connection ICACHE_FLASH_ATTR *tcp_listen(int port, tcp_callback connect_cb, 
+void ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb, 
                                 tcp_callback reconnect_cb, tcp_callback disconnect_cb,
                                 tcp_callback write_finish_cb, tcp_callback recv_cb,
                                 tcp_callback sent_cb)
 {
     int                         ret;
-    struct tcp_connection       *connection;
+    struct tcp_cb_connection    *connection;
     struct espconn              *conn;
     struct tcp_callback_funcs   *callbacks;
     
     debug("TCP listen.\n");
-    //Bail out if there somebody is already listening.
+    //Bail out if somebody is already listening.
     if (listening_connection == NULL)
     {
         //Allocate memory for the new connection.
-        connection = (struct tcp_connection *)os_zalloc(sizeof(struct tcp_connection));
+        connection = (struct tcp_cb_connection *)os_zalloc(sizeof(struct tcp_cb_connection));
         connection->conn = (struct espconn *)os_zalloc(sizeof(struct espconn));
         connection->conn->proto.tcp = (esp_tcp *)os_zalloc(sizeof(esp_tcp));
         //Save our connection data
         connection->conn->reverse = NULL;
         
-        debug(" Allocated memory for connection %p.\n", connection);
-        debug("  espconn data: %p.\n", connection->conn);
-        debug("  TCP data: %p.\n", connection->conn->proto.tcp);
-        debug("  Callbacks: %p.\n", &connection->callbacks);
-        debug("  Callback data: %p.\n", &connection->callback_data);
-        debug("  Reverse pointer to connection: %p.\n", connection->conn->reverse);
-        
+        debug(" Created connection %p.\n", connection);        
         conn = connection->conn;
         callbacks = &connection->callbacks;
         
@@ -409,17 +491,11 @@ struct tcp_connection ICACHE_FLASH_ATTR *tcp_listen(int port, tcp_callback conne
     else
     {
         os_printf("ERROR: Only one listening TCP connection supported.\n");
-        return(NULL);
     }
-    return(connection);
 }
 
-/**Initialise TCP networking.
- * 
- * Parameters:
- * 
- * Returns:
- *  none
+/**
+ * @brief Initialise TCP networking.
  */
 void ICACHE_FLASH_ATTR init_tcp(void)
 {

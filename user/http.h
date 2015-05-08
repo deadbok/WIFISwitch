@@ -1,10 +1,11 @@
-/** Simple HTTP server for the ESP8266.
- * @file http.h
+/** @file http.h
  *
+ * @brief Simple HTTP server for the ESP8266.
  *
  * @copyright
- * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
+ * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
+ * @license
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -24,36 +25,46 @@
 #define HTTP_H
 
 /**
- * Server name.
+ * @brief Server name.
  */
 #define HTTP_SERVER_NAME            "slimhttp"
 /**
- * Server version.
+ * @brief Server version.
  */
 #define HTTP_SERVER_VERSION         "0.0.1"
-/*
- * Version of HTTP that is supported.
+/**
+ * @brief Version of HTTP that is supported.
  */
 #define HTTP_SERVER_HTTP_VERSION    "1.1"
 
-//Responses
+/**
+ * @brief HTTP 200 OK response.
+ */
 #define HTTP_200_OK                 "HTTP/" HTTP_SERVER_HTTP_VERSION \
                                     " 200 OK\r\nContent-Type: text/html\
                                     \r\nConnection: close\r\nContent-Length: "
+/**
+ * @brief HTTP 404 not found response.
+ */
 #define HTTP_404_NOT_FOUND          "HTTP/" HTTP_SERVER_HTTP_VERSION \
                                     " 404 Not Found\r\nContent-Type: text/html\
                                     \r\nConnection: close\r\nContent-Length: "
+/**
+ * @brief HTTP 404 response HTML.
+ */
 #define HTTP_404_NOT_FOUND_HTML     "<!DOCTYPE html><head><title>Resource not found.\
                                     </title></head><body><h1>404 Not Found</h1>\
                                     <br /><br />Resource not found.</body></html>"                                    
 
 /**
- * Callback function for static URIs, that are served if no other way is
- * found of generating the response.
+ * @brief Callback function for static URIs.
+ * 
+ * These are called if no other way is found of generating the response.
  */
 typedef char *(*uri_callback)(char *uri);
 
-/** Structure to store information for a built in URI.
+/** 
+ * @brief Structure to store information for a built in URI.
  * 
  * Used to build an array of built in URI's that has generated responses. The
  * HTTP server will run through these URI's, when all other sources have failed.
@@ -61,11 +72,11 @@ typedef char *(*uri_callback)(char *uri);
 struct  http_builtin_uri
 {
     /**
-     * The URI that the callback can answer.
+     * @brief The URI that the callback can answer.
      */
 	const char      *uri;
 	/**
-     * A function pointer to a function, that renders the answer.
+     * @brief A function pointer to a function, that renders the answer.
      */
     uri_callback    callback;
 };

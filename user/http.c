@@ -1,6 +1,6 @@
-/** Simple HTTP server for the ESP8266.
- * @file http.c
+/** @file http.c
  *
+ * @brief Simple HTTP server for the ESP8266.
  * 
  * Simple HTTP server, that only supports the most basic functionality, and is
  * small.
@@ -12,16 +12,17 @@
  * What works:
  * - Almost nothing.
  * 
- * *THIS SERVER IS NOT COMPLIANT WITH HTTP, TO SAVE SPACE, STUFF HAS BEEN
- * OMITTED.*
+ * **THIS SERVER IS NOT COMPLIANT WITH HTTP, TO SAVE SPACE, STUFF HAS BEEN
+ * OMITTED.**
  * 
  * Missing functionality:
  * - Most header field.
  * - 
  *
  * @copyright
- * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
+ * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
+ * @license
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -49,7 +50,7 @@
 /**
  * Number of entries in the HTTP request line, excluding the method.
  */
-#define HTPP_REQUEST_ENTRIES     2
+#define HTTP_REQUEST_ENTRIES     2
 
 /**
  * HTTP request methods.
@@ -96,22 +97,20 @@ struct http_request
 static struct http_request current_request;
 static struct http_builtin_uri *static_uris;
 static unsigned short n_static_uris;
-//Listening connection.
-static struct tcp_connection *current_connection = NULL;
 
-void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
+static void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
 {
 }
 
-void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
+static void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
 {
 }
 
-void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
+static void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
 {
 }
 
-void ICACHE_FLASH_ATTR tcp_write_finish_cb(struct tcp_connection *connection)
+static void ICACHE_FLASH_ATTR tcp_write_finish_cb(struct tcp_connection *connection)
 {
 }
 
@@ -233,7 +232,7 @@ static void ICACHE_FLASH_ATTR parseHEAD(struct tcp_connection *connection)
     }
 }
 
-void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
+static void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 {
     if ((connection->callback_data.data == NULL) || 
         (os_strlen(connection->callback_data.data) == 0))
@@ -305,16 +304,19 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
     //tcp_disconnect(connection);
 }
 
-void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
+static void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
 {
 }
 
+/**
+ * @brief Initialise the HTTP server,
+ */
 void ICACHE_FLASH_ATTR init_http(struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris)
 {
     n_static_uris = n_builtin_uris;
     static_uris = builtin_uris;
     
     init_tcp();
-    current_connection = tcp_listen(80, tcp_connect_cb, tcp_reconnect_cb, tcp_disconnect_cb, 
+    tcp_listen(80, tcp_connect_cb, tcp_reconnect_cb, tcp_disconnect_cb, 
              tcp_write_finish_cb, tcp_recv_cb, tcp_sent_cb);
 }

@@ -1,9 +1,11 @@
-/* tcp.c
+/** @file tcp.h
  *
- * TCP Routines for the ESP8266.
+ * @brief TCP server routines for the ESP8266.
  *
+ * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
  * 
+ * @license
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -30,46 +32,70 @@
  */
 #define TCP_MAX_CONNECTIONS 5
 
+/**
+ * @brief Data used by the callback functions.
+ * 
+ * Data passed from espconn to the current callback. *Members that are unused 
+ * are zeroed.*
+ */
 struct tcp_callback_data
 {
+    /**
+     * @brief espconn callback `arg` parameter.
+     * 
+     * Usually a pointer to a `struct espconn`.
+     */ 
     void            *arg;
+    /**
+     * @brief espconn callback `data` parameter.
+     * 
+     * Used by the receive callback for passing received data.
+     */ 
     char            *data;
+    /**
+     * @brief Length of the data pointed to by meḿber `data`.
+     */
     unsigned short  length;
+    /**
+     * @brief espconn callback `err` parameter.
+     * 
+     * Used by the reconnect callback to tell what's up. Equals an `ESPCONN_*`
+     * status.
+     */
     err_t            err;
 };
 
 struct tcp_connection;
+
 typedef void (*tcp_callback)(struct tcp_connection *);
 
-struct tcp_callback_funcs
-{
-    tcp_callback connect_callback;
-    tcp_callback reconnect_callback;
-    tcp_callback disconnect_callback;
-	tcp_callback write_finish_fn;
-    tcp_callback recv_callback;
-    tcp_callback sent_callback;
-};
 
+/**
+ * @brief Structure to keep track of TCP connections.
+ *
+ * This is used to create a list of all active connections, with the needed
+ * information in each node.
+ */ 
 struct tcp_connection
 {
+    /**
+     * @brief Pointer to the `struct espconn` structure associated with the connection.
+     */
     struct espconn              *conn;
-    struct tcp_callback_funcs   callbacks;
+    /**
+     * @brief Pointer to the data meant for the current callback.
+     */
     struct tcp_callback_data    callback_data;
     DL_LIST_CREATE(struct tcp_connection);
 };
-    
 
-extern struct tcp_callback_data     tcp_cb_data;
-extern struct tcp_callback_funcs    tcp_cb_funcs;
-
-struct tcp_connection *tcp_listen(int port, tcp_callback connect_cb, 
+void tcp_listen(int port, tcp_callback connect_cb, 
                                 tcp_callback reconnect_cb, 
                                 tcp_callback disconnect_cb, 
                                 tcp_callback write_finish_cb, 
                                 tcp_callback recv_cb, 
                                 tcp_callback sent_cb);
-char tcp_send(struct tcp_connection *connection, char *data);
+char tcp_send(struct tcp_connection *connection, char * const data);
 char tcp_disconnect(struct tcp_connection *connection);
 void init_tcp(void);
 
