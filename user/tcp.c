@@ -40,6 +40,10 @@
 #include "user_config.h"
 #include "tcp.h"
 
+
+const char *state_names[] = {"ESPCONN_NONE", "ESPCONN_WAIT", "ESPCONN_LISTEN",\
+                             "ESPCONN_CONNECT", "ESPCONN_WRITE", "ESPCONN_READ",\
+                             "ESPCONN_CLOSE"};
 /**
  * @brief Callback functions for handling TCP events.
  * 
@@ -170,21 +174,16 @@ void ICACHE_FLASH_ATTR tcp_free(struct tcp_connection *connection)
      * structures it has allocated. */
 
     //Remove connection from, the list of active connections.
-    DL_LIST_UNLINK(connection);
+    DL_LIST_UNLINK(connection, tcp_connections);
     debug(" Unlinked.\n");
     
     if (connection != NULL)
     {
-        os_free(connection);
-        debug("Freed.\n");
+        db_free(connection);
+        debug(" Connection data freed.\n");
     }
     n_tcp_connections--;
-    //Emtpy list, if this was the last connection.
-    if (n_tcp_connections == 0)
-    {
-        tcp_connections = NULL;
-    }
-    debug(" Memory deallocated.\n");
+    debug(" Connections: %d.\n", n_tcp_connections);
 }
 
 /**
@@ -197,7 +196,7 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
     //Check if there are any free connections.
     if (n_tcp_connections < TCP_MAX_CONNECTIONS)
     {
-        connection = (struct tcp_connection *)os_zalloc(sizeof(struct tcp_connection));
+        connection = (struct tcp_connection *)db_zalloc(sizeof(struct tcp_connection));
         connection->conn = arg;
         
         //Set internal callbacks.
@@ -214,14 +213,12 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
         //Add connection to the list.
         if (tcp_connections == NULL)
         {
-            debug(" First connection.\n");
             tcp_connections = connection;
             connection->prev = NULL;
             connection->next = NULL;
         }
         else
         {
-            debug(" Connection number %d.\n", n_tcp_connections + 1);
             struct tcp_connection  *connections = tcp_connections;
             
             DL_LIST_ADD_END(connection, connections);
@@ -237,8 +234,9 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
     else
     {
         os_printf("No more free TCP connections.\n");
-        return;
+        espconn_disconnect(arg);
     }
+    debug(" Connections: %d.\n", n_tcp_connections);
 }
 
 /**
@@ -290,34 +288,30 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
     
     debug("TCP disconnected.\n");
     
-    debug(" Finding connection: ");
+    debug(" Freeing connections:\n");
     while (connection != NULL)
     {
-        if (connection->conn->state == ESPCONN_CLOSE)
+        if (connection->conn->state >= ESPCONN_CLOSE)
         {
-            debug("%p.\n", connection);
-            break;
+            debug(" %p\n", connection);
+            //Clear previous data.
+            os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
+            //Set new data
+            connection->callback_data.arg = arg;
+            //Call call back.
+            if (listening_connection->callbacks.disconnect_callback != NULL)
+            {
+                listening_connection->callbacks.disconnect_callback(connection);
+            }
+            //Free the connection
+            tcp_free(connection);
+        }
+        else
+        {
+            debug("(%p, %s)\n", connection, state_names[connection->conn->state]);
         }
         connection = connection->next;
     }
-    
-    if (connection == NULL)
-    {
-        os_printf("ERROR: Could not find closing connection.\n");
-        return;
-    }
- 
-    //Clear previous data.
-    os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
-    //Set new data
-    connection->callback_data.arg = arg;
-    //Call call back.
-    if (listening_connection->callbacks.disconnect_callback != NULL)
-    {
-        listening_connection->callbacks.disconnect_callback(connection);
-    }
-    //Free the connection
-    tcp_free(connection);
 }
 
 /**
@@ -413,24 +407,12 @@ char ICACHE_FLASH_ATTR tcp_disconnect(struct tcp_connection *connection)
     int ret;
     
     debug("Disconnecting (%p)...", connection);
-
+    connection->conn->state = ESPCONN_CLOSE;
     //Disconnect
     ret = espconn_disconnect(connection->conn);
 #ifdef DEBUG
     print_status(ret);
 #endif
-    //Unlink connection from list
-    DL_LIST_UNLINK(connection);
-    //Free up connection data
-    //connection->conn is left for the sdk to handle.
-    debug(" Freeing memory.\n");
-    tcp_free(connection);
-    debug(" Open connections: %d\n", n_tcp_connections);
-    if (n_tcp_connections == 0)
-    {
-        tcp_connections = NULL;
-    }
-    
     return(ret);
 }
 
@@ -465,9 +447,9 @@ void ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
     if (listening_connection == NULL)
     {
         //Allocate memory for the new connection.
-        connection = (struct tcp_cb_connection *)os_zalloc(sizeof(struct tcp_cb_connection));
-        connection->conn = (struct espconn *)os_zalloc(sizeof(struct espconn));
-        connection->conn->proto.tcp = (esp_tcp *)os_zalloc(sizeof(esp_tcp));
+        connection = (struct tcp_cb_connection *)db_zalloc(sizeof(struct tcp_cb_connection));
+        connection->conn = (struct espconn *)db_zalloc(sizeof(struct espconn));
+        connection->conn->proto.tcp = (esp_tcp *)db_zalloc(sizeof(esp_tcp));
         //Save our connection data
         connection->conn->reverse = NULL;
         

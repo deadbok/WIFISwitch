@@ -27,7 +27,7 @@
 /**
  * @brief Server name.
  */
-#define HTTP_SERVER_NAME            "slimhttp"
+#define HTTP_SERVER_NAME            "slighttpd"
 /**
  * @brief Server version.
  */
@@ -37,30 +37,29 @@
  */
 #define HTTP_SERVER_HTTP_VERSION    "1.1"
 
+#define HTTP_STD_HEAD               "\r\nContent-Type: text/html\
+                                    \r\nConnection: close\
+                                    \r\nServer: " HTTP_SERVER_NAME "\r\n"
 /**
  * @brief HTTP 200 OK response.
  */
 #define HTTP_200                    "HTTP/" HTTP_SERVER_HTTP_VERSION \
-                                    " 200 OK\r\nContent-Type: text/html\
-                                    \r\nConnection: close\r\n"
+                                    " 200 OK" HTTP_STD_HEAD
 /**
  * @brief HTTP 400 bad request.
  */
 #define HTTP_400                    "HTTP/" HTTP_SERVER_HTTP_VERSION \
-                                    " 400 Bad Request\r\nContent-Type: text/html\
-                                    \r\n"
+                                    " 400 Bad Request" HTTP_STD_HEAD
 /**
  * @brief HTTP 404 not found response.
  */
 #define HTTP_404                    "HTTP/" HTTP_SERVER_HTTP_VERSION \
-                                    " 404 Not Found\r\nContent-Type: text/html\
-                                    \r\nConnection: close\r\n"
+                                    " 404 Not Found" HTTP_STD_HEAD
 /**
  * @brief HTTP 501 Noy implemented response.
  */
 #define HTTP_501                    "HTTP/" HTTP_SERVER_HTTP_VERSION \
-                                    " 501 Not Implemented\r\nContent-Type: text/html\
-                                    \r\n"
+                                    " 501 Not Implemented" HTTP_STD_HEAD
                                     /**
 * @brief HTTP 400 response HTML.
  */
