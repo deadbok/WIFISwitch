@@ -50,10 +50,12 @@
 /**
  * @brief Unlink a node from the list.
  */
-#define DL_LIST_UNLINK(NODE)    if (NODE->prev != NULL)\
-                                    NODE->prev->next = NODE->next;\
-                                if (NODE->next != NULL)\
-                                    NODE->next->prev = NODE->prev
+#define DL_LIST_UNLINK(NODE, LIST)  if (LIST == NODE)\
+                                        LIST = NODE->next;\
+                                    if (NODE->prev != NULL)\
+                                        NODE->prev->next = NODE->next;\
+                                    if (NODE->next != NULL)\
+                                        NODE->next->prev = NODE->prev
 /**
  * @brief Insert a node into a list.
  * 
