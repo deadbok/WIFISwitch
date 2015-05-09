@@ -68,7 +68,7 @@ struct tcp_callback_data
 struct tcp_connection;
 
 /**
- * @brief Define a type for the callback funbctions.
+ * @brief Define a type for the callback functions.
  * 
  * This is a function pointer to a callback function, that receives a pointer to 
  * the TCP connection data of the connection, that initialised the callback. 
@@ -87,11 +87,15 @@ struct tcp_connection
     /**
      * @brief Pointer to the `struct espconn` structure associated with the connection.
      */
-    struct espconn              *conn;
+    struct espconn *conn;
     /**
      * @brief Pointer to the data meant for the current callback.
      */
-    struct tcp_callback_data    callback_data;
+    struct tcp_callback_data callback_data;
+    /*
+     * @brief A pointer for the user, never touched.
+     */ 
+    void *free;
     /**
      * @brief Pointers for the prev and next entry in the list.
      */
