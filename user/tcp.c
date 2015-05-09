@@ -229,7 +229,10 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
         //Increase number of connections.        
         n_tcp_connections++;
         //Call callback.
-        listening_connection->callbacks.connect_callback(connection);
+        if (listening_connection->callbacks.connect_callback != NULL)
+        {
+            listening_connection->callbacks.connect_callback(connection);
+        }
     }
     else
     {
@@ -257,7 +260,10 @@ static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err)
     connection->callback_data.arg = arg;
     connection->callback_data.err = err;
     //Call call back.
-    listening_connection->callbacks.reconnect_callback(connection);
+    if (listening_connection->callbacks.reconnect_callback != NULL)
+    {
+        listening_connection->callbacks.reconnect_callback(connection);
+    }
 }
 
 /**
@@ -306,7 +312,10 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
     //Set new data
     connection->callback_data.arg = arg;
     //Call call back.
-    listening_connection->callbacks.disconnect_callback(connection);
+    if (listening_connection->callbacks.disconnect_callback != NULL)
+    {
+        listening_connection->callbacks.disconnect_callback(connection);
+    }
     //Free the connection
     tcp_free(connection);
 }
@@ -326,7 +335,10 @@ static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg)
     //Set new data
     connection->callback_data.arg = arg;
     //Call call back.
-    listening_connection->callbacks.write_finish_fn(connection);
+    if (listening_connection->callbacks.write_finish_fn != NULL)
+    {
+        listening_connection->callbacks.write_finish_fn(connection);
+    }    
 }
 
 /**
@@ -347,11 +359,14 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short 
     connection->callback_data.data = data;
     connection->callback_data.length = length;
     //Call call back.
-    listening_connection->callbacks.recv_callback(connection);
+    if (listening_connection->callbacks.recv_callback != NULL)
+    {
+        listening_connection->callbacks.recv_callback(connection);
+    }    
 }
 
 /*
- * @brief INternal callback, called when TCP data has been sent.
+ * @brief Internal callback, called when TCP data has been sent.
  */
 static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
 {
@@ -365,7 +380,10 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
     //Set new data
     connection->callback_data.arg = arg;
     //Call call back.
-    listening_connection->callbacks.sent_callback(connection);
+    if (listening_connection->callbacks.sent_callback != NULL)
+    {
+        listening_connection->callbacks.sent_callback(connection);
+    }    
 }
 
 /** 
