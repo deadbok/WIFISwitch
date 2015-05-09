@@ -36,8 +36,9 @@ firmware
 build
 *.bin
 
-# Serial log file
-log.txt
+# Serial log files
+logs
+debug.log
 
 # Doxygen log
 doxygen.log

@@ -16,7 +16,9 @@
 # - 2015-05-03: Auto dependency generation.
 # - 2015-05-03: debugflash target, that flashes firmware and immediately 
 #				starts minicom.
-# - 2015-05-07: docs: target, to create HTML documentation with Doxygen.
+# - 2015-05-07: docs target, to create HTML documentation with Doxygen.
+# - 2015-05-09: debug target to just run minicom.
+# - 2015-05-09: Saving of debug logs in separate files under LOG_DIR.
 
 # Output directors to store intermediate compiled files
 # relative to the project directory
@@ -74,6 +76,7 @@ LD		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 ####
 SRC_DIR		:= $(MODULES)
 BUILD_DIR	:= $(addprefix $(BUILD_BASE)/,$(MODULES))
+LOG_DIR		:= logs
 
 SDK_LIBDIR	:= $(addprefix $(SDK_BASE)/,$(SDK_LIBDIR))
 SDK_INCDIR	:= $(addprefix -I$(SDK_BASE)/,$(SDK_INCDIR))
@@ -101,7 +104,7 @@ $1/%.o: %.c
 	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS) -MD -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs flash flashblank clean debugflash docs
+.PHONY: all checkdirs flash flashblank clean debug debugflash docs
 
 all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2)
 	@./mem_usage.sh $(TARGET_OUT) 81920
@@ -123,6 +126,9 @@ $(BUILD_DIR):
 $(FW_BASE):
 	mkdir -p $@
 
+$(LOG_DIR):
+	mkdir -p $@
+
 flash: all
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_2_ADDR) $(FW_FILE_2)
 	
@@ -132,9 +138,15 @@ flashblank:
 clean:
 	rm -rf $(FW_BASE) $(BUILD_BASE)
 
-debugflash: flash	
-	minicom -D $(ESPPORT) -o -b 115200 -C ./log.txt
-	
+debug: $(LOG_DIR)
+#Remove the old log
+	echo "" > ./debug.log
+	minicom -D $(ESPPORT) -o -b 115200 -C ./debug.log
+#Make a copy of the new log before with a saner name.
+	cp ./debug.log $(LOG_DIR)/debug-$(shell date +%Y-%m-%d-%H-%M-%S).log
+
+debugflash: flash debug
+
 docs: doxygen
 
 doxygen: .doxyfile
