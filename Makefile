@@ -140,7 +140,7 @@ clean:
 
 debug: $(LOG_DIR)
 #Remove the old log
-	echo "" > ./debug.log
+	> ./debug.log
 	minicom -D $(ESPPORT) -o -b 115200 -C ./debug.log
 #Make a copy of the new log before with a saner name.
 	cp ./debug.log $(LOG_DIR)/debug-$(shell date +%Y-%m-%d-%H-%M-%S).log
