@@ -70,8 +70,12 @@ char *hello(char *uri)
 char *idx(char *uri)
 {
     char    *html = "<!DOCTYPE html><head><title>Index.</title></head>\
-                     <body>It works.<br /><form action=\"/post\" method=\"POST\"><br /><input type=\"submit\" \
-                     value=\"POST\"></form> </body></html>";
+                     <body>It works.<br /><form action=\"/post\" method=\"POST\">\
+                     <input type=\"text\" name=\"posttext\" value=\"testpost\">\
+                     <br /><input type=\"submit\" value=\"POST\">\
+                     </form><br /><form action=\"/\" method=\"GET\">\
+                     <input type=\"text\" name=\"gettext\" value=\"testget\">\
+                     <br /><input type=\"submit\" value=\"GET\"></form></body></html>";
     return(html);
 }
 
