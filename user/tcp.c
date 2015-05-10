@@ -291,7 +291,8 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
     debug(" Freeing connections:\n");
     while (connection != NULL)
     {
-        if (connection->conn->state >= ESPCONN_CLOSE)
+        if ((connection->conn->state >= ESPCONN_CLOSE) ||
+            (connection->conn->state == ESPCONN_NONE))
         {
             debug(" %p\n", connection);
             //Clear previous data.
@@ -407,7 +408,7 @@ char ICACHE_FLASH_ATTR tcp_disconnect(struct tcp_connection *connection)
     int ret;
     
     debug("Disconnecting (%p)...", connection);
-    connection->conn->state = ESPCONN_CLOSE;
+    //connection->conn->state = ESPCONN_CLOSE;
     //Disconnect
     ret = espconn_disconnect(connection->conn);
 #ifdef DEBUG
