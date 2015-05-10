@@ -293,8 +293,8 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
     debug(" Freeing connections:\n");
     while (connection != NULL)
     {
-        if ((connection->conn->state >= ESPCONN_CLOSE) ||
-            (connection->conn->state == ESPCONN_NONE))
+        if ((connection->conn->state >= ESPCONN_CLOSE)) // ||
+            //(connection->conn->state == ESPCONN_NONE))
         {
             debug(" %p\n", connection);
             //Clear previous data.
@@ -490,6 +490,12 @@ void ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
         print_status(ret);
 #endif
         listening_connection = connection;
+        debug(" Setting connection timeout to 60 secs...");
+        //Set timeout for all connections.
+        ret = espconn_regist_time(conn, 60, 0);
+#ifdef DEBUG
+        print_status(ret);
+#endif
     }
     else
     {
