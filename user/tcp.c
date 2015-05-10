@@ -40,7 +40,9 @@
 #include "user_config.h"
 #include "tcp.h"
 
-
+/**
+ * @brief Array to look up a string from connection state.
+ */
 const char *state_names[] = {"ESPCONN_NONE", "ESPCONN_WAIT", "ESPCONN_LISTEN",\
                              "ESPCONN_CONNECT", "ESPCONN_WRITE", "ESPCONN_READ",\
                              "ESPCONN_CLOSE"};

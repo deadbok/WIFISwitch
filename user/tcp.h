@@ -92,7 +92,7 @@ struct tcp_connection
      * @brief Pointer to the data meant for the current callback.
      */
     struct tcp_callback_data callback_data;
-    /*
+    /**
      * @brief A pointer for the user, never touched.
      */ 
     void *free;
