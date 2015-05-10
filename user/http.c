@@ -50,10 +50,10 @@
 #include "http.h"
 
 /**
- * @brief Number of entries in the HTTP request line, excluding the method.
+ * @brief Eat initial spaces in a string replacing then with '\0'.
  */
-#define HTTP_REQUEST_ENTRIES     2
-
+#define HTTP_EAT_SPACES(string) while (*string == ' ')\
+                                    *string++ = '\0'
 /**
  * @brief HTTP request types.
  */
@@ -246,37 +246,35 @@ static void ICACHE_FLASH_ATTR parse_POST(struct tcp_connection *connection)
  * @brief Parse headers of a request.
  */
 static void ICACHE_FLASH_ATTR parse_header(struct tcp_connection *connection,
-                                           unsigned int header_offset)
+                                           char* raw_headers)
 {
-    //Counter to keep track of where we are.
-    unsigned int i = header_offset;
+    //Pointers to keep track of where we are.
+    char *data = raw_headers;
+    char *next_data = raw_headers;
+    char *value;
     //Where a single header pointers are stored.
     struct http_header *header = NULL;
     //Array where all headers are pointed to.
     struct http_header **headers;
     //Number of headers.
     unsigned short n_headers;
-    //Pointer to the start of the current name or value.
-    char *current_request_header;
-    //True of a header name has been found.
-    bool got_name = false;
     //True if something is done doing stuff.
     bool done;
     
     //Count the headers
-    debug(" Counting headers");
+    debug(" Counting headers (%p)", raw_headers);
     //We're NOT done!
     done = false;
     //Told you, see, no headers.
     n_headers = 0;
     //Go go go.
-    while (!done)
+    while (!done && next_data)
     {
-        if (connection->callback_data.data[i] == '\r')
+        next_data = os_strstr(next_data, "\r");
+        if (next_data)
         {
             //Is it the end?
-            if (os_strncmp(&connection->callback_data.data[i],
-                "\r\n\r\n ", 4) == 0)
+            if (os_strncmp(next_data, "\r\n\r\n ", 4) == 0)
             {
                 n_headers++;
                 debug(": %d\n", n_headers);
@@ -289,81 +287,75 @@ static void ICACHE_FLASH_ATTR parse_header(struct tcp_connection *connection,
                 n_headers++;
                 debug(".");
             }
+            next_data++;
+            next_data++;
         }
-        //next character
-        i++;
     }
-            
-    
-    //Run through the response headers.
-    debug(" Parsing headers:\n");
     //Go back to where the headers start.
-    i = header_offset;
+    next_data = raw_headers;
+    //Run through the response headers.
+    debug(" Parsing headers (%p):\n", data);
     //Allocate memory for the array of headers
     headers = db_zalloc(sizeof(struct http_header *) * n_headers);
     //Start from scratch.
     n_headers = 0;
     //Not done.
     done = false;
-    //Save the position skipping the line feed.
-    current_request_header = &connection->callback_data.data[i];
     //Go go go.
-    while (!done)
+    while (!done && next_data)
     {
-        if (connection->callback_data.data[i] == '\r')
+        next_data = os_strstr(data, "\r");
+        if (next_data)
         {
             //Is it the end?
-            if (os_strncmp(&connection->callback_data.data[i],
-                "\r\n\r\n ", 4) == 0)
+            if (os_strncmp(next_data, "\r\n\r\n ", 4) == 0)
             {
                 debug(" Last header.\n");
+                //0 out and skip over CRLFCRLF.
+                *next_data++ = '\0';
+                *next_data++ = '\0';
+                *next_data++ = '\0';
+                *next_data++ = '\0';
                 //Get out.
                 done = true;
             }
-            
-            //End the string
-            connection->callback_data.data[i] = '\0';
-            debug(" Value: %s\n", current_request_header);
-
-            /*The compiler complains that header might be uninitialised, and it
-             *is right, except it *should* never happen, but lets handle it
-             *anyway.
-             */
-            if ((got_name) && (header != NULL))
-            {
-                header->value = current_request_header;
-                //Add the header to the array
-                headers[n_headers] = header;
-                //Next position.
-                n_headers++;
-            }
             else
             {
-                os_printf("ERROR: Found a value without a name in the HTTP headers.\n");
+                //0 out and skip over CRLF.
+                *next_data++ = '\0';
+                *next_data++ = '\0';
             }
-            //Skip newline.
-            i++;
-            current_request_header = &connection->callback_data.data[++i];
-            got_name = false;
-        }
-        else if ((connection->callback_data.data[i] == ':') &&
-                 !got_name)
-        {
-            //End the name at the ":"
-            connection->callback_data.data[i] = '\0';
-            debug(" Name %s.\n", current_request_header);
-            
+            //Find end of name.
+            value = os_strstr(data, ":");
+            if (!value)
+            {
+                os_printf("ERROR: Could not parse request header: %s\n", data);
+                //Bail out
+                done = true;
+                break;
+            }
+            //End name string.
+            *value++ = '\0';
             //Get some memory for the pointers.
             header = (struct http_header *)db_zalloc(sizeof(struct http_header));
-            header->name = current_request_header;
+            header->name = data;
+            debug(" Name (%p): %s\n", header->name, header->name);
             
-            //Next entry.
-            current_request_header = &connection->callback_data.data[++i];
-            
-            //Signal that we got the name.
-            got_name = true;
+            //Eat spaces in front of value.
+            HTTP_EAT_SPACES(value);
+            //Save value.
+            header->value = value;
+            debug(" Value (%p): %s\n", header->value, header->value);
+            //Insert the header.
+            headers[n_headers++] = header;
+            //Go to the next entry
+            data = next_data;
+
         }
-        i++;
+        else
+        {
+            debug("Done (%p).", next_data);
+        }
     }
     ((struct http_request *)connection->free)->headers = headers;
     ((struct http_request *)connection->free)->n_headers = n_headers;
@@ -372,61 +364,49 @@ static void ICACHE_FLASH_ATTR parse_header(struct tcp_connection *connection,
 static void ICACHE_FLASH_ATTR parse_HEAD(struct tcp_connection *connection)
 {
     struct http_request *request = connection->free;
-    unsigned int i;
-    unsigned char request_entry = 0;
-    char *request_data[HTTP_REQUEST_ENTRIES];
-    
-    //Set all pointers to NULL (kills a compiler warning).
-    for (i = 0; i < HTTP_REQUEST_ENTRIES; request_data[i++] = NULL);
+    char *request_entry, *next_entry;
 
-    /* I'm sorry about the following code, but all in all it looks much nicer,
-     * than doing the same for each struct member, unrolled. 
-     */
-         
+    //Start after method.
+    request_entry = connection->callback_data.data + request->start_offset;
     //Parse the whole request line.
-    debug("Parsing request line:\n");
-    //Start after the method.
-    i = request->start_offset;
-    //Save the pointer to the start of the data (URI)
-    request_data[request_entry++] = connection->callback_data.data + i;
-    while (connection->callback_data.data[i] != '\r')
+    debug("Parsing request line (%p):\n", request_entry);
+
+    //Eat spaces to be tolerant, like spec says.
+    HTTP_EAT_SPACES(request_entry);
+    //Find the space after the URI, and end the URI string.
+    next_entry = os_strstr(request_entry, " ");
+    if (next_entry == NULL)
     {
-        /* To save space, keep the original data, but replace all spaces, separating
-         * data, with a zero byte, so that we can just point at each entity.
-         */            
-        i++;
-        if (connection->callback_data.data[i] == ' ')
-        {
-            //Don't go beyond the entries we expect
-            if (request_entry == HTTP_REQUEST_ENTRIES)
-            {
-                os_printf("ERROR: Request line contains to many entries.");
-                break;
-            }
-            //Seperate the enries.
-            connection->callback_data.data[i] = '\0';
-            //Save a pointer to the current entry.
-            request_data[request_entry++] = &connection->callback_data.data[++i];
-            
-            //Eat spaces to be tolerant, like spec says.
-            for(; connection->callback_data.data[i] == ' ';
-                connection->callback_data.data[i++] = '\0');
-        }
+        os_printf("ERROR: Could not parse HTTP request URI (%s).\n", request_entry);
+        return;
     }
-    //End the last string.
-    connection->callback_data.data[i] = '\0';
-    
+    //
+    HTTP_EAT_SPACES(next_entry);
     //Save URI
-    request->uri = request_data[0];
-    debug(" URI: %s\n", request->uri);  
+    request->uri = request_entry;
+    debug(" URI (%p): %s\n", request_entry, request->uri);  
     
+    request_entry = next_entry;
     //Skip 'HTTP/' and save version.
-    request->version = &request_data[1][5];
-    debug(" Version: %s\n", request->version);
+    request_entry += 5;
+    //Find the CR after the version, and end the string.
+    next_entry = os_strstr(request_entry, "\r");
+    if (next_entry == NULL)
+    {
+        os_printf("ERROR: Could not parse HTTP request version (%s).\n", request_entry);
+        return;
+    }
+
+    //0 out and skip over CRLF.
+    *next_entry++ = '\0';
+    *next_entry++ = '\0';
+
+    //Save version.  
+    request->version = request_entry;
+    debug(" Version (%p): %s\n", request_entry, request->version);
     
-    i += 2;
-    debug("Parsing headers:\n");
-    parse_header(connection, i);
+    debug("Parsing headers (%p):\n", next_entry);
+    parse_header(connection, next_entry);
 }
 
 static void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)

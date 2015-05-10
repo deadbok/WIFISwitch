@@ -36,7 +36,9 @@
  * @brief Version of HTTP that is supported.
  */
 #define HTTP_SERVER_HTTP_VERSION    "1.1"
-
+/**
+ * @brief Standard response header contents.
+ */
 #define HTTP_STD_HEAD               "\r\nContent-Type: text/html\
                                     \r\nConnection: close\
                                     \r\nServer: " HTTP_SERVER_NAME "\r\n"
@@ -79,8 +81,14 @@
                                     </title></head><body><h1>501 Not Implemented</h1>\
                                     <br />Don't know what to say.</body></html>"
                                     
-#define HTTP_RESPONSE(CODE)         HTTP_##CODE
-#define HTTP_RESPONSE_HTML(CODE)    HTTP_##CODE##_HTML
+/**
+ * @brief Return response header for @p CODE.
+ */
+ #define HTTP_RESPONSE(CODE)         HTTP_##CODE
+/**
+ * @brief Return response HTML for @p CODE.
+ */
+ #define HTTP_RESPONSE_HTML(CODE)    HTTP_##CODE##_HTML
 /**
  * @brief Callback function for static URIs.
  * 
