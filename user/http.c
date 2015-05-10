@@ -50,7 +50,9 @@
 #include "http.h"
 
 /**
- * @brief Eat initial spaces in a string replacing then with '\0'.
+ * @brief Eat initial spaces.
+ * 
+ * Eat initial spaces in a string replacing then with '\0', and advance the pointer.
  */
 #define HTTP_EAT_SPACES(string) while (*string == ' ')\
                                     *string++ = '\0'
@@ -214,7 +216,7 @@ static void ICACHE_FLASH_ATTR send_response(struct tcp_connection *connection,
 }
 
 /**
- * @biref Handle a GET request.
+ * @brief Handle a GET request.
  */
 static void ICACHE_FLASH_ATTR handle_GET(struct tcp_connection *connection, bool headers_only)
 {
@@ -350,7 +352,6 @@ static void ICACHE_FLASH_ATTR parse_header(struct tcp_connection *connection,
             headers[n_headers++] = header;
             //Go to the next entry
             data = next_data;
-
         }
         else
         {
@@ -361,13 +362,23 @@ static void ICACHE_FLASH_ATTR parse_header(struct tcp_connection *connection,
     ((struct http_request *)connection->free)->n_headers = n_headers;
 }
 
-static void ICACHE_FLASH_ATTR parse_HEAD(struct tcp_connection *connection)
+/**
+ * @brief Parse the start-line and header fields.
+ * 
+ * Parse the start-line and header fields of a HTTP request. Put the whole thing
+ * in a #http_request and add it to the #tcp_connection data.
+ * 
+ * @param connection Pointer to the connection data.
+ * @param start_offset Where to start parsing the data.
+ */
+static void ICACHE_FLASH_ATTR parse_HEAD(struct tcp_connection *connection, 
+                                         unsigned char start_offset)
 {
     struct http_request *request = connection->free;
     char *request_entry, *next_entry;
 
     //Start after method.
-    request_entry = connection->callback_data.data + request->start_offset;
+    request_entry = connection->callback_data.data + start_offset;
     //Parse the whole request line.
     debug("Parsing request line (%p):\n", request_entry);
 
@@ -409,6 +420,13 @@ static void ICACHE_FLASH_ATTR parse_HEAD(struct tcp_connection *connection)
     parse_header(connection, next_entry);
 }
 
+/**
+ * @brief Called when data has been received.
+ * 
+ * Parse the HTTP request, and send a meaningful answer.
+ * 
+ * @param connection Pointer to the connection that received the data.
+ */
 static void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 {
     struct http_request *request = connection->free;
@@ -425,26 +443,23 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 	if (os_strncmp(connection->callback_data.data, "GET ", 4) == 0)
     {
         debug("GET request.\n");
-        request->start_offset = 4;
         request->type = GET;
-        parse_HEAD(connection);
+        parse_HEAD(connection, 4);
 		handle_GET(connection, false);
 	}
     else if(os_strncmp(connection->callback_data.data, "POST ", 5) == 0)
     {
         debug("POST request.\n");
-        request->start_offset = 5;
         request->type = POST;
-        parse_HEAD(connection);
+        parse_HEAD(connection, 5);
 		parse_POST(connection);
         send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501), true);
 	}
     else if(os_strncmp(connection->callback_data.data, "HEAD ", 5) == 0)
     {
         debug("HEAD request.\n");
-        request->start_offset = 5;
         request->type = HEAD;
-        parse_HEAD(connection);
+        parse_HEAD(connection, 5);
 		handle_GET(connection, true);
 	}
     else if(os_strncmp(connection->callback_data.data, "PUT ", 4) == 0)
