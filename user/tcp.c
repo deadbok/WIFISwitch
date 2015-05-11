@@ -92,10 +92,18 @@ struct tcp_callback_funcs
  */
 struct tcp_cb_connection
 {
+    /**
+     * @brief Pointer to the `struct espconn` structure associated with the connection.
+     */
     struct espconn              *conn;
+    /**
+     * @brief Pointers to callback functions for handling connection states.
+     */
     struct tcp_callback_funcs   callbacks;
+    /**
+     * @brief Pointer to the data meant for the current callback.
+     */
     struct tcp_callback_data    callback_data;
-    DL_LIST_CREATE(struct tcp_connection);
 };
 
 /**
@@ -118,7 +126,11 @@ static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err);
 static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg);
 static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg);
 
-//Internal function to print espconn errors.
+/**
+ * @brief Internal function to print espconn status.
+ * 
+ * @param status Status to print.
+ */
 static void ICACHE_FLASH_ATTR print_status(const int status)
 {
     switch(status)

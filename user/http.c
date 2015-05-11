@@ -103,10 +103,6 @@ struct http_request
      */
     enum request_type   type;
     /**
-     * @brief Where to start parsing the request skipping the type.
-     */
-    unsigned char       start_offset;
-    /**
      * @brief The URI of the HTTP request.
      */
     char                *uri;
@@ -149,6 +145,9 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
     connection->free = request;
 }
 
+/**
+ * @brief Called on connection error.
+ */
 static void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
 {
 }
@@ -156,8 +155,10 @@ static void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection
 /**
  * @brief Callback when a connection is broken.
  * 
- * Called whenever someone disconnects. Free up the HTTP data, used by the 
+ * Called whenever someone disconnects. Frees up the HTTP data, used by the 
  * connection.
+ * 
+ * @param connection Pointer to the connection that has disconnected. 
  */
 static void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
 {
@@ -225,15 +226,14 @@ static void ICACHE_FLASH_ATTR handle_GET(struct tcp_connection *connection, bool
     
     //Check in static uris, go through and stop if URIs match.
     for (i = 0; 
-         ((i < n_static_uris) && 
-         (os_strcmp(request->uri, static_uris[i].uri) != 0)); 
+         ((i < n_static_uris) && (!static_uris[i].test_uri(request->uri))); 
          i++);
     
     //Send response if URI is found
     if (i < n_static_uris)
     {
         send_response(connection, HTTP_RESPONSE(200), 
-                      static_uris[i].callback(request->uri), !headers_only);
+                      static_uris[i].handler(request->uri), !headers_only);
         return;
     }
     //Send 404

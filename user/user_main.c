@@ -42,23 +42,37 @@
 #include "wifi_connect.h"
 #include "tcp.h"
 #include "http.h"
+#include "led.h"
 
 /**
  * @brief Number of built in URIs in the #g_builtin_uris array.
  */
-#define N_BUILTIN_URIS  2
+#define N_BUILTIN_URIS  3
 
 char *hello(char *uri);
+bool hello_test(char *uri);
+
 char *idx(char *uri);
+bool idx_test(char *uri);
 
 /**
  * @brief Array of built in handlers and their URIs.
  */
 struct http_builtin_uri g_builtin_uris[N_BUILTIN_URIS] =
 {
-    {"/", idx},
-    {"/hello", hello}
+    {idx_test, idx},
+    {hello_test, hello},
+    {led_test, led_html}
 };
+
+bool hello_test(char *uri)
+{
+    if (os_strcmp(uri, "/hello") == 0)
+    {
+        return(true);
+    }
+    return(false);
+}
 
 char *hello(char *uri)
 {
@@ -67,15 +81,62 @@ char *hello(char *uri)
     return(html);
 }
 
+bool idx_test(char *uri)
+{
+    if (os_strlen(uri) == 1)
+    {
+        return (true);
+    }
+    if (os_strncmp(uri, "/?", 2) == 0)
+    {
+        return(true);
+    }
+    if (os_strncmp(uri, "/index.html", 11) == 0)
+    {
+        return(true);
+    }
+    return(false);  
+}
+
 char *idx(char *uri)
 {
+    unsigned char i;
+    char    *form_data;
     char    *html = "<!DOCTYPE html><head><title>Index.</title></head>\
-                     <body>It works.<br /><form action=\"/post\" method=\"POST\">\
+                     <body>It works.<br /><form action=\"/\" method=\"POST\">\
                      <input type=\"text\" name=\"posttext\" value=\"testpost\">\
                      <br /><input type=\"submit\" value=\"POST\">\
                      </form><br /><form action=\"/\" method=\"GET\">\
                      <input type=\"text\" name=\"gettext\" value=\"testget\">\
-                     <br /><input type=\"submit\" value=\"GET\"></form></body></html>";
+                     <br /><input type=\"submit\" value=\"GET\"></form>\
+                     <div name=\"result\">              </div></body></html>";
+    char    *html_tmpl;
+    
+    //Find the replaceable part of the HTML.
+    html_tmpl = os_strstr(html, "<div name=\"result\">");
+    //Find the data in the URI.
+    form_data = os_strstr(uri, "gettext=");
+    if (form_data && html_tmpl)
+    {
+        html_tmpl += 19;
+        form_data += 8;
+        *html_tmpl++ = 'G';
+        *html_tmpl++ = 'e';
+        *html_tmpl++ = 't';
+        *html_tmpl++ = ':';
+        *html_tmpl++ = ' ';
+        for (i = 0; i < 8; i++)
+        {
+            if (*form_data == '\0')
+            {
+                *html_tmpl++ = ' ';
+            }
+            else
+            {
+                *html_tmpl++ = *form_data++;
+            }
+        }
+    }
     return(html);
 }
 
@@ -108,6 +169,15 @@ void ICACHE_FLASH_ATTR user_init(void)
     //flash_dump(0x07600, 65536);
     
     wifi_connect(connected_cb);
+    
+    // Initialize the GPIO subsystem.
+    gpio_init();
+
+    //Set GPIO2 to output mode
+    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5);
+
+    //Set GPIO2 low
+    gpio_output_set(0, BIT5, BIT5, 0);
     
     os_printf("\nLeaving user_init...\n");
 }

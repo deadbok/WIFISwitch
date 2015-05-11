@@ -86,7 +86,7 @@
  */
  #define HTTP_RESPONSE(CODE)         HTTP_##CODE
 /**
- * @brief Return response HTML for @p CODE.
+ * @brief Return response HTM for @p CODE.
  */
  #define HTTP_RESPONSE_HTML(CODE)    HTTP_##CODE##_HTML
 /**
@@ -95,6 +95,12 @@
  * These are called if no other way is found of generating the response.
  */
 typedef char *(*uri_callback)(char *uri);
+/**
+ * @brief Callback function for static URIs.
+ * 
+ * This is called to test if the handler associated with it, will handle the URI.
+ */
+typedef bool (*uri_comp_callback)(char *uri);
 
 /** 
  * @brief Structure to store information for a built in URI.
@@ -105,13 +111,13 @@ typedef char *(*uri_callback)(char *uri);
 struct  http_builtin_uri
 {
     /**
-     * @brief The URI that the callback can answer.
+     * @brief Function to test if this handler will handle the URI.
      */
-	const char      *uri;
+	uri_comp_callback      test_uri;
 	/**
      * @brief A function pointer to a function, that renders the answer.
      */
-    uri_callback    callback;
+    uri_callback    handler;
 };
 
 void init_http(struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris);
