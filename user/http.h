@@ -24,6 +24,75 @@
 #ifndef HTTP_H
 #define HTTP_H
 
+#include "tcp.h"
+
+/**
+ * @brief HTTP request types.
+ */
+enum request_type
+{
+    HTTP_OPTIONS,
+    HTTP_GET,
+    HTTP_HEAD,
+    HTTP_POST,
+    HTTP_PUT,
+    HTTP_DELETE,
+    HTTP_TRACE,
+    HTTP_CONNECT
+};
+/**
+ * @brief A HTTP header entry.
+ * 
+ * To save space, the actual values are not copied here from the received data,
+ * rather they are pointed to.
+ */
+struct http_header
+{
+    /**
+     * @brief Pointer to the name.
+     */
+    char *name;
+    /**
+     * @brief Pointer to the value.
+     */
+    char *value;
+};
+
+/**
+ * @brief Structure to keep the data of a HTTP request.
+ */
+struct http_request
+{
+    /**
+     * @brief Pointer to the connection data.
+     */
+    struct tcp_connection *connection;
+    /**
+     * @brief Type of HTTP request.
+     */
+    enum request_type   type;
+    /**
+     * @brief The URI of the HTTP request.
+     */
+    char                *uri;
+    /**
+     * @brief The version of the HTTP request.
+     */
+    char                *version;
+    /**
+     * @brief Headers of the request.
+     */
+    struct http_header  **headers;
+    /**
+     * @brief Number of headers
+     */
+     unsigned short     n_headers;
+    /**
+     * @brief The message body of the HTTP request.
+     */
+    char                *message;
+};
+
 /**
  * @brief Server name.
  */
@@ -94,7 +163,7 @@
  * 
  * These are called if no other way is found of generating the response.
  */
-typedef char *(*uri_callback)(char *uri);
+typedef char *(*uri_callback)(char *uri, struct http_request *request);
 /**
  * @brief Callback function for static URIs.
  * 

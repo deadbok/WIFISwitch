@@ -26,6 +26,7 @@
 #include "eagle_soc.h"
 #include "osapi.h"
 #include "gpio.h"
+#include "http.h"
 
 bool ICACHE_FLASH_ATTR led_test(char *uri)
 {
@@ -36,21 +37,20 @@ bool ICACHE_FLASH_ATTR led_test(char *uri)
     return(false);  
 }
 
-char ICACHE_FLASH_ATTR *led_html(char *uri)
+char ICACHE_FLASH_ATTR *led_html(char *uri, struct http_request *request)
 {
     char    *html = "<!DOCTYPE html><head><title>Led toggle.</title></head>\
                      <body>Toggle LED.<br /><div name=\"status\">LED status: Off\
                      </div><br /><form action=\"/led\" method=\"GET\">\
                      <input type=\"submit\" value=\"Toggle\"></form>\
                      </body></html>";
-    char    *html_tmpl;
+    char *html_tmpl;
     unsigned char led_state;
     
     led_state = GPIO_REG_READ(GPIO_OUT_ADDRESS) & BIT5;
     
     //Find the replaceable part of the HTML.
     html_tmpl = os_strstr(html, "status: ");
-    debug ("%s\n", html_tmpl);
     if (html_tmpl)
     {
         if (led_state)
@@ -74,6 +74,5 @@ char ICACHE_FLASH_ATTR *led_html(char *uri)
             *html_tmpl++ = ' ';
         }
     }
-    debug ("%s\n", html_tmpl);
     return(html);
 }

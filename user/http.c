@@ -13,12 +13,15 @@
  * What works:
  * - GET requests.
  * - HEAD requests.
+ * - POST requests.
  * 
  * **THIS SERVER IS NOT COMPLIANT WITH HTTP, TO SAVE SPACE, STUFF HAS BEEN
  * OMITTED.**
  * 
  * Missing functionality:
  * - Does not understand any header fields.
+ * - MIME types.
+ * - File system access.
  *
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -56,73 +59,6 @@
  */
 #define HTTP_EAT_SPACES(string) while (*string == ' ')\
                                     *string++ = '\0'
-/**
- * @brief HTTP request types.
- */
-enum request_type
-{
-    OPTIONS,
-    GET,
-    HEAD,
-    POST,
-    PUT,
-    DELETE,
-    TRACE,
-    CONNECT
-};
-
-/**
- * @brief A HTTP header entry.
- * 
- * To save space, the actual values are not copied here from the received data,
- * rather they are pointed to.
- */
-struct http_header
-{
-    /**
-     * @brief Pointer to the name.
-     */
-    char *name;
-    /**
-     * @brief Pointer to the value.
-     */
-    char *value;
-};
-
-/**
- * @brief Structure to keep the data of a HTTP request.
- */
-struct http_request
-{
-    /**
-     * @brief Pointer to the connection data.
-     */
-    struct tcp_connection *connection;
-    /**
-     * @brief Type of HTTP request.
-     */
-    enum request_type   type;
-    /**
-     * @brief The URI of the HTTP request.
-     */
-    char                *uri;
-    /**
-     * @brief The version of the HTTP request.
-     */
-    char                *version;
-    /**
-     * @brief Headers of the request.
-     */
-    struct http_header  **headers;
-    /**
-     * @brief Number of headers
-     */
-     unsigned short     n_headers;
-    /**
-     * @brief The message body of the HTTP request.
-     */
-    char                *message;
-};
 
 static struct http_builtin_uri *static_uris;
 static unsigned short n_static_uris;
@@ -233,21 +169,20 @@ static void ICACHE_FLASH_ATTR handle_GET(struct tcp_connection *connection, bool
     if (i < n_static_uris)
     {
         send_response(connection, HTTP_RESPONSE(200), 
-                      static_uris[i].handler(request->uri), !headers_only);
+                      static_uris[i].handler(request->uri, request),
+                      !headers_only);
         return;
     }
     //Send 404
     send_response(connection, HTTP_RESPONSE(404), HTTP_RESPONSE_HTML(404), !headers_only);
 }
 
-static void ICACHE_FLASH_ATTR parse_POST(struct tcp_connection *connection)
-{
-}
-
 /**
  * @brief Parse headers of a request.
+ * 
+ * @return Pointer to the first character after the header and the CRLFCRLF
  */
-static void ICACHE_FLASH_ATTR parse_header(struct tcp_connection *connection,
+static char ICACHE_FLASH_ATTR *parse_header(struct tcp_connection *connection,
                                            char* raw_headers)
 {
     //Pointers to keep track of where we are.
@@ -360,6 +295,7 @@ static void ICACHE_FLASH_ATTR parse_header(struct tcp_connection *connection,
     }
     ((struct http_request *)connection->free)->headers = headers;
     ((struct http_request *)connection->free)->n_headers = n_headers;
+    return(next_data);
 }
 
 /**
@@ -371,7 +307,7 @@ static void ICACHE_FLASH_ATTR parse_header(struct tcp_connection *connection,
  * @param connection Pointer to the connection data.
  * @param start_offset Where to start parsing the data.
  */
-static void ICACHE_FLASH_ATTR parse_HEAD(struct tcp_connection *connection, 
+static char ICACHE_FLASH_ATTR *parse_HEAD(struct tcp_connection *connection, 
                                          unsigned char start_offset)
 {
     struct http_request *request = connection->free;
@@ -389,7 +325,7 @@ static void ICACHE_FLASH_ATTR parse_HEAD(struct tcp_connection *connection,
     if (next_entry == NULL)
     {
         os_printf("ERROR: Could not parse HTTP request URI (%s).\n", request_entry);
-        return;
+        return(NULL);
     }
     //
     HTTP_EAT_SPACES(next_entry);
@@ -405,7 +341,7 @@ static void ICACHE_FLASH_ATTR parse_HEAD(struct tcp_connection *connection,
     if (next_entry == NULL)
     {
         os_printf("ERROR: Could not parse HTTP request version (%s).\n", request_entry);
-        return;
+        return(NULL);
     }
 
     //0 out and skip over CRLF.
@@ -417,7 +353,7 @@ static void ICACHE_FLASH_ATTR parse_HEAD(struct tcp_connection *connection,
     debug(" Version (%p): %s\n", request_entry, request->version);
     
     debug("Parsing headers (%p):\n", next_entry);
-    parse_header(connection, next_entry);
+    return(parse_header(connection, next_entry));
 }
 
 /**
@@ -443,47 +379,46 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 	if (os_strncmp(connection->callback_data.data, "GET ", 4) == 0)
     {
         debug("GET request.\n");
-        request->type = GET;
+        request->type = HTTP_GET;
         parse_HEAD(connection, 4);
 		handle_GET(connection, false);
 	}
     else if(os_strncmp(connection->callback_data.data, "POST ", 5) == 0)
     {
         debug("POST request.\n");
-        request->type = POST;
-        parse_HEAD(connection, 5);
-		parse_POST(connection);
-        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501), true);
+        request->type = HTTP_POST;
+        request->message = parse_HEAD(connection, 5);
+        handle_GET(connection, false);
 	}
     else if(os_strncmp(connection->callback_data.data, "HEAD ", 5) == 0)
     {
         debug("HEAD request.\n");
-        request->type = HEAD;
+        request->type = HTTP_HEAD;
         parse_HEAD(connection, 5);
 		handle_GET(connection, true);
 	}
     else if(os_strncmp(connection->callback_data.data, "PUT ", 4) == 0)
     {
         debug("PUT request.\n");
-        request->type = PUT;
+        request->type = HTTP_PUT;
         send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501), true);      
 	}
     else if(os_strncmp(connection->callback_data.data, "DELETE ", 7) == 0)
     {
         debug("DELETE request.\n");
-        request->type = DELETE;
+        request->type = HTTP_DELETE;
         send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501), true);
 	}
     else if(os_strncmp(connection->callback_data.data, "TRACE ", 6) == 0)
     {
         debug("TRACE request.\n");
-        request->type = TRACE;
+        request->type = HTTP_TRACE;
         send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501), true);
 	}
     else if(os_strncmp(connection->callback_data.data, "CONECT ", 5) == 0)
     {
         debug("CONNECT request.\n");
-        request->type = CONNECT;
+        request->type = HTTP_CONNECT;
         send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501), true);
 	}
     else

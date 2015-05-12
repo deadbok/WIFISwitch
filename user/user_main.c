@@ -49,10 +49,10 @@
  */
 #define N_BUILTIN_URIS  3
 
-char *hello(char *uri);
+char *hello(char *uri, struct http_request *request);
 bool hello_test(char *uri);
 
-char *idx(char *uri);
+char *idx(char *uri, struct http_request *request);
 bool idx_test(char *uri);
 
 /**
@@ -74,7 +74,7 @@ bool hello_test(char *uri)
     return(false);
 }
 
-char *hello(char *uri)
+char *hello(char *uri, struct http_request *request)
 {
     char    *html = "<!DOCTYPE html><head><title>Web server test.</title></head>\
                      <body>Hello world.</body></html>";
@@ -98,10 +98,11 @@ bool idx_test(char *uri)
     return(false);  
 }
 
-char *idx(char *uri)
+char *idx(char *uri, struct http_request *request)
 {
     unsigned char i;
-    char    *form_data;
+    unsigned char offset = 0;
+    char    *data = NULL            ;
     char    *html = "<!DOCTYPE html><head><title>Index.</title></head>\
                      <body>It works.<br /><form action=\"/\" method=\"POST\">\
                      <input type=\"text\" name=\"posttext\" value=\"testpost\">\
@@ -109,31 +110,51 @@ char *idx(char *uri)
                      </form><br /><form action=\"/\" method=\"GET\">\
                      <input type=\"text\" name=\"gettext\" value=\"testget\">\
                      <br /><input type=\"submit\" value=\"GET\"></form>\
-                     <div name=\"result\">              </div></body></html>";
+                     <div name=\"result\">               </div></body></html>";
     char    *html_tmpl;
     
     //Find the replaceable part of the HTML.
     html_tmpl = os_strstr(html, "<div name=\"result\">");
-    //Find the data in the URI.
-    form_data = os_strstr(uri, "gettext=");
-    if (form_data && html_tmpl)
+    if (html_tmpl)
     {
         html_tmpl += 19;
-        form_data += 8;
+    }
+    //Handle GET request.
+    if (request->type == HTTP_GET)
+    {
+        //Find the data in the URI.
+        data = os_strstr(uri, "gettext=");
+        offset = 8;
+        *html_tmpl++ = ' ';
         *html_tmpl++ = 'G';
         *html_tmpl++ = 'e';
         *html_tmpl++ = 't';
+        *html_tmpl++ = ':';        
+    }
+    else if (request->type == HTTP_POST)
+    {
+        data = os_strstr(request->message, "posttext=");
+        offset = 9;
+        *html_tmpl++ = 'P';
+        *html_tmpl++ = 'o';
+        *html_tmpl++ = 's';
+        *html_tmpl++ = 't';
         *html_tmpl++ = ':';
+    }
+    if (data && html_tmpl)
+    {
         *html_tmpl++ = ' ';
+        data += offset;
+
         for (i = 0; i < 8; i++)
         {
-            if (*form_data == '\0')
+            if (*data == '\0')
             {
                 *html_tmpl++ = ' ';
             }
             else
             {
-                *html_tmpl++ = *form_data++;
+                *html_tmpl++ = *data++;
             }
         }
     }
