@@ -47,18 +47,19 @@ char ICACHE_FLASH_ATTR *led_html(char *uri, struct http_request *request)
     char *html_tmpl;
     unsigned char led_state;
     
-    led_state = GPIO_REG_READ(GPIO_OUT_ADDRESS) & BIT5;
-    
     //Find the replaceable part of the HTML.
     html_tmpl = os_strstr(html, "status: ");
     if (html_tmpl)
     {
+        led_state = GPIO_REG_READ(GPIO_OUT_ADDRESS) & BIT5;
+        
+        html_tmpl += 8;
+        
         if (led_state)
         {
             //Set GPIO2 to LOW
             gpio_output_set(0, BIT5, BIT5, 0);
 
-            html_tmpl += 8;
             *html_tmpl++ = 'O';
             *html_tmpl++ = 'f';
             *html_tmpl++ = 'f';
@@ -68,7 +69,6 @@ char ICACHE_FLASH_ATTR *led_html(char *uri, struct http_request *request)
             //Set GPIO2 to HIGH
             gpio_output_set(BIT5, 0, BIT5, 0);
 
-            html_tmpl += 8;
             *html_tmpl++ = 'O';
             *html_tmpl++ = 'n';
             *html_tmpl++ = ' ';

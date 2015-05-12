@@ -65,7 +65,7 @@ struct http_builtin_uri g_builtin_uris[N_BUILTIN_URIS] =
     {led_test, led_html}
 };
 
-bool hello_test(char *uri)
+bool ICACHE_FLASH_ATTR hello_test(char *uri)
 {
     if (os_strcmp(uri, "/hello") == 0)
     {
@@ -74,14 +74,14 @@ bool hello_test(char *uri)
     return(false);
 }
 
-char *hello(char *uri, struct http_request *request)
+char ICACHE_FLASH_ATTR *hello(char *uri, struct http_request *request)
 {
     char    *html = "<!DOCTYPE html><head><title>Web server test.</title></head>\
                      <body>Hello world.</body></html>";
     return(html);
 }
 
-bool idx_test(char *uri)
+bool ICACHE_FLASH_ATTR idx_test(char *uri)
 {
     if (os_strlen(uri) == 1)
     {
@@ -98,7 +98,7 @@ bool idx_test(char *uri)
     return(false);  
 }
 
-char *idx(char *uri, struct http_request *request)
+char ICACHE_FLASH_ATTR *idx(char *uri, struct http_request *request)
 {
     unsigned char i;
     unsigned char offset = 0;

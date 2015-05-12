@@ -59,8 +59,16 @@
  */
 #define HTTP_EAT_SPACES(string) while (*string == ' ')\
                                     *string++ = '\0'
-
+/**
+ * @brief Built in pages.
+ * 
+ * Built in pages that are served when every other method of getting the resource
+ * has failed.
+ */
 static struct http_builtin_uri *static_uris;
+/**
+ * @brief Number of built in pages.
+ */
 static unsigned short n_static_uris;
 
 /**
