@@ -24,6 +24,8 @@
 #ifndef TCP_H
 #define TCP_H
 
+//Should be included by espconn.h
+#include "ip_addr.h"
 #include "espconn.h"
 #include "dl_list.h"
 

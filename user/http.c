@@ -127,7 +127,36 @@ bool ICACHE_FLASH_ATTR is_header_value(struct http_request *request, char *name,
     }
     return(false);
 }
-        
+
+/**
+ * @brieef Print a Common Log Format message to the console.
+ * 
+ * Log access to the web server to console in a standardized text file format:
+ * 
+ *  host ident authuser date request status bytes
+ * 
+ * or:
+ * 
+ *  127.0.0.1 user-identifier frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326
+ * 
+ * See [CLF](https://en.wikipedia.org/wiki/Common_Log_Format).
+ */
+static void ICACHE_FLASH_ATTR print_clf_status(struct tcp_connection *connection,
+                                               char *status_code, char *length)
+{
+    struct http_request *request = connection->free;
+
+    char *unknown = "-";
+    
+    if (connection)
+    {
+        os_printf(IPSTR " %s %s %s %s HTTP/%s %s %s\n",
+                  IP2STR(connection->conn->proto.tcp->remote_ip), unknown,
+                  unknown, unknown, connection->callback_data.data,
+                  request->version, status_code, length);
+    }
+}
+
 /**
  * @brief Callback when a connection is made.
  * 
@@ -212,7 +241,9 @@ static void ICACHE_FLASH_ATTR send_response(struct tcp_connection *connection,
 {
     char *h_connection_close = "Connection: close\r\n";
     char *h_length = "Content-Length: ";
-    char html_length[6];
+    char status_code[4] = "000\0";
+    char html_length[10];
+    char *s_status_code;
  
     //Send start of the response.
     tcp_send(connection, response);
@@ -234,6 +265,17 @@ static void ICACHE_FLASH_ATTR send_response(struct tcp_connection *connection,
     if (send_content)
     {
         tcp_send(connection, content);
+    }
+    //Find status code and skip spaces.
+    for (s_status_code = os_strstr(response, " "); *s_status_code == ' '; s_status_code++);
+    if (s_status_code)
+    {
+        os_memcpy(status_code, s_status_code, 3);
+        print_clf_status(connection, status_code, html_length);
+    }
+    else
+    {
+        print_clf_status(connection, "-", html_length);
     }
     if (close)
     {
