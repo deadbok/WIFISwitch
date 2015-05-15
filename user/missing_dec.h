@@ -32,6 +32,8 @@ int ets_vsnprintf(char *buffer, size_t sizeOfBuffer, const char *format, va_list
 
 int ets_str2macaddr(void *, void *);
 
+void ets_bzero(void *s, size_t n);
+
 int ets_strcmp(const char *s1, const char *s2);
 char *ets_strcpy(char *dest, const char *src);
 size_t ets_strlen(char *s);

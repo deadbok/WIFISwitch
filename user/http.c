@@ -14,14 +14,19 @@
  * - GET requests.
  * - HEAD requests.
  * - POST requests.
+ * - CRLF, LF, and space tolerance (never tested except for space).
  * 
- * **THIS SERVER IS NOT COMPLIANT WITH HTTP, TO SAVE SPACE, STUFF HAS BEEN
- * OMITTED.**
+ * **This server is not compliant with HTTP, to save space, stuff has been
+ * omitted. It has been built to be small, not fast, and probably breaks in 100
+ * places.**
  * 
  * Missing functionality:
  * - Does not understand any header fields.
  * - MIME types.
  * - File system access.
+ * - 400 errors are not send in all situations where they should be.
+ * - Persistent connections. The server closes every connection when the 
+ *   response has been sent.
  *
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -44,12 +49,14 @@
  */
 #include <stdlib.h>
 #include "missing_dec.h"
+#include "c_types.h"
 #include "osapi.h"
 #include "mem.h"
 #include "ip_addr.h"
 #include "espconn.h"
 #include "user_config.h"
 #include "tcp.h"
+#include "strxtra.h"
 #include "http.h"
 
 /**
@@ -59,6 +66,29 @@
  */
 #define HTTP_EAT_SPACES(string) while (*string == ' ')\
                                     *string++ = '\0'
+/**
+ * @brief eat line ends from HTTP headers.
+ * 
+ * This macro is used to be tolerant, accepting both CRLF and LF endings.
+ */
+#define HTTP_EAT_CRLF(ptr, number)  do\
+                                    {\
+                                        if (*ptr == '\r')\
+                                        {\
+                                            os_bzero(ptr, number * 2);\
+                                            ptr += (number * 2);\
+                                        }\
+                                        else\
+                                        {\
+                                            os_bzero(ptr, number);\
+                                            ptr += number;\
+                                        }\
+                                    } while(0)
+/* Wrapping stuff in do...while(0), makes it possible to invoke the macro like a
+ * function call ending with semicolon (;).
+ * Idea from here: [https://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html
+ */
+
 /**
  * @brief Built in pages.
  * 
@@ -72,10 +102,39 @@ static struct http_builtin_uri *static_uris;
 static unsigned short n_static_uris;
 
 /**
+ * @brief Test if a header is set to a certain value.
+ * 
+ * @param request HTTP request to check.
+ * @param name Name of the header. *Must be lower case.*
+ * @param value Value to test for. *Case sensitive.*
+ * @return `true`if found, `false` otherwise.
+ */
+bool ICACHE_FLASH_ATTR is_header_value(struct http_request *request, char *name, char *value)
+{
+    unsigned short i;
+    char *current_name;
+    char *current_value;
+    
+    for (i = 00; i < request->n_headers; i++)
+    {
+        current_name = request->headers[i]->name;
+        current_value = request->headers[i]->value;
+        if ((os_strcmp(current_name, name) == 0) && 
+            (os_strcmp(current_value, value) == 0))
+        {
+            return(true);
+        }
+    }
+    return(false);
+}
+        
+/**
  * @brief Callback when a connection is made.
  * 
  * Called whenever a connections is made. Sets up the data structures for
  * the server.
+ * 
+* @param connection Pointer to the connection that has connected.
  */
 static void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
 {
@@ -91,6 +150,8 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
 
 /**
  * @brief Called on connection error.
+ * 
+ * @param connection Pointer to the connection that has had an error.
  */
 static void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
 {
@@ -123,6 +184,11 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connectio
     connection->free = NULL;
 }
 
+/**
+ * @brief Called when a write is done I guess?
+ * 
+ * @param connection Pointer to the connection that is finished.
+ */
 static void ICACHE_FLASH_ATTR tcp_write_finish_cb(struct tcp_connection *connection)
 {
 }
@@ -130,21 +196,32 @@ static void ICACHE_FLASH_ATTR tcp_write_finish_cb(struct tcp_connection *connect
 /**
  * @brief Send a HTTP response.
  * 
+ * Send a HTTP response, and close the connection, if the headers says so.
+ * 
  * @param connection Connection to use when sending.
  * @param response Response header (without the final `\r\n\r\n`.
  * @param content The content of the response.
  * @param send_content If `false` only send headers.
+ * @param close Close the connection after the response. 
  */
 static void ICACHE_FLASH_ATTR send_response(struct tcp_connection *connection,
                                                    char *response,
                                                    char *content,
-                                                   bool send_content)
+                                                   bool send_content,
+                                                   bool close)
 {
+    char *h_connection_close = "Connection: close\r\n";
     char *h_length = "Content-Length: ";
     char html_length[6];
-    
+ 
     //Send start of the response.
     tcp_send(connection, response);
+    //Send close announcement if needed.
+    if (close)
+    {
+        tcp_send(connection, h_connection_close);
+    }
+
     //Send the length header.
     tcp_send(connection, h_length);
     //Get the message length.
@@ -158,10 +235,18 @@ static void ICACHE_FLASH_ATTR send_response(struct tcp_connection *connection,
     {
         tcp_send(connection, content);
     }
+    if (close)
+    {
+        tcp_disconnect(connection);
+    }
 }
 
 /**
  * @brief Handle a GET request.
+ * 
+ * @param connection Pointer to the connection used.
+ * @param headers_only Send only headers, make this usable for HEAD requests
+ *                     as well.
  */
 static void ICACHE_FLASH_ATTR handle_GET(struct tcp_connection *connection, bool headers_only)
 {
@@ -178,16 +263,20 @@ static void ICACHE_FLASH_ATTR handle_GET(struct tcp_connection *connection, bool
     {
         send_response(connection, HTTP_RESPONSE(200), 
                       static_uris[i].handler(request->uri, request),
-                      !headers_only);
+                      !headers_only, HTTP_CLOSE_CONNECTIONS);
         return;
     }
     //Send 404
-    send_response(connection, HTTP_RESPONSE(404), HTTP_RESPONSE_HTML(404), !headers_only);
+    send_response(connection, HTTP_RESPONSE(404), HTTP_RESPONSE_HTML(404),
+                  !headers_only, HTTP_CLOSE_CONNECTIONS);
 }
 
 /**
  * @brief Parse headers of a request.
  * 
+ * @param connection Pointer to the connection used.
+ * @param raw_headers Pointer to the raw headers to parse. *This memory is
+ *                    modified*.
  * @return Pointer to the first character after the header and the CRLFCRLF
  */
 static char ICACHE_FLASH_ATTR *parse_header(struct tcp_connection *connection,
@@ -207,7 +296,7 @@ static char ICACHE_FLASH_ATTR *parse_header(struct tcp_connection *connection,
     bool done;
     
     //Count the headers
-    debug(" Counting headers (%p)", raw_headers);
+    debug("Counting headers (%p)", raw_headers);
     //We're NOT done!
     done = false;
     //Told you, see, no headers.
@@ -215,11 +304,12 @@ static char ICACHE_FLASH_ATTR *parse_header(struct tcp_connection *connection,
     //Go go go.
     while (!done && next_data)
     {
-        next_data = os_strstr(next_data, "\r");
+        next_data = strchrs(next_data, "\r\n");
         if (next_data)
         {
             //Is it the end?
-            if (os_strncmp(next_data, "\r\n\r\n ", 4) == 0)
+            if ((os_strncmp(next_data, "\r\n\r\n ", 4) == 0) ||
+                (os_strncmp(next_data, "\n\n ", 2) == 0))
             {
                 n_headers++;
                 debug(": %d\n", n_headers);
@@ -233,13 +323,16 @@ static char ICACHE_FLASH_ATTR *parse_header(struct tcp_connection *connection,
                 debug(".");
             }
             next_data++;
-            next_data++;
+            if (*next_data == '\n')
+            {
+                next_data++;
+            }
         }
     }
     //Go back to where the headers start.
     next_data = raw_headers;
     //Run through the response headers.
-    debug(" Parsing headers (%p):\n", data);
+    debug("Parsing headers (%p):\n", data);
     //Allocate memory for the array of headers
     headers = db_zalloc(sizeof(struct http_header *) * n_headers);
     //Start from scratch.
@@ -249,26 +342,21 @@ static char ICACHE_FLASH_ATTR *parse_header(struct tcp_connection *connection,
     //Go go go.
     while (!done && next_data)
     {
-        next_data = os_strstr(data, "\r");
+        next_data = strchrs(next_data, "\r\n");
         if (next_data)
         {
             //Is it the end?
-            if (os_strncmp(next_data, "\r\n\r\n ", 4) == 0)
+            if ((os_strncmp(next_data, "\r\n\r\n ", 4) == 0) ||
+                (os_strncmp(next_data, "\n\n ", 2) == 0))
             {
                 debug(" Last header.\n");
-                //0 out and skip over CRLFCRLF.
-                *next_data++ = '\0';
-                *next_data++ = '\0';
-                *next_data++ = '\0';
-                *next_data++ = '\0';
+                HTTP_EAT_CRLF(next_data, 2);
                 //Get out.
                 done = true;
             }
             else
             {
-                //0 out and skip over CRLF.
-                *next_data++ = '\0';
-                *next_data++ = '\0';
+                HTTP_EAT_CRLF(next_data, 1);
             }
             //Find end of name.
             value = os_strstr(data, ":");
@@ -276,11 +364,23 @@ static char ICACHE_FLASH_ATTR *parse_header(struct tcp_connection *connection,
             {
                 os_printf("ERROR: Could not parse request header: %s\n", data);
                 //Bail out
-                done = true;
-                break;
+                send_response(connection, HTTP_RESPONSE(400),
+                              HTTP_RESPONSE_HTML(400), true,
+                              HTTP_CLOSE_CONNECTIONS);
+                return(NULL);
+            }
+            //Spec. says to return 400 on space before the colon.
+            if (*(value - 1) == ' ')
+            {
+                send_response(connection, HTTP_RESPONSE(400),
+                              HTTP_RESPONSE_HTML(400), true,
+                              HTTP_CLOSE_CONNECTIONS);
+                return(NULL);
             }
             //End name string.
             *value++ = '\0';
+            //Convert to lower case.
+            data = strlwr(data);
             //Get some memory for the pointers.
             header = (struct http_header *)db_zalloc(sizeof(struct http_header));
             header->name = data;
@@ -314,6 +414,7 @@ static char ICACHE_FLASH_ATTR *parse_header(struct tcp_connection *connection,
  * 
  * @param connection Pointer to the connection data.
  * @param start_offset Where to start parsing the data.
+ * @return Pointer to the start of the raw message.
  */
 static char ICACHE_FLASH_ATTR *parse_HEAD(struct tcp_connection *connection, 
                                          unsigned char start_offset)
@@ -323,7 +424,7 @@ static char ICACHE_FLASH_ATTR *parse_HEAD(struct tcp_connection *connection,
 
     //Start after method.
     request_entry = connection->callback_data.data + start_offset;
-    //Parse the whole request line.
+    //Parse the rest of request line.
     debug("Parsing request line (%p):\n", request_entry);
 
     //Eat spaces to be tolerant, like spec says.
@@ -333,9 +434,10 @@ static char ICACHE_FLASH_ATTR *parse_HEAD(struct tcp_connection *connection,
     if (next_entry == NULL)
     {
         os_printf("ERROR: Could not parse HTTP request URI (%s).\n", request_entry);
+        send_response(connection, HTTP_RESPONSE(400), HTTP_RESPONSE_HTML(400),
+                      true, HTTP_CLOSE_CONNECTIONS);
         return(NULL);
     }
-    //
     HTTP_EAT_SPACES(next_entry);
     //Save URI
     request->uri = request_entry;
@@ -345,22 +447,19 @@ static char ICACHE_FLASH_ATTR *parse_HEAD(struct tcp_connection *connection,
     //Skip 'HTTP/' and save version.
     request_entry += 5;
     //Find the CR after the version, and end the string.
-    next_entry = os_strstr(request_entry, "\r");
+    next_entry = strchrs(next_entry, "\r\n");
     if (next_entry == NULL)
     {
         os_printf("ERROR: Could not parse HTTP request version (%s).\n", request_entry);
+        send_response(connection, HTTP_RESPONSE(400), HTTP_RESPONSE_HTML(400),
+                      true, HTTP_CLOSE_CONNECTIONS);
         return(NULL);
     }
-
-    //0 out and skip over CRLF.
-    *next_entry++ = '\0';
-    *next_entry++ = '\0';
-
+    HTTP_EAT_CRLF(next_entry, 1);
     //Save version.  
     request->version = request_entry;
     debug(" Version (%p): %s\n", request_entry, request->version);
     
-    debug("Parsing headers (%p):\n", next_entry);
     return(parse_header(connection, next_entry));
 }
 
@@ -380,7 +479,8 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
         (os_strlen(connection->callback_data.data) == 0))
     {
         os_printf("ERROR: Emtpy request recieved.\n");
-        send_response(connection, HTTP_RESPONSE(400), HTTP_RESPONSE_HTML(400), true);
+        send_response(connection, HTTP_RESPONSE(400), HTTP_RESPONSE_HTML(400),
+                      true, HTTP_CLOSE_CONNECTIONS);
         return;
     }
     //Parse the request header
@@ -388,53 +488,64 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
     {
         debug("GET request.\n");
         request->type = HTTP_GET;
-        parse_HEAD(connection, 4);
-		handle_GET(connection, false);
+        if (parse_HEAD(connection, 4))
+        {
+            handle_GET(connection, false);
+        }
 	}
     else if(os_strncmp(connection->callback_data.data, "POST ", 5) == 0)
     {
         debug("POST request.\n");
         request->type = HTTP_POST;
         request->message = parse_HEAD(connection, 5);
-        handle_GET(connection, false);
+        if (request->message)
+        {
+            handle_GET(connection, false);
+        }
 	}
     else if(os_strncmp(connection->callback_data.data, "HEAD ", 5) == 0)
     {
         debug("HEAD request.\n");
         request->type = HTTP_HEAD;
-        parse_HEAD(connection, 5);
-		handle_GET(connection, true);
+        if (parse_HEAD(connection, 5))
+        {
+            handle_GET(connection, true);
+        }
 	}
     else if(os_strncmp(connection->callback_data.data, "PUT ", 4) == 0)
     {
         debug("PUT request.\n");
         request->type = HTTP_PUT;
-        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501), true);      
+        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501),
+                      true, HTTP_CLOSE_CONNECTIONS);      
 	}
     else if(os_strncmp(connection->callback_data.data, "DELETE ", 7) == 0)
     {
         debug("DELETE request.\n");
         request->type = HTTP_DELETE;
-        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501), true);
+        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501),
+                      true, HTTP_CLOSE_CONNECTIONS);
 	}
     else if(os_strncmp(connection->callback_data.data, "TRACE ", 6) == 0)
     {
         debug("TRACE request.\n");
         request->type = HTTP_TRACE;
-        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501), true);
+        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501),
+                      true, HTTP_CLOSE_CONNECTIONS);
 	}
     else if(os_strncmp(connection->callback_data.data, "CONECT ", 5) == 0)
     {
         debug("CONNECT request.\n");
         request->type = HTTP_CONNECT;
-        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501), true);
+        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501),
+                      true, HTTP_CLOSE_CONNECTIONS);
 	}
     else
     {
         os_printf("ERROR: Unknown request: %s\n", connection->callback_data.data);
-        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501), true);
+        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501),
+                      true, HTTP_CLOSE_CONNECTIONS);
     }
-    tcp_disconnect(connection);
 }
 
 static void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
@@ -443,6 +554,9 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
 
 /**
  * @brief Initialise the HTTP server,
+ * 
+ * @param builtin_uris An array of built in handlers for URIs.
+ * @param n_builtin_uris Number of URI handlers.
  */
 void ICACHE_FLASH_ATTR init_http(struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris)
 {

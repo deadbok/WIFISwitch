@@ -31,6 +31,8 @@
  * 
  * This is lalkalkjnhgjs.
  * 
+ * @tableofcontents
+ * 
  */
 #include "ets_sys.h"
 #include "osapi.h"

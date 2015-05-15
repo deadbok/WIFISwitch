@@ -202,6 +202,8 @@ void ICACHE_FLASH_ATTR tcp_free(struct tcp_connection *connection)
 
 /**
  * @brief Internal callback for when a new connection has been made.
+ * 
+ * @param arg Pointer to an espconn connection structure.
  */
 static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
 {
@@ -257,6 +259,9 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
  * @brief Internal error handler.
  * 
  * Called whenever an error has occurred.
+ * 
+ * @param arg Pointer to an espconn connection structure.
+ * @param err Error code.
  */
 static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err)
 {
@@ -280,6 +285,8 @@ static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err)
 
 /**
  * @brief Internal callback for when someone disconnects.
+ * 
+ * @param arg Pointer to an espconn connection structure.
  */
 static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
 {
@@ -331,6 +338,8 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
 
 /**
  * @brief Internal callback, called when a TCP write is done.
+ * 
+ * @param arg Pointer to an espconn connection structure.
  */
 static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg)
 {
@@ -352,6 +361,8 @@ static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg)
 
 /**
  * @brief Internal callback, called when data is received.
+ * 
+ * @param arg Pointer to an espconn connection structure.
  */
 static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short length)
 {
@@ -374,8 +385,10 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short 
     }    
 }
 
-/*
+/**
  * @brief Internal callback, called when TCP data has been sent.
+ * 
+ * @param arg Pointer to an espconn connection structure.
  */
 static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
 {

@@ -27,6 +27,11 @@
 #include "tcp.h"
 
 /**
+ * @brief Close connection when the server is done.
+ */
+#define HTTP_CLOSE_CONNECTIONS  true
+
+/**
  * @brief HTTP request types.
  */
 enum request_type
@@ -108,9 +113,10 @@ struct http_request
 /**
  * @brief Standard response header contents.
  */
-#define HTTP_STD_HEAD               "\r\nContent-Type: text/html\
-                                    \r\nConnection: close\
-                                    \r\nServer: " HTTP_SERVER_NAME "\r\n"
+#define HTTP_STD_HEAD               "\r\nContent-Type: text/html\r\n\
+                                    Server: " HTTP_SERVER_NAME "\r\n"
+//Connection: close\r\n
+
 /**
  * @brief HTTP 200 OK response.
  */
