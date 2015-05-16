@@ -104,9 +104,9 @@ $1/%.o: %.c
 	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS) -MD -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs flash flashblank clean debug debugflash docs
+.PHONY: all checkdirs flash flashblank clean debug debugflash docs spiffy/build/spiffy
 
-all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2)
+all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2) spiffy/build/spiffy
 	@./mem_usage.sh $(TARGET_OUT) 81920
 
 $(FW_BASE)/%.bin: $(TARGET_OUT) | $(FW_BASE)
@@ -129,7 +129,7 @@ $(FW_BASE):
 $(LOG_DIR):
 	mkdir -p $@
 
-flash: all
+flash: all spiffy/spiffy
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_2_ADDR) $(FW_FILE_2)
 	
 flashblank:
@@ -137,8 +137,9 @@ flashblank:
 
 clean:
 	rm -rf $(FW_BASE) $(BUILD_BASE)
+	$(MAKE) -C spiffy clean 
 
-debug: $(LOG_DIR)
+debug: $(LOG_DIR) all
 #Remove the old log
 	> ./debug.log
 	minicom -D $(ESPPORT) -o -b 115200 -C ./debug.log
@@ -151,6 +152,9 @@ docs: doxygen
 
 doxygen: .doxyfile
 	doxygen .doxyfile
+	
+spiffy/build/spiffy:
+	$(MAKE) -C spiffy
 	
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
 

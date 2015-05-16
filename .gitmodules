@@ -1,3 +1,6 @@
 [submodule "spiffs"]
 	path = spiffs
 	url = https://github.com/deadbok/spiffs
+[submodule "spiffy"]
+	path = spiffy
+	url = https://github.com/deadbok/spiffy
