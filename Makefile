@@ -5,7 +5,7 @@
 # - Jeroen Domburg (Sprite_tm)
 # - Christian Klippel (mamalala)
 # - Tommie Gannert (tommie)
-# - Martin Bo Kristensen Grønholdt
+# - Martin Bo Kristensen Grønholdt (deadbok)
 #
 # Changelog:
 # - 2014-10-06: Changed the variables to include the header file directory
@@ -77,6 +77,7 @@ LD		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 SRC_DIR		:= $(MODULES)
 BUILD_DIR	:= $(addprefix $(BUILD_BASE)/,$(MODULES))
 LOG_DIR		:= logs
+TOOLS_DIR	:= tools
 
 SDK_LIBDIR	:= $(addprefix $(SDK_BASE)/,$(SDK_LIBDIR))
 SDK_INCDIR	:= $(addprefix -I$(SDK_BASE)/,$(SDK_INCDIR))
@@ -106,7 +107,7 @@ endef
 
 .PHONY: all checkdirs flash flashblank clean debug debugflash docs spiffy/build/spiffy
 
-all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2) spiffy/build/spiffy
+all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2) $(TOOLS_DIR)/spiffy
 	@./mem_usage.sh $(TARGET_OUT) 81920
 
 $(FW_BASE)/%.bin: $(TARGET_OUT) | $(FW_BASE)
@@ -129,7 +130,10 @@ $(FW_BASE):
 $(LOG_DIR):
 	mkdir -p $@
 
-flash: all spiffy/spiffy
+$(TOOLS_DIR):
+	mkdir -p $@
+	
+flash: all 
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_2_ADDR) $(FW_FILE_2)
 	
 flashblank:
@@ -153,8 +157,11 @@ docs: doxygen
 doxygen: .doxyfile
 	doxygen .doxyfile
 	
-spiffy/build/spiffy:
+spiffy/spiffy:
 	$(MAKE) -C spiffy
+	
+$(TOOLS_DIR)/spiffy: $(TOOLS_DIR) spiffy/spiffy
+	cp spiffy/spiffy $@
 	
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
 
