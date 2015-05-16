@@ -35,6 +35,7 @@
 firmware
 build
 *.bin
+tools
 
 # Serial log files
 logs

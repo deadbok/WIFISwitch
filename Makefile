@@ -43,6 +43,9 @@ TARGET		= wifiswitch
 MODULES		= spiffs/src user
 EXTRA_INCDIR    = include
 
+# Directory to use when creating the file system image.
+FS_DIR		?= fs
+
 # libraries used in this project, mainly provided by the SDK
 LIBS		= c gcc hal pp phy net80211 lwip wpa main
 
@@ -96,6 +99,7 @@ MODULE_INCDIR	:= $(addsuffix /include,$(INCDIR))
 
 FW_FILE_1		:= $(addprefix $(FW_BASE)/,$(FW_FILE_1_ADDR).bin)
 FW_FILE_2		:= $(addprefix $(FW_BASE)/,$(FW_FILE_2_ADDR).bin)
+FW_FS			:= $(FW_BASE)/spiffs.bin
 
 vpath %.c $(SRC_DIR)
 vpath %.h $(SRC_DIR)
@@ -107,7 +111,7 @@ endef
 
 .PHONY: all checkdirs flash flashblank clean debug debugflash docs spiffy/build/spiffy
 
-all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2) $(TOOLS_DIR)/spiffy
+all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2) $(FW_FS)
 	@./mem_usage.sh $(TARGET_OUT) 81920
 
 $(FW_BASE)/%.bin: $(TARGET_OUT) | $(FW_BASE)
@@ -162,6 +166,9 @@ spiffy/spiffy:
 	
 $(TOOLS_DIR)/spiffy: $(TOOLS_DIR) spiffy/spiffy
 	cp spiffy/spiffy $@
+	
+$(FW_FS): $(TOOLS_DIR)/spiffy
+	tools/spiffy $(FS_DIR) $@ 16384
 	
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
 
