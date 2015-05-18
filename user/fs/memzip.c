@@ -5,75 +5,88 @@
 //#include <stdlib.h>
 //#include <string.h>
 #include "osapi.h"
+#include "int_flash.h"
 #include "memzip.h"
 
-extern uint8_t _staticfs[];
+const MEMZIP_FILE_HDR *memzip_find_file_header(const char *filename) 
+{
 
-const MEMZIP_FILE_HDR *memzip_find_file_header(const char *filename) {
+    MEMZIP_FILE_HDR *file_hdr;
+    unsigned int offset;
 
-    const MEMZIP_FILE_HDR *file_hdr = (const MEMZIP_FILE_HDR *)_staticfs;
-    uint8_t *mem_data;
+    file_hdr = load_header(0);
 
     /* Zip file filenames don't have a leading /, so we strip it off */
 
-    if (*filename == '/') {
+    if (*filename == '/') 
+    {
         filename++;
     }
-    while (file_hdr->signature == MEMZIP_FILE_HEADER_SIGNATURE) {
-        const char *file_hdr_filename = (const char *)&file_hdr[1];
-        mem_data = (uint8_t *)file_hdr_filename;
-        mem_data += file_hdr->filename_len;
-        mem_data += file_hdr->extra_len;
-        if (!os_strncmp(file_hdr_filename, filename, file_hdr->filename_len)) {
+    while (file_hdr->signature == MEMZIP_FILE_HEADER_SIGNATURE) 
+    {
+        const char *file_hdr_filename = (const char *)read_flash(file_hdr->filename_len);
+        if (!os_strncmp(file_hdr_filename, filename, file_hdr->filename_len)) 
+        {
             /* We found a match */
             return file_hdr;
         }
-        mem_data += file_hdr->uncompressed_size;
-        file_hdr = (const MEMZIP_FILE_HDR *)mem_data;
+        offset = sizeof(MEMZIP_FILE_HDR);
+        offset += file_hdr->filename_len;
+        offset += file_hdr->extra_len;
+        offset += file_hdr->uncompressed_size;
+        file_hdr = load_header(offset);
     }
     return NULL;
 }
 
-bool memzip_is_dir(const char *filename) {
-    const MEMZIP_FILE_HDR *file_hdr = (const MEMZIP_FILE_HDR *)_staticfs;
-    uint8_t *mem_data;
+bool memzip_is_dir(const char *filename) 
+{
+    MEMZIP_FILE_HDR *file_hdr;
+    unsigned int offset;
 
-    if (os_strcmp(filename, "/") == 0) {
+    file_hdr = load_header(0);
+
+    if (os_strcmp(filename, "/") == 0) 
+    {
         // The root directory is a directory.
         return true;
     }
 
     // Zip filenames don't have a leading /, so we strip it off
-    if (*filename == '/') {
+    if (*filename == '/') 
+    {
         filename++;
     }
     size_t filename_len = strlen(filename);
 
-    while (file_hdr->signature == MEMZIP_FILE_HEADER_SIGNATURE) {
+    while (file_hdr->signature == MEMZIP_FILE_HEADER_SIGNATURE) 
+    {
         const char *file_hdr_filename = (const char *)&file_hdr[1];
         if (filename_len < file_hdr->filename_len &&
             os_strncmp(file_hdr_filename, filename, filename_len) == 0 &&
-            file_hdr_filename[filename_len] == '/') {
+            file_hdr_filename[filename_len] == '/') 
+        {
             return true;
         }
 
-        mem_data = (uint8_t *)file_hdr_filename;
-        mem_data += file_hdr->filename_len;
-        mem_data += file_hdr->extra_len;
-        mem_data += file_hdr->uncompressed_size;
-        file_hdr = (const MEMZIP_FILE_HDR *)mem_data;
+        offset = sizeof(MEMZIP_FILE_HDR);
+        offset += file_hdr->filename_len;
+        offset += file_hdr->extra_len;
+        offset += file_hdr->uncompressed_size;
+        file_hdr = load_header(offset);
     }
     return NULL;
-
 }
 
 MEMZIP_RESULT memzip_locate(const char *filename, void **data, size_t *len)
 {
     const MEMZIP_FILE_HDR *file_hdr = memzip_find_file_header(filename);
-    if (file_hdr == NULL) {
+    if (file_hdr == NULL) 
+    {
         return MZ_NO_FILE;
     }
-    if (file_hdr->compression_method != 0) {
+    if (file_hdr->compression_method != 0) 
+    {
         return MZ_FILE_COMPRESSED;
     }
 
@@ -89,8 +102,10 @@ MEMZIP_RESULT memzip_locate(const char *filename, void **data, size_t *len)
 
 MEMZIP_RESULT memzip_stat(const char *path, MEMZIP_FILE_INFO *info) {
     const MEMZIP_FILE_HDR *file_hdr = memzip_find_file_header(path);
-    if (file_hdr == NULL) {
-        if (memzip_is_dir(path)) {
+    if (file_hdr == NULL) 
+    {
+        if (memzip_is_dir(path)) 
+        {
             info->file_size = 0;
             info->last_mod_date = 0;
             info->last_mod_time = 0;

@@ -22,6 +22,8 @@
  
 #ifndef INT_FLASH_H
 #define INT_FLASH_H
+
+#include "memzip.h"
  
 extern void *_text_start;
 extern void *_text_end;
@@ -31,5 +33,7 @@ extern void *_irom0_text_start;
 extern void *_irom0_text_end;
  
 extern void flash_dump(unsigned int src_addr, unsigned int size);
+extern void *read_flash(size_t size);
+extern MEMZIP_FILE_HDR *load_header(unsigned int address);
  
 #endif

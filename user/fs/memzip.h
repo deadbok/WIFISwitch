@@ -1,3 +1,6 @@
+#ifndef MEMZIP_H
+#define MEMZIP_H
+
 #pragma pack(push, 1)
 
 #define MEMZIP_FILE_HEADER_SIGNATURE 0x04034b50
@@ -81,3 +84,5 @@ typedef struct {
 MEMZIP_RESULT memzip_locate(const char *filename, void **data, size_t *len);
 
 MEMZIP_RESULT memzip_stat(const char *path, MEMZIP_FILE_INFO *info);
+
+#endif //MEMZIP_H

@@ -207,5 +207,7 @@ void ICACHE_FLASH_ATTR user_init(void)
     //Set GPIO2 low
     gpio_output_set(0, BIT5, BIT5, 0);
     
+    os_printf("Flash fs stat result: %d.\n", memzip_stat("index.html", &zip_info));
+    
     os_printf("\nLeaving user_init...\n");
 }

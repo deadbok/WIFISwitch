@@ -1,14 +1,7 @@
-/* wifi_connect.c
+/** 
+ * @file int_flash.c
  *
- * Routines for connecting th ESP8266 to a WIFI network.
- *
- * - Load a WIFI configuration.
- * - Try to connect to the AP.
- * - If unsuccessful create an AP presenting a HTTP to configure the 
- *   connection values.
- * 
- * What works.
- * - Nothin'.
+ * @brief Interface between flash and memzip.
  * 
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
  * 
@@ -31,8 +24,9 @@
 #include "c_types.h"
 #include "spi_flash.h"
 #include "user_interface.h"
+#include "mem.h"
 #include "tools/missing_dec.h"
-//#include "spiffs.h"
+#include "memzip.h"
 
 //#size of 0x10000.bin
 //sz = 285312
@@ -46,16 +40,25 @@
 #define FLASHSTR "%02x:%02x:%02x:%02x"
 
 /**
+ * @brief Address of the zip file.
+ */
+#define FS_ADDR 0x14000
+
+MEMZIP_FILE_HDR *zip_header;
+
+static unsigned int read_addr = 0;
+
+/**
  * @brief Dump flash contents from an address until size bytes has been dumped.
  * 
  * Parameters:
  *  - unsigned int src_addr: Start address.
  *  - unsigned int size: Number of bytes to dump.
  */
-void ICACHE_FLASH_ATTR flash_dump(unsigned int src_addr, unsigned int size)
+void ICACHE_FLASH_ATTR flash_dump(unsigned int src_addr, size_t size)
 {
-    unsigned int    i;
-    unsigned int    buf;
+    size_t i;
+    unsigned int buf;
     
     for (i = 0; i < (size >> 2); i++)
     {
@@ -68,28 +71,39 @@ void ICACHE_FLASH_ATTR flash_dump(unsigned int src_addr, unsigned int size)
     }
 }
 
-/*
-static s32_t api_spiffs_read(u32_t addr, u32_t size, u8_t *dst)
+void ICACHE_FLASH_ATTR *read_flash(size_t size)
 {
-  flashmem_read(dst, addr, size);
-  return SPIFFS_OK;
+    unsigned int addr = FS_ADDR + read_addr;
+    void *data;
+    
+    debug("Reading %d bytes of flash at 0x%x...", size, addr);
+    
+    data = (void *)os_malloc(size);
+    
+    if (spi_flash_read(addr, (uint32 *)data, size) == SPI_FLASH_RESULT_OK)
+    {
+        debug("OK.\n");
+        read_addr += size;
+        return(data);
+    }
+    debug("Failed!\n");
+    return(NULL);
 }
 
-static s32_t api_spiffs_write(u32_t addr, u32_t size, u8_t *src)
+void ICACHE_FLASH_ATTR seek_flash(unsigned int addr)
 {
-  //debugf("api_spiffs_write");
-  flashmem_write(src, addr, size);
-  return SPIFFS_OK;
+    read_addr += addr;
 }
 
-static s32_t api_spiffs_erase(u32_t addr, u32_t size)
+void ICACHE_FLASH_ATTR abs_seek_flash(unsigned int addr)
 {
-  debug("api_spiffs_erase");
-  u32_t sect_first = flashmem_get_sector_of_address(addr);
-  u32_t sect_last = sect_first;
-  while( sect_first <= sect_last )
-    if( !flashmem_erase_sector( sect_first ++ ) )
-      return SPIFFS_ERR_INTERNAL;
-  return SPIFFS_OK;
-} 
-*/
+    read_addr = addr;
+}
+
+MEMZIP_FILE_HDR ICACHE_FLASH_ATTR *load_header(unsigned int address)
+{
+    debug("Loading header at 0x%x.\n", address);
+    
+    abs_seek_flash(address);
+    return(read_flash(sizeof(MEMZIP_FILE_HDR)));
+}
