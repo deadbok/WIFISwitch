@@ -177,7 +177,7 @@ doxygen: .doxyfile
 	doxygen .doxyfile
 	
 $(FW_FS): $(FS_FILES)
-	 zip -0 $@ $(FS_DIR)/*
+	$(ZIP) -0 $@ $(FS_DIR)/*
 	
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
 
