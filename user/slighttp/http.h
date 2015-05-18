@@ -24,7 +24,7 @@
 #ifndef HTTP_H
 #define HTTP_H
 
-#include "tcp.h"
+#include "net/tcp.h"
 
 /**
  * @brief Close connection when the server is done.

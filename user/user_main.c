@@ -40,11 +40,13 @@
 #include "os_type.h"
 #include "user_config.h"
 #include "user_interface.h"
-#include "missing_dec.h"
-#include "wifi_connect.h"
-#include "tcp.h"
-#include "http.h"
+#include "tools/missing_dec.h"
+#include "net/wifi_connect.h"
+#include "net/tcp.h"
+#include "slighttp/http.h"
 #include "led.h"
+#include "int_flash.h"
+#include "fs/memzip.h"
 
 /**
  * @brief Number of built in URIs in the #g_builtin_uris array.
@@ -176,6 +178,8 @@ void ICACHE_FLASH_ATTR connected_cb(void)
  */
 void ICACHE_FLASH_ATTR user_init(void)
 {
+    MEMZIP_FILE_INFO    zip_info;
+    
     //Turn off auto connect.
     wifi_station_set_auto_connect(false);
     
@@ -187,9 +191,10 @@ void ICACHE_FLASH_ATTR user_init(void)
     //Print banner
     os_printf("\nWIFISwitch version %s.\n", STRING_VERSION);
     system_print_meminfo();
-    os_printf("Free heap %u\n\n", system_get_free_heap_size());    
+    os_printf("Free heap %u\n\n", system_get_free_heap_size());
+    debug("IRAM: %p to %p.\n", _irom0_text_start, _irom0_text_end);
            
-    //flash_dump(0x07600, 65536);
+    flash_dump(0x14000, 512);
     
     wifi_connect(connected_cb);
     

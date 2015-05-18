@@ -30,8 +30,8 @@
 #include "os_type.h"
 #include "user_interface.h"
 #include "user_config.h"
-#include "itoa.h"
-#include "missing_dec.h"
+#include "tools/itoa.h"
+#include "tools/missing_dec.h"
 #include "wifi_connect.h"
 
 //The current station config.

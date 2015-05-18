@@ -48,15 +48,15 @@
  * MA 02110-1301, USA.
  */
 #include <stdlib.h>
-#include "missing_dec.h"
+#include "tools/missing_dec.h"
 #include "c_types.h"
 #include "osapi.h"
 #include "mem.h"
 #include "ip_addr.h"
 #include "espconn.h"
 #include "user_config.h"
-#include "tcp.h"
-#include "strxtra.h"
+#include "net/tcp.h"
+#include "tools/strxtra.h"
 #include "http.h"
 
 /**

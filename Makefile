@@ -40,7 +40,7 @@ ESPSPEED	?= 921600
 TARGET		= wifiswitch
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES		= spiffs/src user
+MODULES			= user user/fs user/net user/slighttp user/tools
 EXTRA_INCDIR    = include
 
 # Directory to use when creating the file system image.
@@ -73,6 +73,13 @@ CC		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 AR		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-ar
 LD		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 
+#Other tools
+MKDIR 			?= mkdir -p
+GET_FILESIZE 	?= stat --printf="%s"
+RM				?= rm -f
+ECHO			?= @echo
+ZIP				?= zip
+
 
 ####
 #### no user configurable options below here
@@ -90,6 +97,7 @@ OBJ			:= $(patsubst %.c,$(BUILD_BASE)/%.o,$(SRC))
 LIBS		:= $(addprefix -l,$(LIBS))
 APP_AR		:= $(addprefix $(BUILD_BASE)/,$(TARGET)_app.a)
 TARGET_OUT	:= $(addprefix $(BUILD_BASE)/,$(TARGET).out)
+FS_FILES	:= $(foreach sdir,$(FS_DIR),$(wildcard $(sdir)/*))
 
 LD_SCRIPT		:= $(addprefix -T$(SDK_BASE)/$(SDK_LDDIR)/,$(LD_SCRIPT))
 
@@ -99,7 +107,12 @@ MODULE_INCDIR	:= $(addsuffix /include,$(INCDIR))
 
 FW_FILE_1		:= $(addprefix $(FW_BASE)/,$(FW_FILE_1_ADDR).bin)
 FW_FILE_2		:= $(addprefix $(FW_BASE)/,$(FW_FILE_2_ADDR).bin)
-FW_FS			:= $(FW_BASE)/spiffs.bin
+FW_FS			:= $(FW_BASE)/fs.zip
+
+#File system image flash location
+FS_START_OFFSET = $(shell printf '0x%X\n' $$(( ($$($(GET_FILESIZE) $(FW_FILE_1)) + 16384 + 36864) & (0xFFFFC000) )) )
+FS_END = 0x2E000
+FS_MAX_SIZE = $(shell printf '%d\n' $$(($(FS_END) - $(FS_START_OFFSET) - 1)))
 
 vpath %.c $(SRC_DIR)
 vpath %.h $(SRC_DIR)
@@ -109,11 +122,14 @@ $1/%.o: %.c
 	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS) -MD -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs flash flashblank clean debug debugflash docs spiffy/build/spiffy
+.PHONY: all checkdirs flash flashblank clean debug debugflash docs
 
 all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2) $(FW_FS)
 	@./mem_usage.sh $(TARGET_OUT) 81920
-
+	$(ECHO) File system start offset: $(FS_START_OFFSET)
+	$(ECHO) File system end offset: $(FS_END)
+	$(ECHO) File system maximum size: $(FS_MAX_SIZE)
+	
 $(FW_BASE)/%.bin: $(TARGET_OUT) | $(FW_BASE)
 	$(ESPTOOL) elf2image -o $(FW_BASE)/ $(TARGET_OUT)
 
@@ -126,26 +142,25 @@ $(APP_AR): $(OBJ)
 checkdirs: $(BUILD_DIR) $(FW_BASE)
 
 $(BUILD_DIR):
-	mkdir -p $@
+	$(MKDIR) $@
 
 $(FW_BASE):
-	mkdir -p $@
+	$(MKDIR) $@
 
 $(LOG_DIR):
-	mkdir -p $@
+	$(MKDIR) $@
 
 $(TOOLS_DIR):
-	mkdir -p $@
+	$(MKDIR) $@
 	
 flash: all 
-	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_2_ADDR) $(FW_FILE_2)
+	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_2_ADDR) $(FW_FILE_2) $(FS_START_OFFSET) $(FW_FS)
 	
 flashblank:
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash 0x7E000 bin/blank.bin
 
 clean:
-	rm -rf $(FW_BASE) $(BUILD_BASE)
-	$(MAKE) -C spiffy clean 
+	$(RM) -R $(FW_BASE) $(BUILD_BASE)
 
 debug: $(LOG_DIR) all
 #Remove the old log
@@ -161,14 +176,8 @@ docs: doxygen
 doxygen: .doxyfile
 	doxygen .doxyfile
 	
-spiffy/spiffy:
-	$(MAKE) -C spiffy
-	
-$(TOOLS_DIR)/spiffy: $(TOOLS_DIR) spiffy/spiffy
-	cp spiffy/spiffy $@
-	
-$(FW_FS): $(TOOLS_DIR)/spiffy
-	tools/spiffy $(FS_DIR) $@ 16384
+$(FW_FS): $(FS_FILES)
+	 zip -0 $@ $(FS_DIR)/*
 	
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
 

@@ -26,7 +26,7 @@
 #include "eagle_soc.h"
 #include "osapi.h"
 #include "gpio.h"
-#include "http.h"
+#include "slighttp/http.h"
 
 bool ICACHE_FLASH_ATTR led_test(char *uri)
 {

@@ -1,11 +1,9 @@
-/** @file strxtra.h
+/* int_flash.h
  *
- * @brief Extra functions for srings.
+ * Routines for accessing the internal flash.
  *
- * @copyright
- * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
+ * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
  * 
- * @license
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -20,11 +18,18 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
- */
-#ifndef STRXTRA_H
-#define STRXTRA_H
-
-extern char ICACHE_FLASH_ATTR *strchrs(char *str, char *chrs);
-extern char ICACHE_FLASH_ATTR *strlwr(char *str);
-
-#endif //STRXTRA_H
+ */ 
+ 
+#ifndef INT_FLASH_H
+#define INT_FLASH_H
+ 
+extern void *_text_start;
+extern void *_text_end;
+extern void *_lit4_start;
+extern void *_lit4_end;
+extern void *_irom0_text_start;
+extern void *_irom0_text_end;
+ 
+extern void flash_dump(unsigned int src_addr, unsigned int size);
+ 
+#endif
