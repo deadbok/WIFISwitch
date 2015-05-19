@@ -194,7 +194,7 @@ void ICACHE_FLASH_ATTR user_init(void)
     os_printf("Free heap %u\n\n", system_get_free_heap_size());
     debug("IRAM: %p to %p.\n", _irom0_text_start, _irom0_text_end);
            
-    flash_dump(0x14000, 512);
+    //flash_dump_mem(0x14000, 512);
     
     wifi_connect(connected_cb);
     

@@ -1,3 +1,7 @@
+/**
+ * @file memzip.c
+ * @brief Basic routines for parsing an uncompressed ZIP file.
+ */
 //Ripped from micropython: https://github.com/micropython
 //Credits: Dave Hylands
 
@@ -6,15 +10,23 @@
 //#include <string.h>
 #include "osapi.h"
 #include "int_flash.h"
+#include "user_config.h"
 #include "memzip.h"
 
-const MEMZIP_FILE_HDR *memzip_find_file_header(const char *filename) 
+/**
+ * @brief Find a file in the ZIP file.
+ * 
+ * @param filename Name of the file to find.
+ * @return A pointer to the ZIP header for the file.
+ */
+const struct int_file_hdr *memzip_find_file_header(const char *filename) 
 {
 
-    MEMZIP_FILE_HDR *file_hdr;
-    unsigned int offset;
+    struct int_file_hdr *file_hdr;
+    unsigned int offset = 0;
 
-    file_hdr = load_header(0);
+    debug("Finding file header for file: %s.\n", filename);
+    file_hdr = zip_load_header(0);
 
     /* Zip file filenames don't have a leading /, so we strip it off */
 
@@ -24,63 +36,61 @@ const MEMZIP_FILE_HDR *memzip_find_file_header(const char *filename)
     }
     while (file_hdr->signature == MEMZIP_FILE_HEADER_SIGNATURE) 
     {
-        const char *file_hdr_filename = (const char *)read_flash(file_hdr->filename_len);
-        if (!os_strncmp(file_hdr_filename, filename, file_hdr->filename_len)) 
+        if (!os_strncmp(file_hdr->filename, filename, file_hdr->filename_len)) 
         {
             /* We found a match */
-            return file_hdr;
+            debug("Found.\n");
+            return(file_hdr);
         }
-        offset = sizeof(MEMZIP_FILE_HDR);
+        offset += sizeof(MEMZIP_FILE_HDR);
         offset += file_hdr->filename_len;
         offset += file_hdr->extra_len;
         offset += file_hdr->uncompressed_size;
-        file_hdr = load_header(offset);
+        
+        zip_free_header(file_hdr);
+        
+        file_hdr = zip_load_header(offset);
     }
+    zip_free_header(file_hdr);
+    debug("Not found!\n"); 
     return NULL;
 }
 
 bool memzip_is_dir(const char *filename) 
 {
-    MEMZIP_FILE_HDR *file_hdr;
-    unsigned int offset;
-
-    file_hdr = load_header(0);
+    const struct int_file_hdr *file_hdr;
+    size_t filename_len;
 
     if (os_strcmp(filename, "/") == 0) 
     {
         // The root directory is a directory.
-        return true;
+        return(true);
     }
 
+    file_hdr = memzip_find_file_header(filename);
+    if (file_hdr == NULL)
+    {
+        return(false);
+    }
     // Zip filenames don't have a leading /, so we strip it off
     if (*filename == '/') 
     {
         filename++;
     }
-    size_t filename_len = strlen(filename);
+    filename_len = strlen(filename);
 
-    while (file_hdr->signature == MEMZIP_FILE_HEADER_SIGNATURE) 
+    if (filename_len < file_hdr->filename_len &&
+        os_strncmp(file_hdr->filename, filename, filename_len) == 0 &&
+        file_hdr->filename[filename_len] == '/') 
     {
-        const char *file_hdr_filename = (const char *)&file_hdr[1];
-        if (filename_len < file_hdr->filename_len &&
-            os_strncmp(file_hdr_filename, filename, filename_len) == 0 &&
-            file_hdr_filename[filename_len] == '/') 
-        {
-            return true;
-        }
-
-        offset = sizeof(MEMZIP_FILE_HDR);
-        offset += file_hdr->filename_len;
-        offset += file_hdr->extra_len;
-        offset += file_hdr->uncompressed_size;
-        file_hdr = load_header(offset);
+        return(true);
     }
-    return NULL;
+    return(false);
 }
 
 MEMZIP_RESULT memzip_locate(const char *filename, void **data, size_t *len)
 {
-    const MEMZIP_FILE_HDR *file_hdr = memzip_find_file_header(filename);
+    const struct int_file_hdr *file_hdr = memzip_find_file_header(filename);
     if (file_hdr == NULL) 
     {
         return MZ_NO_FILE;
@@ -101,7 +111,7 @@ MEMZIP_RESULT memzip_locate(const char *filename, void **data, size_t *len)
 }
 
 MEMZIP_RESULT memzip_stat(const char *path, MEMZIP_FILE_INFO *info) {
-    const MEMZIP_FILE_HDR *file_hdr = memzip_find_file_header(path);
+    const struct int_file_hdr *file_hdr = memzip_find_file_header(path);
     if (file_hdr == NULL) 
     {
         if (memzip_is_dir(path)) 

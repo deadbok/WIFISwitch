@@ -25,6 +25,7 @@
 #include "spi_flash.h"
 #include "user_interface.h"
 #include "mem.h"
+#include "user_config.h"
 #include "tools/missing_dec.h"
 #include "memzip.h"
 
@@ -51,9 +52,10 @@ static unsigned int read_addr = 0;
 /**
  * @brief Dump flash contents from an address until size bytes has been dumped.
  * 
- * Parameters:
- *  - unsigned int src_addr: Start address.
- *  - unsigned int size: Number of bytes to dump.
+ * Uses the Espressif API.
+ * 
+ * @param src_addr Start address.
+ * @param size Number of bytes to dump.
  */
 void ICACHE_FLASH_ATTR flash_dump(unsigned int src_addr, size_t size)
 {
@@ -71,39 +73,80 @@ void ICACHE_FLASH_ATTR flash_dump(unsigned int src_addr, size_t size)
     }
 }
 
-void ICACHE_FLASH_ATTR *read_flash(size_t size)
+/**
+ * @brief Dump flash contents from an address until size bytes has been dumped.
+ * 
+ * Uses mapped access.
+ * 
+ * @param src_addr Start address.
+ * @param size Number of bytes to dump.
+ */
+void ICACHE_FLASH_ATTR flash_dump_mem(unsigned int src_addr, size_t size)
+{
+    size_t i;
+    unsigned int *buf = (unsigned int *)(0x40200000 + src_addr);
+    unsigned int data;
+    
+    for (i = 0; i < (size >> 2); i++)
+    {
+        os_printf("%x:", (unsigned int)buf);
+        data = *((unsigned int *)((unsigned int)buf & -0x03));
+        os_printf(FLASHSTR, FLASH2STR((char *)&data));
+        os_printf("\n");
+        buf++;
+    }
+}
+
+bool ICACHE_FLASH_ATTR flash_read(const void *data, size_t size)
 {
     unsigned int addr = FS_ADDR + read_addr;
-    void *data;
     
     debug("Reading %d bytes of flash at 0x%x...", size, addr);
-    
-    data = (void *)os_malloc(size);
     
     if (spi_flash_read(addr, (uint32 *)data, size) == SPI_FLASH_RESULT_OK)
     {
         debug("OK.\n");
         read_addr += size;
-        return(data);
+        return(true);
     }
     debug("Failed!\n");
-    return(NULL);
+    return(false);
 }
 
-void ICACHE_FLASH_ATTR seek_flash(unsigned int addr)
+void ICACHE_FLASH_ATTR flash_seek(unsigned int addr)
 {
     read_addr += addr;
 }
 
-void ICACHE_FLASH_ATTR abs_seek_flash(unsigned int addr)
+void ICACHE_FLASH_ATTR flash_abs_seek(unsigned int addr)
 {
     read_addr = addr;
 }
 
-MEMZIP_FILE_HDR ICACHE_FLASH_ATTR *load_header(unsigned int address)
+unsigned int flash_pos()
 {
-    debug("Loading header at 0x%x.\n", address);
+    return(read_addr);
+}
+
+struct int_file_hdr ICACHE_FLASH_ATTR *zip_load_header(unsigned int address)
+{
+    struct int_file_hdr *file_hdr = db_malloc(sizeof(struct int_file_hdr));
     
-    abs_seek_flash(address);
-    return(read_flash(sizeof(MEMZIP_FILE_HDR)));
+    debug("Loading header at 0x%x.\n", address);
+    flash_abs_seek(address);
+    flash_read(file_hdr, sizeof(MEMZIP_FILE_HDR));
+    debug(" Header signature: 0x%x.\n", file_hdr->signature);
+    //Read one more byte, to make room for the '\0' byte:
+    file_hdr->filename = db_malloc(file_hdr->filename_len + 1);
+    flash_read(file_hdr->filename, file_hdr->filename_len);
+    file_hdr->filename[file_hdr->filename_len] = '\0';
+    debug(" File name: %s.\n", file_hdr->filename);
+    
+    return(file_hdr);
+}
+
+void ICACHE_FLASH_ATTR zip_free_header(struct int_file_hdr *file_hdr)
+{
+    db_free(file_hdr->filename);
+    db_free(file_hdr);
 }

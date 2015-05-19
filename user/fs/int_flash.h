@@ -24,16 +24,22 @@
 #define INT_FLASH_H
 
 #include "memzip.h"
- 
+
+//Interesting places.
 extern void *_text_start;
 extern void *_text_end;
 extern void *_lit4_start;
 extern void *_lit4_end;
 extern void *_irom0_text_start;
 extern void *_irom0_text_end;
- 
+
+//Flash access functions.
 extern void flash_dump(unsigned int src_addr, unsigned int size);
-extern void *read_flash(size_t size);
-extern MEMZIP_FILE_HDR *load_header(unsigned int address);
+extern void flash_dump_mem(unsigned int src_addr, unsigned int size);
+extern bool flash_read(const void *data, size_t size);
+
+//Zip functions.
+extern struct int_file_hdr *zip_load_header(unsigned int address);
+extern void zip_free_header(struct int_file_hdr *file_hdr);
  
 #endif
