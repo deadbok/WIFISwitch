@@ -38,6 +38,7 @@ int n_alloc;
                         os_printf("Allocs: %d.\n", n_alloc);
 #define DEBUG_HEAP_SIZE(ARG) os_printf("Free heap (" ARG "): %d.\n", system_get_free_heap_size())
 #define db_malloc(ARG)  os_malloc(ARG);\
+                        os_printf("Size: %d.\n", ARG);\
                         DEBUG_ALLOC\
                         DEBUG_HEAP_SIZE("malloc")
                         
