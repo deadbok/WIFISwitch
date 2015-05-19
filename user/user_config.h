@@ -32,14 +32,14 @@
 #include "mem.h"
 int n_alloc;
 
-#define DEBUG_ALLOC     n_alloc++;\
-                        os_printf("Allocs: %d.\n", n_alloc);
+#define DEBUG_ALLOC(ARG)    n_alloc++;\
+                            os_printf("Size: %d.\n", ARG);\
+                            os_printf("Allocs: %d.\n", n_alloc);
 #define DEBUG_DEALLOC   n_alloc--;\
                         os_printf("Allocs: %d.\n", n_alloc);
 #define DEBUG_HEAP_SIZE(ARG) os_printf("Free heap (" ARG "): %d.\n", system_get_free_heap_size())
 #define db_malloc(ARG)  os_malloc(ARG);\
-                        os_printf("Size: %d.\n", ARG);\
-                        DEBUG_ALLOC\
+                        DEBUG_ALLOC(ARG)\
                         DEBUG_HEAP_SIZE("malloc")
                         
 #define db_free(ARG)    os_free(ARG);\
@@ -47,7 +47,7 @@ int n_alloc;
                         DEBUG_HEAP_SIZE("free")
                         
 #define db_zalloc(ARG)  os_zalloc(ARG);\
-                        DEBUG_ALLOC\
+                        DEBUG_ALLOC(ARG)\
                         DEBUG_HEAP_SIZE("zalloc")
 #else
 #define db_malloc      os_malloc
