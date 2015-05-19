@@ -74,12 +74,12 @@ AR		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-ar
 LD		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 
 #Other tools
-MKDIR 			?= mkdir -p
+MKDIR 		?= mkdir -p
 GET_FILESIZE 	?= stat --printf="%s"
-RM				?= rm -f
-ECHO			?= @echo
-ZIP				?= zip
-
+RM		?= rm -f
+ECHO		?= @echo
+ZIP		?= zip
+CD		?= cd
 
 ####
 #### no user configurable options below here
@@ -177,7 +177,7 @@ doxygen: .doxyfile
 	doxygen .doxyfile
 	
 $(FW_FS): $(FS_FILES)
-	$(ZIP) -0 $@ $(FS_DIR)/*
+	(cd $(FS_DIR); $(ZIP) -0 -r0 ../$@ .; cd ..;);
 	
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
 
