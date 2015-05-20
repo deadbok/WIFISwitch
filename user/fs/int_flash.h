@@ -36,10 +36,9 @@ extern void *_irom0_text_end;
 //Flash access functions.
 extern void flash_dump(unsigned int src_addr, unsigned int size);
 extern void flash_dump_mem(unsigned int src_addr, unsigned int size);
-extern bool flash_read(const void *data, size_t size);
+extern bool flash_read(const void *data, unsigned int read_addr, size_t size);
 
 //Zip functions.
 extern struct int_file_hdr *zip_load_header(unsigned int address);
-extern void zip_free_header(struct int_file_hdr *file_hdr);
  
 #endif

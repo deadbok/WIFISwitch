@@ -24,10 +24,12 @@
 #include "c_types.h"
 #include "spi_flash.h"
 #include "user_interface.h"
+#include "osapi.h"
 #include "mem.h"
 #include "user_config.h"
 #include "tools/missing_dec.h"
 #include "memzip.h"
+#include "int_flash.h"
 
 //#size of 0x10000.bin
 //sz = 285312
@@ -44,10 +46,6 @@
  * @brief Address of the zip file.
  */
 #define FS_ADDR 0x14000
-
-MEMZIP_FILE_HDR *zip_header;
-
-static unsigned int read_addr = 0;
 
 /**
  * @brief Dump flash contents from an address until size bytes has been dumped.
@@ -97,7 +95,7 @@ void ICACHE_FLASH_ATTR flash_dump_mem(unsigned int src_addr, size_t size)
     }
 }
 
-bool ICACHE_FLASH_ATTR flash_read(const void *data, size_t size)
+bool ICACHE_FLASH_ATTR flash_read(const void *data, unsigned int read_addr, size_t size)
 {
     unsigned int addr = FS_ADDR + read_addr;
     
@@ -113,40 +111,36 @@ bool ICACHE_FLASH_ATTR flash_read(const void *data, size_t size)
     return(false);
 }
 
-void ICACHE_FLASH_ATTR flash_seek(unsigned int addr)
-{
-    read_addr += addr;
-}
-
-void ICACHE_FLASH_ATTR flash_abs_seek(unsigned int addr)
-{
-    read_addr = addr;
-}
-
-unsigned int flash_pos()
-{
-    return(read_addr);
-}
-
 struct int_file_hdr ICACHE_FLASH_ATTR *zip_load_header(unsigned int address)
 {
     struct int_file_hdr *file_hdr = db_malloc(sizeof(struct int_file_hdr));
     
     debug("Loading header at 0x%x.\n", address);
-    flash_abs_seek(address);
-    flash_read(file_hdr, sizeof(MEMZIP_FILE_HDR));
+    //Load the header
+    if (!flash_read(file_hdr, address, sizeof(MEMZIP_FILE_HDR)))
+    {
+        os_printf("ERROR: Failed loading the ZIP header at %d.\n", address);
+        db_free(file_hdr);
+        return(NULL);
+    }
     debug(" Header signature: 0x%x.\n", file_hdr->signature);
-    //Read one more byte, to make room for the '\0' byte:
+    
+    //Alloc an extra byte for the \0 byte.
     file_hdr->filename = db_malloc(file_hdr->filename_len + 1);
-    flash_read(file_hdr->filename, file_hdr->filename_len);
+    //Load the file name.
+    if (!flash_read(file_hdr->filename, 
+                    address + sizeof(MEMZIP_FILE_HDR), 
+                    file_hdr->filename_len))
+    {
+        os_printf("ERROR: Failed loading the ZIP file name at %d.\n",
+                  address + sizeof(MEMZIP_FILE_HDR));
+        memzip_free_header(file_hdr);
+        return(NULL);
+    }
+    //Terminate the string.
     file_hdr->filename[file_hdr->filename_len] = '\0';
     debug(" File name: %s.\n", file_hdr->filename);
     
     return(file_hdr);
 }
 
-void ICACHE_FLASH_ATTR zip_free_header(struct int_file_hdr *file_hdr)
-{
-    db_free(file_hdr->filename);
-    db_free(file_hdr);
-}

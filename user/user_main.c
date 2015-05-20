@@ -47,6 +47,7 @@
 #include "led.h"
 #include "int_flash.h"
 #include "fs/memzip.h"
+#include "fs/fs.h"
 
 /**
  * @brief Number of built in URIs in the #g_builtin_uris array.
@@ -179,6 +180,8 @@ void ICACHE_FLASH_ATTR connected_cb(void)
 void ICACHE_FLASH_ATTR user_init(void)
 {
     MEMZIP_FILE_INFO    zip_info;
+    FS_FILE_H file;
+    char    buffer[512];
     
     //Turn off auto connect.
     wifi_station_set_auto_connect(false);
@@ -208,6 +211,16 @@ void ICACHE_FLASH_ATTR user_init(void)
     gpio_output_set(0, BIT5, BIT5, 0);
     
     os_printf("Flash fs stat result: %d.\n", memzip_stat("index.html", &zip_info));
+    os_printf(" Size: %d.\n", zip_info.file_size);
+    os_printf(" Last modified date: %d.\n", zip_info.last_mod_date);
+    os_printf(" Last modified time: %d.\n", zip_info.last_mod_time);
+    os_printf(" Size: %s.\n", zip_info.is_dir ? "Yes" : "No");
+    
+    file = fs_open("index.html");
+    os_printf("Read %d bytes.\n", fs_read(buffer, sizeof(char), 50, file));
+    buffer[51] = '\0';
+    os_printf("Data:\n %s\n", buffer);
+    fs_close(file);
     
     os_printf("\nLeaving user_init...\n");
 }

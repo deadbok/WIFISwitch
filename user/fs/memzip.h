@@ -1,6 +1,8 @@
 #ifndef MEMZIP_H
 #define MEMZIP_H
 
+#include "c_types.h"
+
 #pragma pack(push, 1)
 
 #define MEMZIP_FILE_HEADER_SIGNATURE 0x04034b50
@@ -36,6 +38,7 @@ struct int_file_hdr
     uint32_t    uncompressed_size;
     uint16_t    filename_len;
     uint16_t    extra_len;
+    uint32_t    data_pos;
     char        *filename;
     char        *extra;
 };
@@ -98,8 +101,9 @@ typedef struct {
 
 } MEMZIP_FILE_INFO;
 
-MEMZIP_RESULT memzip_locate(const char *filename, void **data, size_t *len);
-
-MEMZIP_RESULT memzip_stat(const char *path, MEMZIP_FILE_INFO *info);
+extern struct int_file_hdr *memzip_find_file_header(const char *path);
+extern bool memzip_is_dir(const char *path);
+extern MEMZIP_RESULT memzip_stat(const char *path, MEMZIP_FILE_INFO *info);
+extern void memzip_free_header(struct int_file_hdr *file_hdr);
 
 #endif //MEMZIP_H

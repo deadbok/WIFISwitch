@@ -14,6 +14,9 @@
 //Try to connect for X seconds.
 #define CONNECT_DELAY_SEC   30
 
+#define HLT os_printf("Halt execution.\n");\
+            while(1);
+
 //Print extra debug info on the serial port
 #define DEBUG
 #define DEBUG_MEM
