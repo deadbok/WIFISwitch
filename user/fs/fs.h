@@ -28,12 +28,15 @@
 #define FS_MAX_OPEN_FILES 8
 #endif
 
+#define FS_EOF -1
+
 typedef int FS_FILE_H;
 
 extern void fs_init(void);
 extern FS_FILE_H fs_open(const char *filename);
 extern void fs_close(FS_FILE_H handle);
 extern size_t fs_read(void *buffer, size_t size, size_t count, FS_FILE_H handle);
+extern int fs_getc(FS_FILE_H handle);
 
 
 //~ int      fclose(FILE *);

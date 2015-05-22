@@ -524,7 +524,7 @@ void ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
     }
     else
     {
-        os_printf("ERROR: Only one listening TCP connection supported.\n");
+        error("Only one listening TCP connection supported.\n");
     }
 }
 

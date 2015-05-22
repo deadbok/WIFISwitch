@@ -76,7 +76,7 @@ static struct zip_file_hdr ICACHE_FLASH_ATTR *zip_load_header(unsigned int addre
     //Read the flags, compression method, last modified time and date.
     if (!flash_read(&file_hdr->flags, offset, sizeof(uint16_t) * 4))
     {
-        os_printf("ERROR: Failed reading the ZIP flags at %d.\n", offset);
+        error("Failed reading the ZIP flags at %d.\n", offset);
         db_free(file_hdr);
         return(NULL);
     }
@@ -85,7 +85,7 @@ static struct zip_file_hdr ICACHE_FLASH_ATTR *zip_load_header(unsigned int addre
     //Read uncompressed data size, file name length, and extra data length.
     if (!flash_read(&file_hdr->uncompressed_size, offset, sizeof(uint32_t) * 2))
     {
-        os_printf("ERROR: Failed reading the ZIP file size at %d.\n", offset);
+        error("Failed reading the ZIP file size at %d.\n", offset);
         db_free(file_hdr);
         return(NULL);
     }
@@ -96,8 +96,8 @@ static struct zip_file_hdr ICACHE_FLASH_ATTR *zip_load_header(unsigned int addre
                     address + ZIP_REAL_FILE_HEADER_SIZE, 
                     file_hdr->filename_len))
     {
-        os_printf("ERROR: Failed loading the ZIP file name at %d.\n",
-                  address + ZIP_REAL_FILE_HEADER_SIZE);
+        error("Failed loading the ZIP file name at %d.\n",
+              address + ZIP_REAL_FILE_HEADER_SIZE);
         zip_free_header(file_hdr);
         return(NULL);
     }
@@ -137,7 +137,7 @@ struct zip_file_hdr *zip_find_file_header(const char *path)
         //Test bit 3 of the flags, to see if a data descriptor is used.
         if ((file_hdr->flags & ( 1 << 2)))
         {
-            os_printf("ERROR: ZIP data descriptors are not supported.\n");
+            error("ZIP data descriptors are not supported.\n");
             return(NULL);
         }
         //Calculate the position of the file data.

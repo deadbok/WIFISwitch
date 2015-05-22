@@ -404,7 +404,7 @@ static char ICACHE_FLASH_ATTR *parse_header(struct tcp_connection *connection,
             value = os_strstr(data, ":");
             if (!value)
             {
-                os_printf("ERROR: Could not parse request header: %s\n", data);
+                error("Could not parse request header: %s\n", data);
                 //Bail out
                 send_response(connection, HTTP_RESPONSE(400),
                               HTTP_RESPONSE_HTML(400), true,
@@ -475,7 +475,7 @@ static char ICACHE_FLASH_ATTR *parse_HEAD(struct tcp_connection *connection,
     next_entry = os_strstr(request_entry, " ");
     if (next_entry == NULL)
     {
-        os_printf("ERROR: Could not parse HTTP request URI (%s).\n", request_entry);
+        error("Could not parse HTTP request URI (%s).\n", request_entry);
         send_response(connection, HTTP_RESPONSE(400), HTTP_RESPONSE_HTML(400),
                       true, HTTP_CLOSE_CONNECTIONS);
         return(NULL);
@@ -492,7 +492,7 @@ static char ICACHE_FLASH_ATTR *parse_HEAD(struct tcp_connection *connection,
     next_entry = strchrs(next_entry, "\r\n");
     if (next_entry == NULL)
     {
-        os_printf("ERROR: Could not parse HTTP request version (%s).\n", request_entry);
+        error("Could not parse HTTP request version (%s).\n", request_entry);
         send_response(connection, HTTP_RESPONSE(400), HTTP_RESPONSE_HTML(400),
                       true, HTTP_CLOSE_CONNECTIONS);
         return(NULL);
@@ -520,7 +520,7 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
     if ((connection->callback_data.data == NULL) || 
         (os_strlen(connection->callback_data.data) == 0))
     {
-        os_printf("ERROR: Emtpy request recieved.\n");
+        error("Emtpy request recieved.\n");
         send_response(connection, HTTP_RESPONSE(400), HTTP_RESPONSE_HTML(400),
                       true, HTTP_CLOSE_CONNECTIONS);
         return;
@@ -584,7 +584,7 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 	}
     else
     {
-        os_printf("ERROR: Unknown request: %s\n", connection->callback_data.data);
+        error("Unknown request: %s\n", connection->callback_data.data);
         send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501),
                       true, HTTP_CLOSE_CONNECTIONS);
     }

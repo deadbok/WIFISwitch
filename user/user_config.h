@@ -17,9 +17,22 @@
 #define HLT os_printf("Halt execution.\n");\
             while(1);
 
+#define error(...)     os_printf("ERROR: " __VA_ARGS__)
+
+//Print warnings on the serial port.
+#define WARNINGS
 //Print extra debug info on the serial port
 #define DEBUG
 #define DEBUG_MEM
+
+//Macro for debugging. Prints the message if warnings is enabled.
+#ifdef WARNIGS
+#include "tools/missing_dec.h"
+#include "osapi.h"
+#define warn(...)     os_printf("WARN: " __VA_ARGS__)
+#else
+#define warn(...)
+#endif
 
 //Macro for debugging. Prints the messag if debugging is enabled.
 #ifdef DEBUG

@@ -63,13 +63,13 @@ static unsigned char ICACHE_FLASH_ATTR wifi_disconnect(void)
         ret = wifi_station_disconnect();
         if (!ret)
         {
-            os_printf("ERROR: Cannot disconnect (%d).", ret);
+            error("Cannot disconnect (%d).", ret);
             return(ret);
         }
         ret = wifi_station_dhcpc_stop();
         if (!ret)
         {
-            os_printf("ERROR: Cannot stop DHCP client (%d).", ret);
+            error("Cannot stop DHCP client (%d).", ret);
             return(255);
         }    
     }
@@ -123,7 +123,7 @@ static void connect(void *arg)
             ret = wifi_get_ip_info(STATION_IF, &ipinfo);
             if (!ret)
             {
-                os_printf("ERROR: Failed get IP address (%d).\n", ret);
+                error("Failed get IP address (%d).\n", ret);
                 return;
             }
             os_printf("Got IP address: %d.%d.%d.%d.\n", IP2STR(&ipinfo.ip) );
@@ -143,7 +143,7 @@ static void connect(void *arg)
             }
             else
             {
-                os_printf("ERROR: Failed to connect\n");
+                error("Failed to connect\n");
             }
             break;
         default:
@@ -183,7 +183,7 @@ static void ICACHE_FLASH_ATTR create_softap(char *ssid, char *passwd, unsigned c
     ret = wifi_set_opmode(SOFTAP_MODE);
     if (!ret)
     {
-        os_printf("ERROR: Cannot set soft AP mode (%d).", ret);
+        error("Cannot set soft AP mode (%d).", ret);
         return;
     }
               
@@ -203,7 +203,7 @@ static void ICACHE_FLASH_ATTR create_softap(char *ssid, char *passwd, unsigned c
     ret = wifi_softap_set_config(&ap_config);
     if (!ret)
     {
-        os_printf("ERROR: Failed to set soft AP configuration (%d).", ret);
+        error("Failed to set soft AP configuration (%d).", ret);
         return;
     }
 }
@@ -225,7 +225,7 @@ void timeout_cb(void)
     ret = wifi_get_macaddr(SOFTAP_IF, mac);
     if (!ret)
     {
-        os_printf("ERROR: Cannot get MAC address (%d).", ret);
+        error("Cannot get MAC address (%d).", ret);
         return;
     }
     debug("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", MAC2STR(mac));
@@ -270,23 +270,24 @@ void ICACHE_FLASH_ATTR wifi_connect(void (*connect_cb)())
     ret = wifi_set_opmode(STATION_MODE);
     if (!ret)
     {
-        os_printf("ERROR: Cannot set station mode (%d).", ret);
+        error("Cannot set station mode (%d).", ret);
         return;
     }
     //Get a pointer the configuration data.
     ret = wifi_station_get_config(&station_conf); 
     if (!ret)
     {
-        os_printf("ERROR: Cannot get station configuration (%d).", ret);
+        error("Cannot get station configuration (%d).", ret);
         return;
     }
 
-    debug("Connecting to SSID: %s, password: %s\n", station_conf.ssid, station_conf.password);
+    debug("Connecting to SSID: %s, password: %s\n", station_conf.ssid, 
+          station_conf.password);
 
     ret = wifi_disconnect();
     if (!ret)
     {
-        os_printf("ERROR: Cannot disconnect (%d).", ret);
+        error("Cannot disconnect (%d).", ret);
         return;
     }
     
@@ -294,7 +295,7 @@ void ICACHE_FLASH_ATTR wifi_connect(void (*connect_cb)())
     ret = wifi_station_set_config(&station_conf);
     if (!ret)
     {
-        os_printf("ERROR: Failed to set station configuration (%d).\n", ret);
+        error("Failed to set station configuration (%d).\n", ret);
         return;
     }
     

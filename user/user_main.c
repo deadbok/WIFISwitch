@@ -212,8 +212,9 @@ void ICACHE_FLASH_ATTR user_init(void)
     
     file = fs_open("index.html");
     os_printf("Read %d bytes.\n", fs_read(buffer, sizeof(char), 50, file));
-    buffer[51] = '\0';
+    buffer[50] = '\0';
     os_printf("Data:\n %s\n", buffer);
+    os_printf("%c\n", fs_getc(file));
     fs_close(file);
     
     os_printf("\nLeaving user_init...\n");
