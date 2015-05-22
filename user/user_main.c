@@ -46,7 +46,6 @@
 #include "slighttp/http.h"
 #include "led.h"
 #include "int_flash.h"
-#include "fs/memzip.h"
 #include "fs/fs.h"
 
 /**
@@ -179,7 +178,6 @@ void ICACHE_FLASH_ATTR connected_cb(void)
  */
 void ICACHE_FLASH_ATTR user_init(void)
 {
-    MEMZIP_FILE_INFO    zip_info;
     FS_FILE_H file;
     char    buffer[512];
     
@@ -199,6 +197,8 @@ void ICACHE_FLASH_ATTR user_init(void)
            
     //flash_dump_mem(0x14000, 512);
     
+    fs_init();
+    
     wifi_connect(connected_cb);
     
     // Initialize the GPIO subsystem.
@@ -209,12 +209,6 @@ void ICACHE_FLASH_ATTR user_init(void)
 
     //Set GPIO2 low
     gpio_output_set(0, BIT5, BIT5, 0);
-    
-    os_printf("Flash fs stat result: %d.\n", memzip_stat("index.html", &zip_info));
-    os_printf(" Size: %d.\n", zip_info.file_size);
-    os_printf(" Last modified date: %d.\n", zip_info.last_mod_date);
-    os_printf(" Last modified time: %d.\n", zip_info.last_mod_time);
-    os_printf(" Size: %s.\n", zip_info.is_dir ? "Yes" : "No");
     
     file = fs_open("index.html");
     os_printf("Read %d bytes.\n", fs_read(buffer, sizeof(char), 50, file));

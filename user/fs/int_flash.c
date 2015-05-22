@@ -28,7 +28,6 @@
 #include "mem.h"
 #include "user_config.h"
 #include "tools/missing_dec.h"
-#include "memzip.h"
 #include "int_flash.h"
 
 //#size of 0x10000.bin
@@ -109,38 +108,5 @@ bool ICACHE_FLASH_ATTR flash_read(const void *data, unsigned int read_addr, size
     }
     debug("Failed!\n");
     return(false);
-}
-
-struct int_file_hdr ICACHE_FLASH_ATTR *zip_load_header(unsigned int address)
-{
-    struct int_file_hdr *file_hdr = db_malloc(sizeof(struct int_file_hdr));
-    
-    debug("Loading header at 0x%x.\n", address);
-    //Load the header
-    if (!flash_read(file_hdr, address, sizeof(MEMZIP_FILE_HDR)))
-    {
-        os_printf("ERROR: Failed loading the ZIP header at %d.\n", address);
-        db_free(file_hdr);
-        return(NULL);
-    }
-    debug(" Header signature: 0x%x.\n", file_hdr->signature);
-    
-    //Alloc an extra byte for the \0 byte.
-    file_hdr->filename = db_malloc(file_hdr->filename_len + 1);
-    //Load the file name.
-    if (!flash_read(file_hdr->filename, 
-                    address + sizeof(MEMZIP_FILE_HDR), 
-                    file_hdr->filename_len))
-    {
-        os_printf("ERROR: Failed loading the ZIP file name at %d.\n",
-                  address + sizeof(MEMZIP_FILE_HDR));
-        memzip_free_header(file_hdr);
-        return(NULL);
-    }
-    //Terminate the string.
-    file_hdr->filename[file_hdr->filename_len] = '\0';
-    debug(" File name: %s.\n", file_hdr->filename);
-    
-    return(file_hdr);
 }
 

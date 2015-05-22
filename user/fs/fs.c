@@ -23,7 +23,7 @@
 #include "c_types.h"
 #include "user_config.h"
 #include "int_flash.h"
-#include "memzip.h"
+#include "zip.h"
 #include "fs.h"
 
 /**
@@ -52,6 +52,13 @@ static struct fs_file *fs_open_files[FS_MAX_OPEN_FILES];
 static FS_FILE_H n_open_files = 0;
 
 /**
+ * @brief Initialise stuff for file system access.
+ */
+void ICACHE_FLASH_ATTR fs_init(void)
+{
+}
+
+/**
  * @brief Open a file.
  * 
  * @param filename Name of the file to open.
@@ -59,7 +66,7 @@ static FS_FILE_H n_open_files = 0;
  */
 FS_FILE_H ICACHE_FLASH_ATTR fs_open(const char *filename)
 {
-    struct int_file_hdr *file_hdr;
+    struct zip_file_hdr *file_hdr;
     struct fs_file *file;
     FS_FILE_H i;
     
@@ -70,7 +77,7 @@ FS_FILE_H ICACHE_FLASH_ATTR fs_open(const char *filename)
         return(-1);
     }
     
-    file_hdr = memzip_find_file_header(filename);
+    file_hdr = zip_find_file_header(filename);
     if (!file_hdr)
     {
         os_printf("ERROR: Could not open %s.\n", filename);
@@ -82,7 +89,7 @@ FS_FILE_H ICACHE_FLASH_ATTR fs_open(const char *filename)
     file->start_pos = file_hdr->data_pos;
     file->size = file_hdr->uncompressed_size;
     
-    memzip_free_header(file_hdr);
+    zip_free_header(file_hdr);
     
     for(i = 0; ((i < FS_MAX_OPEN_FILES) && (fs_open_files[i] != NULL)); i++);
     if (i == FS_MAX_OPEN_FILES)
@@ -120,6 +127,7 @@ void ICACHE_FLASH_ATTR fs_close(FS_FILE_H handle)
  * @param size 	Size of each object in bytes.
  * @param count The number of the objects to be read.
  * @param handle The handle of the file to read from.
+ * @return The count of objects read.
  */
 size_t ICACHE_FLASH_ATTR fs_read(void *buffer, size_t size, size_t count, FS_FILE_H handle)
 {
@@ -131,5 +139,7 @@ size_t ICACHE_FLASH_ATTR fs_read(void *buffer, size_t size, size_t count, FS_FIL
         os_printf("ERROR: Failed reading %d bytes from %d.\n", total_size, handle);
         return(0);
     }
+    fs_open_files[handle]->pos = total_size;
     return(count);
 }
+

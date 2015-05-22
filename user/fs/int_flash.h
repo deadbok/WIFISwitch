@@ -23,8 +23,6 @@
 #ifndef INT_FLASH_H
 #define INT_FLASH_H
 
-#include "memzip.h"
-
 //Interesting places.
 extern void *_text_start;
 extern void *_text_end;
@@ -38,7 +36,5 @@ extern void flash_dump(unsigned int src_addr, unsigned int size);
 extern void flash_dump_mem(unsigned int src_addr, unsigned int size);
 extern bool flash_read(const void *data, unsigned int read_addr, size_t size);
 
-//Zip functions.
-extern struct int_file_hdr *zip_load_header(unsigned int address);
- 
+
 #endif
