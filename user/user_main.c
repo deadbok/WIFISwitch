@@ -211,10 +211,11 @@ void ICACHE_FLASH_ATTR user_init(void)
     gpio_output_set(0, BIT5, BIT5, 0);
     
     file = fs_open("index.html");
-    os_printf("Read %d bytes.\n", fs_read(buffer, sizeof(char), 50, file));
-    buffer[50] = '\0';
+    os_printf("Read %d bytes.\n", fs_read(buffer, sizeof(char), 51, file));
+    buffer[51] = '\0';
     os_printf("Data:\n %s\n", buffer);
-    os_printf("%c\n", fs_getc(file));
+    os_printf("Character: %c\n", fs_getc(file));
+    os_printf("String: %s\n", fs_gets(buffer, 20, file));
     fs_close(file);
     
     os_printf("\nLeaving user_init...\n");

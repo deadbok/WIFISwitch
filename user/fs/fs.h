@@ -25,11 +25,20 @@
 #define FS_H
 
 #ifndef FS_MAX_OPEN_FILES
+/**
+ * @brief Maximum number of open files.
+ */
 #define FS_MAX_OPEN_FILES 8
 #endif
 
+/**
+ * @brief End of file indicator.
+ */
 #define FS_EOF -1
 
+/**
+ * @brief The type of a file handle.
+ */
 typedef int FS_FILE_H;
 
 extern void fs_init(void);
@@ -37,18 +46,14 @@ extern FS_FILE_H fs_open(const char *filename);
 extern void fs_close(FS_FILE_H handle);
 extern size_t fs_read(void *buffer, size_t size, size_t count, FS_FILE_H handle);
 extern int fs_getc(FS_FILE_H handle);
+extern char *fs_gets(char *str, size_t count, FS_FILE_H handle);
 
-
-//~ int      fclose(FILE *);
 //~ int      feof(FILE *);
 //~ int      ferror(FILE *);
-//~ int      fgetc(FILE *);
 //~ int      fgetpos(FILE *restrict, fpos_t *restrict);
 //~ char    *fgets(char *restrict, int, FILE *restrict);
 //~ int      fileno(FILE *);
 //~ void     flockfile(FILE *);
-//~ FILE    *fopen(const char *restrict, const char *restrict);
-//~ size_t   fread(void *restrict, size_t, size_t, FILE *restrict);
 //~ FILE    *freopen(const char *restrict, const char *restrict, ILE *restrict);
 //~ int      fscanf(FILE *restrict, const char *restrict, ...);
 //~ int      fseek(FILE *, long, int);

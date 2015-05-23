@@ -1,7 +1,9 @@
 /** 
- * @file fs.h
+ * @file fs.c
  *
  * @brief Routines for file access.
+ * 
+ * These functions mimics some of the file functions in the standard C library.
  *
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
  * 
@@ -53,6 +55,9 @@ struct fs_file
  * @brief Array of all open files.
  */
 static struct fs_file *fs_open_files[FS_MAX_OPEN_FILES];
+/**
+ * @brief Number currently open files.
+ */
 static FS_FILE_H n_open_files = 0;
 
 /**
@@ -62,6 +67,11 @@ void ICACHE_FLASH_ATTR fs_init(void)
 {
 }
 
+/**
+ * @brief Test if a file handle is valid.
+ * 
+ * @param handle The handle to test.
+ */
 static bool ICACHE_FLASH_ATTR fs_test_handle(FS_FILE_H handle)
 {
     if ((handle > -1) && (handle < FS_MAX_OPEN_FILES))
@@ -71,6 +81,29 @@ static bool ICACHE_FLASH_ATTR fs_test_handle(FS_FILE_H handle)
     }
     error("Invalid file handle.\n");
     return(false);
+}
+
+
+/**
+ * @brief Check if the end of the file has been reached.
+ * 
+ * Check for EOF, and set file handle accordingly.
+ * 
+ * @param handle The handle of the file to check.
+ * @return True on end of file, false otherwise.
+ */
+static bool ICACHE_FLASH_ATTR fs_check_eof(FS_FILE_H handle)
+{
+    //End of file?
+    if (fs_open_files[handle]->pos >= fs_open_files[handle]->size)
+    {
+        //Read doesn't happen.
+        fs_open_files[handle]->pos = fs_open_files[handle]->size;
+        fs_open_files[handle]->eof = true;
+        debug("End of file: %d of %d.\n", fs_open_files[handle]->pos,
+              fs_open_files[handle]->size);
+    }
+    return(fs_open_files[handle]->eof);
 }
 
 /**
@@ -98,21 +131,25 @@ FS_FILE_H ICACHE_FLASH_ATTR fs_open(const char *filename)
         error("Could not open %s.\n", filename);
         return(-1);
     }
-    
+   
+    //Get some memory for file house keeping, and fill in the data.
     file = db_malloc(sizeof(struct fs_file));
     file->pos = 0;
     file->start_pos = file_hdr->data_pos;
     file->size = file_hdr->uncompressed_size;
     file->eof = false;
     
+    //Free up the ZIP header, since we don't need it anymore.
     zip_free_header(file_hdr);
     
+    //Find the first free file handle
     for(i = 0; ((i < FS_MAX_OPEN_FILES) && (fs_open_files[i] != NULL)); i++);
     if (i == FS_MAX_OPEN_FILES)
     {
         error("Could not add file to array of open files.\n");
         return(-1);
     }
+    //Assign to current file
     fs_open_files[i] = file;    
     debug(" File handle: %d.\n", i);
     return(i);
@@ -153,14 +190,11 @@ size_t ICACHE_FLASH_ATTR fs_read(void *buffer, size_t size, size_t count, FS_FIL
     {
         return(0);
     }
+    //Don't read beyond the data.
     if( total_size > fs_open_files[handle]->size)
     {
         warn("Truncating read to file size.\n");
         total_size = fs_open_files[handle]->size;
-    }
-    if ( total_size == fs_open_files[handle]->size)
-    {
-        fs_open_files[handle]->eof = true;
     }
 
     if (!flash_read(buffer, fs_open_files[handle]->start_pos, total_size))
@@ -169,29 +203,83 @@ size_t ICACHE_FLASH_ATTR fs_read(void *buffer, size_t size, size_t count, FS_FIL
         return(0);
     }
     fs_open_files[handle]->pos = total_size;
+    fs_check_eof(handle);
     return(total_size / count);
 }
 
+/**
+ * @brief Read a character from a file.
+ * 
+ * @param handle A handle to the file to read from.
+ * @return The character read, or #FS_EOF on failure.
+ */ 
 int ICACHE_FLASH_ATTR fs_getc(FS_FILE_H handle)
 {
     int ch;
     unsigned int abs_pos = fs_open_files[handle]->start_pos + fs_open_files[handle]->pos;
 
     debug("Reading a character from %d.\n", handle);
-    if (!fs_test_handle(handle))
-    {
-        return(FS_EOF);
-    }
-    if (fs_open_files[handle]->pos >= fs_open_files[handle]->size)
+    if (!fs_test_handle(handle) || fs_check_eof(handle))
     {
         return(FS_EOF);
     }
     
+    //Read the char.
     if (!flash_read(&ch, abs_pos, sizeof(char)))
     {
         error("Failed reading %d bytes from %d.\n", sizeof(char), handle);
         return(FS_EOF);
     }
+    //Adjust position.
     fs_open_files[handle]->pos += sizeof(char);
     return(ch);
 }    
+
+/**
+ * @brief Read a string from a file.
+ * 
+ * Read a string from a file.  Read `count - 1` characters from the file and put
+ * them in str, ending with a `'\0'`. Stop on a `'\0'`, or an end of file. If a
+ * new line is read, it is included and ends the string (besides the `'\0'`.
+ * 
+ * @param str Pointer to the string to read the characters to.
+ * @param count Maximum number of characters to read.
+ * @param handle A handle to the file to read from.
+ * @return The string read, or NULL on error.
+ */ 
+char ICACHE_FLASH_ATTR *fs_gets(char *str, size_t count, FS_FILE_H handle)
+{
+    unsigned int abs_pos = fs_open_files[handle]->start_pos + fs_open_files[handle]->pos;
+    unsigned int i = 0;
+    unsigned char ch;
+    
+    debug("Reading a string of max. %d characters from %d.\n", count, handle);
+    if (!fs_test_handle(handle) || fs_check_eof(handle))
+    {
+        return(NULL);
+    }
+    
+    //Read the string, Stop on end of file, new lines, and zero bytes.
+    do
+    {
+        //Read the char.
+        if (!flash_read(&ch, abs_pos + i, sizeof(char)))
+        {
+            error("Failed reading %d bytes from %d.\n", sizeof(char), handle);
+            return(NULL);
+        }
+        //Update position.
+        fs_open_files[handle]->pos += sizeof(char);
+        //Add char.
+        str[i++] = ch;
+    }
+    while ((i < (count - 1)) && (!fs_check_eof(handle)) && 
+                 (ch != '\0') && (ch != '\n'));
+    if (ch)
+    {
+        //Zero terminate.
+        str[i] = '\0';
+    }
+    
+    return(str);
+}

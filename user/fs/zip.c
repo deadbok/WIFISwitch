@@ -208,6 +208,11 @@ bool zip_is_dir(const char *path)
     return(false);
 }
 
+/**
+ * @brief Free up memory used by a file header.
+ * 
+ * @param file_hdr Pointer to the memory to free.
+ */
 void ICACHE_FLASH_ATTR zip_free_header(struct zip_file_hdr *file_hdr)
 {
     db_free(file_hdr->filename);
