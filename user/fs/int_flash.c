@@ -3,7 +3,7 @@
  *
  * @brief Interface between flash and memzip.
  * 
- * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
+ * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,8 +37,13 @@
 
 //Flash: W25Q32BV
 
-//Easy convert read to printable format
+/**
+ * @brief Easy convert read bytes to printable format.
+ */
 #define FLASH2STR(a) (a)[0], (a)[1], (a)[2], (a)[3]
+/**
+ * @brief Format string for printing the read bytes.
+ */
 #define FLASHSTR "%02x:%02x:%02x:%02x"
 
 /**
@@ -94,6 +99,14 @@ void ICACHE_FLASH_ATTR flash_dump_mem(unsigned int src_addr, size_t size)
     }
 }
 
+/**
+ * @brief Read data from the flash.
+ * 
+ * @param data Pointer to a buffer to place the data in.
+ * @param read_addr Address to read from.
+ * @param size Bytes to read.
+ * @return True if everything wen well, false otherwise.
+ */
 bool ICACHE_FLASH_ATTR flash_read(const void *data, unsigned int read_addr, size_t size)
 {
     unsigned int addr = FS_ADDR + read_addr;

@@ -57,6 +57,7 @@
 #include "user_config.h"
 #include "net/tcp.h"
 #include "tools/strxtra.h"
+#include "fs/fs.h"
 #include "http.h"
 
 /**
@@ -129,7 +130,7 @@ bool ICACHE_FLASH_ATTR is_header_value(struct http_request *request, char *name,
 }
 
 /**
- * @brieef Print a Common Log Format message to the console.
+ * @brief Print a Common Log Format message to the console.
  * 
  * Log access to the web server to console in a standardized text file format:
  * 
@@ -294,6 +295,24 @@ static void ICACHE_FLASH_ATTR handle_GET(struct tcp_connection *connection, bool
 {
     struct http_request *request = connection->free;
     unsigned short  i;
+    FS_FILE_H file;
+    long data_size;
+    char *buffer;
+    
+    file = fs_open(request->uri);
+    if (file > FS_EOF)
+    {
+        debug("Found file: %s.\n", request->uri);
+        data_size = fs_size(file);
+        buffer = db_malloc((int)data_size + 1);
+        fs_read(buffer, data_size, sizeof(char), file);
+        buffer[data_size] = '\0';
+        send_response(connection, HTTP_RESPONSE(200), 
+                      buffer,
+                      !headers_only, HTTP_CLOSE_CONNECTIONS);
+        db_free(buffer);
+        return;
+    }
     
     //Check in static uris, go through and stop if URIs match.
     for (i = 0; 

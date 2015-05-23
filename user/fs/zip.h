@@ -58,8 +58,8 @@ struct __attribute__ ((__packed__)) zip_file_hdr
     uint32_t data_pos;
 };
 
-extern struct zip_file_hdr *zip_find_file_header(const char *path);
-extern bool zip_is_dir(const char *path);
+extern struct zip_file_hdr *zip_find_file_header(char *path);
+extern bool zip_is_dir(char *path);
 extern void zip_free_header(struct zip_file_hdr *file_hdr);
 
 #endif //ZIP_H

@@ -3,7 +3,7 @@
  *
  * @brief Routines for file access.
  *
- * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
+ * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -37,29 +37,44 @@
 #define FS_EOF -1
 
 /**
+ * @brief Values for position origin.
+ */
+enum fs_seek_pos_e
+{
+    FS_SEEK_SET = 0,
+    FS_SEEK_CUR,
+    FS_SEEK_END
+};
+
+/**
+ * @brief Type to hold origin position.
+ */
+typedef enum fs_seek_pos_e fs_seek_pos_t;
+
+/**
  * @brief The type of a file handle.
  */
 typedef int FS_FILE_H;
 
 extern void fs_init(void);
-extern FS_FILE_H fs_open(const char *filename);
+extern FS_FILE_H fs_open(char *filename);
 extern void fs_close(FS_FILE_H handle);
 extern size_t fs_read(void *buffer, size_t size, size_t count, FS_FILE_H handle);
 extern int fs_getc(FS_FILE_H handle);
 extern char *fs_gets(char *str, size_t count, FS_FILE_H handle);
+extern long fs_tell(FS_FILE_H handle);
+extern long fs_size(FS_FILE_H handle);
+extern int fs_seek(FS_FILE_H handle, long offset, fs_seek_pos_t origin);
+extern int fs_eof(FS_FILE_H handle);
 
-//~ int      feof(FILE *);
 //~ int      ferror(FILE *);
 //~ int      fgetpos(FILE *restrict, fpos_t *restrict);
-//~ char    *fgets(char *restrict, int, FILE *restrict);
 //~ int      fileno(FILE *);
 //~ void     flockfile(FILE *);
 //~ FILE    *freopen(const char *restrict, const char *restrict, ILE *restrict);
 //~ int      fscanf(FILE *restrict, const char *restrict, ...);
-//~ int      fseek(FILE *, long, int);
 //~ int      fseeko(FILE *, off_t, int);
 //~ int      fsetpos(FILE *, const fpos_t *);
-//~ long     ftell(FILE *);
 //~ off_t    ftello(FILE *);
 //~ int      ftrylockfile(FILE *);
 //~ void     funlockfile(FILE *);

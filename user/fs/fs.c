@@ -5,7 +5,7 @@
  * 
  * These functions mimics some of the file functions in the standard C library.
  *
- * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
+ * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -71,6 +71,7 @@ void ICACHE_FLASH_ATTR fs_init(void)
  * @brief Test if a file handle is valid.
  * 
  * @param handle The handle to test.
+ * @return True if this is a valid handle, false otherwise.
  */
 static bool ICACHE_FLASH_ATTR fs_test_handle(FS_FILE_H handle)
 {
@@ -112,7 +113,7 @@ static bool ICACHE_FLASH_ATTR fs_check_eof(FS_FILE_H handle)
  * @param filename Name of the file to open.
  * @return A handle to the newly opened file, or -1 on error.
  */
-FS_FILE_H ICACHE_FLASH_ATTR fs_open(const char *filename)
+FS_FILE_H ICACHE_FLASH_ATTR fs_open(char *filename)
 {
     struct zip_file_hdr *file_hdr;
     struct fs_file *file;
@@ -282,4 +283,89 @@ char ICACHE_FLASH_ATTR *fs_gets(char *str, size_t count, FS_FILE_H handle)
     }
     
     return(str);
+}
+
+/**
+ * @brief Get the current position relative to the start of the file.
+ * 
+ * @param handle Handle to a file.
+ * @return Position or FS_EOF 
+ */
+long ICACHE_FLASH_ATTR fs_tell( FS_FILE_H handle)
+{
+    if (!fs_test_handle(handle))
+    {
+        return(FS_EOF);
+    }
+    
+    return(fs_open_files[handle]->pos);
+}
+
+/**
+ * @brief Get the file size.
+ * 
+ * @param handle Handle to a file.
+ * @return Size of file or FS_EOF 
+ */
+long ICACHE_FLASH_ATTR fs_size( FS_FILE_H handle)
+{
+    if (!fs_test_handle(handle))
+    {
+        return(FS_EOF);
+    }
+    
+    return(fs_open_files[handle]->size);
+}
+
+/**
+ * @brief Set the current position in the file.
+ * 
+ * Origin values:
+ *  - SEEK_CUR: Set position by adding offset to the current position.
+ *  - SEEK_END: Set position by substracting offset to the end position.
+ *  - SEEK_SET: Set position by adding offset to the start position.* 
+ * 
+ * @param handle Handle to a file.
+ * @param offset New position in file.
+ * @param origin FS_SEEK_CUR, FS_SEEK_SET, or FS_SEEK_END, from where to set the
+ *               offset.
+ * @return Position or FS_EOF 
+ */
+int ICACHE_FLASH_ATTR fs_seek(FS_FILE_H handle, long offset, fs_seek_pos_t origin)
+{
+    if (!fs_test_handle(handle))
+    {
+        return(FS_EOF);
+    }
+    
+    switch(origin)
+    {
+        case FS_SEEK_CUR: fs_open_files[handle]->pos += offset;
+                          break;
+                          
+        case FS_SEEK_END: fs_open_files[handle]->pos = fs_open_files[handle]->size - offset;
+                          break;
+        case FS_SEEK_SET: fs_open_files[handle]-> pos = offset;
+                          break;
+        default: warn("Unknown file origin requested.\n");
+    }
+    fs_check_eof(handle);
+    
+    return(0);
+}
+
+/**
+ * @brief Get end of file status.
+ * 
+ * @param handle Handle to a file.
+ * @return 0 if the end is not reached or FS_EOF
+ */
+int ICACHE_FLASH_ATTR fs_eof(FS_FILE_H handle)
+{
+    if (!fs_test_handle(handle))
+    {
+        return(FS_EOF);
+    }
+
+    return(fs_check_eof(handle));
 }

@@ -1,8 +1,9 @@
-/* int_flash.h
+/**
+ * @file int_flash.h
  *
- * Routines for accessing the internal flash.
+ * @brief Routines for accessing the internal flash.
  *
- * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
+ * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by

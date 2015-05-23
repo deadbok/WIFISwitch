@@ -114,7 +114,7 @@ static struct zip_file_hdr ICACHE_FLASH_ATTR *zip_load_header(unsigned int addre
  * @param path Name of the entry to find.
  * @return A pointer to the ZIP header for the file.
  */
-struct zip_file_hdr *zip_find_file_header(const char *path) 
+struct zip_file_hdr *zip_find_file_header(char *path) 
 {
     struct zip_file_hdr *file_hdr;
     unsigned int offset = 0;
@@ -145,7 +145,8 @@ struct zip_file_hdr *zip_find_file_header(const char *path)
         offset += file_hdr->filename_len;
         offset += file_hdr->extra_len;
         
-        if (!os_strncmp(file_hdr->filename, path, file_hdr->filename_len)) 
+        if ((!os_strncmp(file_hdr->filename, path, file_hdr->filename_len)) &&
+            (file_hdr->filename_len == os_strlen(path))) 
         {
             //We found a match .
             debug("Found.\n");
@@ -176,7 +177,7 @@ struct zip_file_hdr *zip_find_file_header(const char *path)
  * @param path Path to check.
  * @return True if path is a directory.
  */
-bool zip_is_dir(const char *path) 
+bool zip_is_dir(char *path) 
 {
     const struct zip_file_hdr *file_hdr;
     size_t filename_len;
