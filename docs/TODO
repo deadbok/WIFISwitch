@@ -4,4 +4,4 @@ LOTS!
    I am sure what is going on.
  - Find out if the file system image, should be loaded after the 0x40000 data
    in the flash.
-   
+ - WIFI AP configuration through web server.

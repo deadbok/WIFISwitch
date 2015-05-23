@@ -77,7 +77,6 @@ struct tcp_connection;
  */
 typedef void (*tcp_callback)(struct tcp_connection *);
 
-
 /**
  * @brief Structure to keep track of TCP connections.
  *
