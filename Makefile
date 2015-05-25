@@ -74,12 +74,12 @@ AR		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-ar
 LD		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 
 #Other tools
-MKDIR 		?= mkdir -p
-GET_FILESIZE 	?= stat --printf="%s"
+MKDIR 	?= mkdir -p
 RM		?= rm -f
-ECHO		?= @echo
+ECHO	?= @echo
 ZIP		?= zip
 CD		?= cd
+GET_FILESIZE ?= stat --printf="%s"
 
 ####
 #### no user configurable options below here
@@ -162,7 +162,7 @@ flashblank:
 clean:
 	$(RM) -R $(FW_BASE) $(BUILD_BASE)
 
-debug: $(LOG_DIR) all
+debug: $(LOG_DIR)
 #Remove the old log
 	> ./debug.log
 	minicom -D $(ESPPORT) -o -b 115200 -C ./debug.log
@@ -178,6 +178,7 @@ doxygen: .doxyfile
 	
 $(FW_FS): $(FS_FILES)
 	(cd $(FS_DIR); $(ZIP) -0 -r0 ../$@ .; cd ..;);
+	tools/testsize.sh $@ $(FS_MAX_SIZE)
 	
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
 
