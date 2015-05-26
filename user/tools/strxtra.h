@@ -24,7 +24,8 @@
 #ifndef STRXTRA_H
 #define STRXTRA_H
 
-extern char ICACHE_FLASH_ATTR *strchrs(char *str, char *chrs);
-extern char ICACHE_FLASH_ATTR *strlwr(char *str);
+extern char *strchrs(char *str, char *chrs);
+extern char *strlwr(char *str);
+extern int digits(long n);
 
 #endif //STRXTRA_H

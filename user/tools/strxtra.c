@@ -90,3 +90,15 @@ char ICACHE_FLASH_ATTR *strlwr(char *str)
     }
     return(str);
 }
+
+int ICACHE_FLASH_ATTR digits(long n)
+{
+	int i = 1;
+	
+	while(n)
+	{
+		n /= 10;
+		i++;
+	}
+	return(i);
+}
