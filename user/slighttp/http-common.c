@@ -76,7 +76,7 @@ bool ICACHE_FLASH_ATTR is_header_value(struct http_request *request, char *name,
  * See [CLF](https://en.wikipedia.org/wiki/Common_Log_Format).
  */
 void ICACHE_FLASH_ATTR print_clf_status(struct tcp_connection *connection,
-                                        char *status_code, char *length)
+                                        char *status_code, size_t length)
 {
     struct http_request *request = connection->free;
 
@@ -84,7 +84,7 @@ void ICACHE_FLASH_ATTR print_clf_status(struct tcp_connection *connection,
     
     if (connection)
     {
-        os_printf(IPSTR " %s %s %s %s HTTP/%s %s %s\n",
+        os_printf(IPSTR " %s %s %s %s HTTP/%s %s %d\n",
                   IP2STR(connection->conn->proto.tcp->remote_ip), unknown,
                   unknown, unknown, connection->callback_data.data,
                   request->version, status_code, length);

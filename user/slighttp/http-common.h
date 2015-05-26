@@ -67,6 +67,6 @@ struct http_builtin_uri *static_uris;
 unsigned short n_static_uris;
 
 extern void print_clf_status(struct tcp_connection *connection, 
-                             char *status_code, char *length);
+                             char *status_code, size_t length);
 
 #endif //HTTP_COMMON_H

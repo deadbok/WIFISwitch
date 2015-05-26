@@ -20,6 +20,11 @@
  * omitted. It has been built to be small, not fast, and probably breaks in 100
  * places.**
  * 
+ * I have gone to somewhat irresponsible length, to make this code dynamic
+ * with regards to the size of the buffers for recieved data. This is probably
+ * stupid and wastefull since, there isn't that much RAM to begin with, and the
+ * failure modes, seems to become way more complex. 
+ * 
  * Missing functionality:
  * - Does not understand any header fields.
  * - MIME types.

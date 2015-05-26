@@ -25,12 +25,23 @@
 #define HTTP_H
 
 #include "net/tcp.h"
-
 /**
  * @brief Close connection when the server is done.
  */
 #define HTTP_CLOSE_CONNECTIONS  true
 
+/**
+ * @brief Server name.
+ */
+#define HTTP_SERVER_NAME            "slighttpd"
+/**
+ * @brief Server version.
+ */
+#define HTTP_SERVER_VERSION         "0.0.1"
+/**
+ * @brief Version of HTTP that is supported.
+ */
+#define HTTP_SERVER_HTTP_VERSION    "1.1"
 /**
  * @brief HTTP request types.
  */
@@ -97,73 +108,36 @@ struct http_request
      */
     char                *message;
 };
-
 /**
- * @brief Server name.
+ * @brief Structure to keep the data of a HTTP response.
  */
-#define HTTP_SERVER_NAME            "slighttpd"
-/**
- * @brief Server version.
- */
-#define HTTP_SERVER_VERSION         "0.0.1"
-/**
- * @brief Version of HTTP that is supported.
- */
-#define HTTP_SERVER_HTTP_VERSION    "1.1"
-/**
- * @brief Standard response header contents.
- */
-#define HTTP_STD_HEAD               "\r\nContent-Type: text/html\r\n\
-                                    Server: " HTTP_SERVER_NAME "\r\n"
-//Connection: close\r\n
-
-/**
- * @brief HTTP 200 OK response.
- */
-#define HTTP_200                    "HTTP/" HTTP_SERVER_HTTP_VERSION \
-                                    " 200 OK" HTTP_STD_HEAD
-/**
- * @brief HTTP 400 bad request.
- */
-#define HTTP_400                    "HTTP/" HTTP_SERVER_HTTP_VERSION \
-                                    " 400 Bad Request" HTTP_STD_HEAD
-/**
- * @brief HTTP 404 not found response.
- */
-#define HTTP_404                    "HTTP/" HTTP_SERVER_HTTP_VERSION \
-                                    " 404 Not Found" HTTP_STD_HEAD
-/**
- * @brief HTTP 501 Noy implemented response.
- */
-#define HTTP_501                    "HTTP/" HTTP_SERVER_HTTP_VERSION \
-                                    " 501 Not Implemented" HTTP_STD_HEAD
-                                    /**
-* @brief HTTP 400 response HTML.
- */
-#define HTTP_400_HTML               "<!DOCTYPE html><head><title>Resource not found.\
-                                    </title></head><body><h1>400 Bad Request</h1>\
-                                    <br />Sorry I didn't quite get that.</body></html>" 
-/**
- * @brief HTTP 404 response HTML.
- */
-#define HTTP_404_HTML               "<!DOCTYPE html><head><title>Resource not found.\
-                                    </title></head><body><h1>404 Not Found</h1>\
-                                    <br />Resource not found.</body></html>"                                    
-/**
- * @brief HTTP 501 response HTML.
- */
-#define HTTP_501_HTML               "<!DOCTYPE html><head><title>Resource not found.\
-                                    </title></head><body><h1>501 Not Implemented</h1>\
-                                    <br />Don't know what to say.</body></html>"
-                                    
-/**
- * @brief Return response header for @p CODE.
- */
- #define HTTP_RESPONSE(CODE)         HTTP_##CODE
-/**
- * @brief Return response HTM for @p CODE.
- */
- #define HTTP_RESPONSE_HTML(CODE)    HTTP_##CODE##_HTML
+struct http_response
+{
+    /**
+     * @brief Pointer to the connection data.
+     */
+    struct tcp_connection *connection;
+    /**
+     * @brief Numerical status code.
+     */
+     unsigned short status_code;
+    /**
+     * @brief Status-line.
+     */
+     char *status_line;
+    /**
+     * @brief The start line of the response.
+     */
+    struct http_header *headers;
+    /**
+     * @brief Number of headers
+     */
+     unsigned short     n_headers;
+    /**
+     * @brief The message body of the HTTP response.
+     */
+    char                *message;
+};
 /**
  * @brief Callback function for static URIs.
  * 

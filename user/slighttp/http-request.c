@@ -1,4 +1,4 @@
-/** @file http-reqeust.c
+/** @file http-request.c
  *
  * @brief Dealing with requests for the HTTP server.
  * 
@@ -30,58 +30,9 @@
 #include "user_config.h"
 #include "net/tcp.h"
 #include "tools/strxtra.h"
-#include "fs/fs.h"
 #include "http-common.h"
 #include "http-response.h"
 #include "http.h"
-
-/**
- * @brief Handle a GET request.
- * 
- * @param connection Pointer to the connection used.
- * @param headers_only Send only headers, make this usable for HEAD requests
- *                     as well.
- */
-void ICACHE_FLASH_ATTR handle_GET(struct tcp_connection *connection, bool headers_only)
-{
-    struct http_request *request = connection->free;
-    unsigned short  i;
-    FS_FILE_H file;
-    long data_size;
-    char *buffer;
-    
-    file = fs_open(request->uri);
-    if (file > FS_EOF)
-    {
-        debug("Found file: %s.\n", request->uri);
-        data_size = fs_size(file);
-        buffer = db_malloc((int)data_size + 1);
-        fs_read(buffer, data_size, sizeof(char), file);
-        buffer[data_size] = '\0';
-        send_response(connection, HTTP_RESPONSE(200), 
-                      buffer,
-                      !headers_only, HTTP_CLOSE_CONNECTIONS);
-        db_free(buffer);
-        return;
-    }
-    
-    //Check in static uris, go through and stop if URIs match.
-    for (i = 0; 
-         ((i < n_static_uris) && (!static_uris[i].test_uri(request->uri))); 
-         i++);
-    
-    //Send response if URI is found
-    if (i < n_static_uris)
-    {
-        send_response(connection, HTTP_RESPONSE(200), 
-                      static_uris[i].handler(request->uri, request),
-                      !headers_only, HTTP_CLOSE_CONNECTIONS);
-        return;
-    }
-    //Send 404
-    send_response(connection, HTTP_RESPONSE(404), HTTP_RESPONSE_HTML(404),
-                  !headers_only, HTTP_CLOSE_CONNECTIONS);
-}
 
 /**
  * @brief Parse headers of a request.
@@ -91,14 +42,14 @@ void ICACHE_FLASH_ATTR handle_GET(struct tcp_connection *connection, bool header
  *                    modified*.
  * @return Pointer to the first character after the header and the CRLFCRLF
  */
-char ICACHE_FLASH_ATTR *parse_header(struct tcp_connection *connection,
+char ICACHE_FLASH_ATTR *http_parse_headers(struct tcp_connection *connection,
                                            char* raw_headers)
 {
     //Pointers to keep track of where we are.
     char *data = raw_headers;
     char *next_data = raw_headers;
     char *value;
-    //Where a single header pointers are stored.
+    //Where a single headers pointers are stored.
     struct http_header *header = NULL;
     //Array where all headers are pointed to.
     struct http_header **headers;
@@ -176,17 +127,11 @@ char ICACHE_FLASH_ATTR *parse_header(struct tcp_connection *connection,
             {
                 error("Could not parse request header: %s\n", data);
                 //Bail out
-                send_response(connection, HTTP_RESPONSE(400),
-                              HTTP_RESPONSE_HTML(400), true,
-                              HTTP_CLOSE_CONNECTIONS);
                 return(NULL);
             }
             //Spec. says to return 400 on space before the colon.
             if (*(value - 1) == ' ')
             {
-                send_response(connection, HTTP_RESPONSE(400),
-                              HTTP_RESPONSE_HTML(400), true,
-                              HTTP_CLOSE_CONNECTIONS);
                 return(NULL);
             }
             //End name string.
@@ -228,7 +173,7 @@ char ICACHE_FLASH_ATTR *parse_header(struct tcp_connection *connection,
  * @param start_offset Where to start parsing the data.
  * @return Pointer to the start of the raw message.
  */
-char ICACHE_FLASH_ATTR *parse_HEAD(struct tcp_connection *connection, 
+char ICACHE_FLASH_ATTR *http_parse_request(struct tcp_connection *connection, 
                                          unsigned char start_offset)
 {
     struct http_request *request = connection->free;
@@ -246,8 +191,6 @@ char ICACHE_FLASH_ATTR *parse_HEAD(struct tcp_connection *connection,
     if (next_entry == NULL)
     {
         error("Could not parse HTTP request URI (%s).\n", request_entry);
-        send_response(connection, HTTP_RESPONSE(400), HTTP_RESPONSE_HTML(400),
-                      true, HTTP_CLOSE_CONNECTIONS);
         return(NULL);
     }
     HTTP_EAT_SPACES(next_entry);
@@ -263,8 +206,6 @@ char ICACHE_FLASH_ATTR *parse_HEAD(struct tcp_connection *connection,
     if (next_entry == NULL)
     {
         error("Could not parse HTTP request version (%s).\n", request_entry);
-        send_response(connection, HTTP_RESPONSE(400), HTTP_RESPONSE_HTML(400),
-                      true, HTTP_CLOSE_CONNECTIONS);
         return(NULL);
     }
     HTTP_EAT_CRLF(next_entry, 1);
@@ -272,6 +213,80 @@ char ICACHE_FLASH_ATTR *parse_HEAD(struct tcp_connection *connection,
     request->version = request_entry;
     debug(" Version (%p): %s\n", request_entry, request->version);
     
-    return(parse_header(connection, next_entry));
+    return(http_parse_headers(connection, next_entry));
 }
 
+void ICACHE_FLASH_ATTR http_process_request(struct tcp_connection *connection)
+{
+    struct http_request *request = connection->free;
+    struct http_response *response;
+    unsigned short status_code = 200;
+    bool headers_only = false;
+    
+    //Parse the request header
+	if (os_strncmp(connection->callback_data.data, "GET ", 4) == 0)
+    {
+        debug("GET request.\n");
+        request->type = HTTP_GET;
+        if (!http_parse_request(connection, 4))
+        {
+            status_code = 400;
+        }
+	}
+    else if(os_strncmp(connection->callback_data.data, "POST ", 5) == 0)
+    {
+        debug("POST request.\n");
+        request->type = HTTP_POST;
+        request->message = http_parse_request(connection, 5);
+        if (!request->message)
+        {
+            status_code = 400;
+        }
+	}
+    else if(os_strncmp(connection->callback_data.data, "HEAD ", 5) == 0)
+    {
+        debug("HEAD request.\n");
+        request->type = HTTP_HEAD;
+        if (!http_parse_request(connection, 5))
+        {
+            status_code = 400;
+        }
+        else
+        {
+			headers_only = true;
+		}
+	}
+    else if(os_strncmp(connection->callback_data.data, "PUT ", 4) == 0)
+    {
+        debug("PUT request.\n");
+        request->type = HTTP_PUT;
+        status_code = 501;
+    }
+    else if(os_strncmp(connection->callback_data.data, "DELETE ", 7) == 0)
+    {
+        debug("DELETE request.\n");
+        request->type = HTTP_DELETE;
+        status_code = 501;
+	}
+    else if(os_strncmp(connection->callback_data.data, "TRACE ", 6) == 0)
+    {
+        debug("TRACE request.\n");
+        request->type = HTTP_TRACE;
+		status_code = 501;
+   	}
+    else if(os_strncmp(connection->callback_data.data, "CONECT ", 5) == 0)
+    {
+        debug("CONNECT request.\n");
+        request->type = HTTP_CONNECT;
+        status_code = 501;
+	}
+    else
+    {
+        error("Unknown request: %s\n", connection->callback_data.data);
+		status_code = 501;
+    }
+    response = http_generate_response(connection, status_code);
+    debug("Response: %p.\n", response);
+    http_send_response(response, !headers_only);
+    http_free_response(response);
+}

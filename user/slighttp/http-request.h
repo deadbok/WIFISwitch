@@ -24,8 +24,12 @@
 #ifndef HTTP_REQUEST_H
 #define HTTP_REQUEST_H
 
-extern void handle_GET(struct tcp_connection *connection, bool headers_only);
-extern char *parse_header(struct tcp_connection *connection, char* raw_headers);
-extern char *parse_HEAD(struct tcp_connection *connection, unsigned char start_offset);
-
+extern void http_handle_request(struct tcp_connection *connection,
+										   unsigned short error_code, 
+										   bool headers_only);
+extern char *http_parse_headers(struct tcp_connection *connection,
+								char* raw_headers);
+extern char *http_parse_request(struct tcp_connection *connection, 
+								unsigned char start_offset);
+extern void http_process_request(struct tcp_connection *connection);
 #endif //HTTP_REQUEST_H

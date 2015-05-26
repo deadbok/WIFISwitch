@@ -105,80 +105,20 @@ void ICACHE_FLASH_ATTR tcp_write_finish_cb(struct tcp_connection *connection)
  */
 void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 {
-    struct http_request *request = connection->free;
+	struct http_response *response;
     
     debug("HTTP received (%p).\n", connection);
     if ((connection->callback_data.data == NULL) || 
         (os_strlen(connection->callback_data.data) == 0))
     {
         error("Emtpy request recieved.\n");
-        send_response(connection, HTTP_RESPONSE(400), HTTP_RESPONSE_HTML(400),
-                      true, HTTP_CLOSE_CONNECTIONS);
+        response = http_generate_response(connection, 400);
+        http_send_response(response, true);
+        http_free_response(response);
         return;
     }
-    //Parse the request header
-	if (os_strncmp(connection->callback_data.data, "GET ", 4) == 0)
-    {
-        debug("GET request.\n");
-        request->type = HTTP_GET;
-        if (parse_HEAD(connection, 4))
-        {
-            handle_GET(connection, false);
-        }
-	}
-    else if(os_strncmp(connection->callback_data.data, "POST ", 5) == 0)
-    {
-        debug("POST request.\n");
-        request->type = HTTP_POST;
-        request->message = parse_HEAD(connection, 5);
-        if (request->message)
-        {
-            handle_GET(connection, false);
-        }
-	}
-    else if(os_strncmp(connection->callback_data.data, "HEAD ", 5) == 0)
-    {
-        debug("HEAD request.\n");
-        request->type = HTTP_HEAD;
-        if (parse_HEAD(connection, 5))
-        {
-            handle_GET(connection, true);
-        }
-	}
-    else if(os_strncmp(connection->callback_data.data, "PUT ", 4) == 0)
-    {
-        debug("PUT request.\n");
-        request->type = HTTP_PUT;
-        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501),
-                      true, HTTP_CLOSE_CONNECTIONS);      
-	}
-    else if(os_strncmp(connection->callback_data.data, "DELETE ", 7) == 0)
-    {
-        debug("DELETE request.\n");
-        request->type = HTTP_DELETE;
-        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501),
-                      true, HTTP_CLOSE_CONNECTIONS);
-	}
-    else if(os_strncmp(connection->callback_data.data, "TRACE ", 6) == 0)
-    {
-        debug("TRACE request.\n");
-        request->type = HTTP_TRACE;
-        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501),
-                      true, HTTP_CLOSE_CONNECTIONS);
-	}
-    else if(os_strncmp(connection->callback_data.data, "CONECT ", 5) == 0)
-    {
-        debug("CONNECT request.\n");
-        request->type = HTTP_CONNECT;
-        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501),
-                      true, HTTP_CLOSE_CONNECTIONS);
-	}
-    else
-    {
-        error("Unknown request: %s\n", connection->callback_data.data);
-        send_response(connection, HTTP_RESPONSE(501), HTTP_RESPONSE_HTML(501),
-                      true, HTTP_CLOSE_CONNECTIONS);
-    }
+
+    http_process_request(connection);
 }
 
 void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
