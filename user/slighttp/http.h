@@ -98,7 +98,7 @@ struct http_request
     /**
      * @brief Headers of the request.
      */
-    struct http_header  **headers;
+    struct http_header  *headers;
     /**
      * @brief Number of headers
      */

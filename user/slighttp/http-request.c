@@ -33,6 +33,7 @@
 #include "http-common.h"
 #include "http-response.h"
 #include "http.h"
+#include "http-request.h"
 
 /**
  * @brief Parse headers of a request.
@@ -49,10 +50,8 @@ char ICACHE_FLASH_ATTR *http_parse_headers(struct tcp_connection *connection,
     char *data = raw_headers;
     char *next_data = raw_headers;
     char *value;
-    //Where a single headers pointers are stored.
-    struct http_header *header = NULL;
     //Array where all headers are pointed to.
-    struct http_header **headers;
+    struct http_header *headers;
     //Number of headers.
     unsigned short n_headers;
     //True if something is done doing stuff.
@@ -97,7 +96,7 @@ char ICACHE_FLASH_ATTR *http_parse_headers(struct tcp_connection *connection,
     //Run through the response headers.
     debug("Parsing headers (%p):\n", data);
     //Allocate memory for the array of headers
-    headers = db_zalloc(sizeof(struct http_header *) * n_headers);
+    headers = db_malloc(sizeof(struct http_header) * n_headers, "headers http_parse_headers");
     //Start from scratch.
     n_headers = 0;
     //Not done.
@@ -139,17 +138,16 @@ char ICACHE_FLASH_ATTR *http_parse_headers(struct tcp_connection *connection,
             //Convert to lower case.
             data = strlwr(data);
             //Get some memory for the pointers.
-            header = (struct http_header *)db_zalloc(sizeof(struct http_header));
-            header->name = data;
-            debug(" Name (%p): %s\n", header->name, header->name);
+            headers[n_headers].name = data;
+            debug(" Name (%p): %s\n", headers[n_headers].name, 
+				  headers[n_headers].name);
             
             //Eat spaces in front of value.
             HTTP_EAT_SPACES(value);
             //Save value.
-            header->value = value;
-            debug(" Value (%p): %s\n", header->value, header->value);
-            //Insert the header.
-            headers[n_headers++] = header;
+            headers[n_headers].value = value;
+            debug(" Value (%p): %s\n", headers[n_headers].value,
+				  headers[n_headers].value);
             //Go to the next entry
             data = next_data;
         }
@@ -289,4 +287,14 @@ void ICACHE_FLASH_ATTR http_process_request(struct tcp_connection *connection)
     debug("Response: %p.\n", response);
     http_send_response(response, !headers_only);
     http_free_response(response);
+    http_free_request(request);
+}
+
+void ICACHE_FLASH_ATTR http_free_request(struct http_request *request)
+{
+	/*Most pointers can't be freed here, since they point to espconn
+	 *owned data.*/
+	debug("Freeing request data at %p.\n", request);
+    db_free(request->headers);
+    db_free(request);
 }

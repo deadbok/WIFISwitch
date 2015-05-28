@@ -49,10 +49,10 @@ bool ICACHE_FLASH_ATTR is_header_value(struct http_request *request, char *name,
     char *current_name;
     char *current_value;
     
-    for (i = 00; i < request->n_headers; i++)
+    for (i = 0; i < request->n_headers; i++)
     {
-        current_name = request->headers[i]->name;
-        current_value = request->headers[i]->value;
+        current_name = request->headers[i].name;
+        current_value = request->headers[i].value;
         if ((os_strcmp(current_name, name) == 0) && 
             (os_strcmp(current_value, value) == 0))
         {

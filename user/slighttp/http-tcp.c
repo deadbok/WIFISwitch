@@ -46,7 +46,7 @@ void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
     debug("HTTP new connection (%p).\n", connection);
    
     //Allocate memory for the request data, and tie it to the connection.
-    request = (struct http_request *)db_zalloc(sizeof(struct http_request)); 
+    request = (struct http_request *)db_zalloc(sizeof(struct http_request), "request tcp_connect_cb"); 
     debug(" Allocated memory for request data: %p.\n", request);
     connection->free = request;
 }
@@ -69,21 +69,9 @@ void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
  * @param connection Pointer to the connection that has disconnected. 
  */
 void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
-{
-    unsigned int i;
-    struct http_request *request = connection->free;
-    
+{ 
     debug("HTTP disconnect (%p).\n", connection);
     
-    debug(" Freeing headers.\n");    
-    for (i = 0; i < request->n_headers; i++)
-    {
-        db_free(request->headers[i]);
-    }
-    debug(" Freeing header array.\n");
-    db_free(request->headers);
-    debug(" Freeing request data.\n");
-    db_free(connection->free);
     connection->free = NULL;
 }
 

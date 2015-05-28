@@ -129,12 +129,12 @@ FS_FILE_H ICACHE_FLASH_ATTR fs_open(char *filename)
     file_hdr = zip_find_file_header(filename);
     if (!file_hdr)
     {
-        error("Could not open %s.\n", filename);
+        warn("Could not open %s.\n", filename);
         return(-1);
     }
    
     //Get some memory for file house keeping, and fill in the data.
-    file = db_malloc(sizeof(struct fs_file));
+    file = db_malloc(sizeof(struct fs_file), "file");
     file->pos = 0;
     file->start_pos = file_hdr->data_pos;
     file->size = file_hdr->uncompressed_size;

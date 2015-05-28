@@ -56,7 +56,7 @@
  */
 static struct zip_file_hdr ICACHE_FLASH_ATTR *zip_load_header(unsigned int address)
 {
-    struct zip_file_hdr *file_hdr = db_malloc(sizeof(struct zip_file_hdr));
+    struct zip_file_hdr *file_hdr = db_malloc(sizeof(struct zip_file_hdr), "file_hdr");
     uint32_t signature;
     unsigned int offset = address;
     
@@ -90,7 +90,7 @@ static struct zip_file_hdr ICACHE_FLASH_ATTR *zip_load_header(unsigned int addre
         return(NULL);
     }
     //Alloc an extra byte for the \0 byte.
-    file_hdr->filename = db_malloc(file_hdr->filename_len + 1);
+    file_hdr->filename = db_malloc(file_hdr->filename_len + 1, "file_hdr->filename");
     //Load the file name.
     if (!flash_read(file_hdr->filename, 
                     address + ZIP_REAL_FILE_HEADER_SIZE, 

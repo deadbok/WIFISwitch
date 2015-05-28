@@ -32,6 +32,9 @@
  * - 400 errors are not send in all situations where they should be.
  * - Persistent connections. The server closes every connection when the 
  *   response has been sent.
+ * 
+ * Things that needs to be dealt with, from the specs:
+ * - Space between start line, and header (RFC7230.txt Line 1095).
  *
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>

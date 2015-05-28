@@ -1,6 +1,6 @@
-/** @file http-response.h
+/** @file http-mime.h
  *
- * @brief Reqeust stuff for thw HTTP server.
+ * @brief MIME types.
  *
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -21,19 +21,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */ 
-#ifndef HTTP_REQUEST_H
-#define HTTP_REQUEST_H
+#ifndef HTTP_MIME_H
+#define HTTP_MIME_H
 
-#include "http.h"
+#define HTTP_N_MIME_TYPES 8
 
-extern void http_handle_request(struct tcp_connection *connection,
-										   unsigned short error_code, 
-										   bool headers_only);
-extern char *http_parse_headers(struct tcp_connection *connection,
-								char* raw_headers);
-extern char *http_parse_request(struct tcp_connection *connection, 
-								unsigned char start_offset);
-extern void http_process_request(struct tcp_connection *connection);
-extern void http_free_request(struct http_request *request);
+/**
+ * @brief Structure to represent a MIME-type.
+ */
+struct http_mime_type
+{
+	char *ext;
+	char *type;
+};
 
-#endif //HTTP_REQUEST_H
+extern struct http_mime_type http_mime_types[HTTP_N_MIME_TYPES];
+
+#endif //HTTP_TCP_H

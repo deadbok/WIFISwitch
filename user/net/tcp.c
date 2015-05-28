@@ -212,7 +212,7 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
     //Check if there are any free connections.
     if (n_tcp_connections < TCP_MAX_CONNECTIONS)
     {
-        connection = (struct tcp_connection *)db_zalloc(sizeof(struct tcp_connection));
+        connection = (struct tcp_connection *)db_zalloc(sizeof(struct tcp_connection), "connection tcp_connect_cb");
         connection->conn = arg;
         
         //Set internal callbacks.
@@ -315,7 +315,6 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
         if ((connection->conn->state >= ESPCONN_CLOSE) ||
             (connection->conn->state == ESPCONN_NONE))
         {
-            debug(" %p\n", connection);
             //Clear previous data.
             os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
             //Set new data
@@ -330,7 +329,7 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
         }
         else
         {
-            debug("(%p, %s)\n", connection, state_names[connection->conn->state]);
+            debug(" Keeping %p status %s, next %p\n", connection, state_names[connection->conn->state], connection->next);
         }
         connection = connection->next;
     }
@@ -475,9 +474,9 @@ void ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
     if (listening_connection == NULL)
     {
         //Allocate memory for the new connection.
-        connection = (struct tcp_cb_connection *)db_zalloc(sizeof(struct tcp_cb_connection));
-        connection->conn = (struct espconn *)db_zalloc(sizeof(struct espconn));
-        connection->conn->proto.tcp = (esp_tcp *)db_zalloc(sizeof(esp_tcp));
+        connection = (struct tcp_cb_connection *)db_zalloc(sizeof(struct tcp_cb_connection), "connection tcp_listen");
+        connection->conn = (struct espconn *)db_zalloc(sizeof(struct espconn), "espconn tcp_listen");
+        connection->conn->proto.tcp = (esp_tcp *)db_zalloc(sizeof(esp_tcp), "esp_tcp tcp_listen");
         //Save our connection data
         connection->conn->reverse = NULL;
         
@@ -540,7 +539,6 @@ void ICACHE_FLASH_ATTR init_tcp(void)
     {
         debug("TCP init already called once.\n");
         return;
-        //TODO: Close and deallocate connection.
     }
     //Listening connection
     listening_connection = NULL;
