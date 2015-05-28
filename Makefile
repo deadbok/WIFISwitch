@@ -154,6 +154,7 @@ $(TOOLS_DIR):
 	$(MKDIR) $@
 	
 flash: all 
+	tools/testsize.sh $@ $(FS_MAX_SIZE)
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_2_ADDR) $(FW_FILE_2) $(FS_START_OFFSET) $(FW_FS)
 	
 flashblank:
@@ -178,7 +179,6 @@ doxygen: .doxyfile
 	
 $(FW_FS): $(FS_FILES)
 	(cd $(FS_DIR); $(ZIP) -0 -r0 ../$@ .; cd ..;);
-	tools/testsize.sh $@ $(FS_MAX_SIZE)
 	
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
 
