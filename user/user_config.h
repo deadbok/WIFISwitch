@@ -2,7 +2,7 @@
 #define USER_CONFIG_H
 
 //Version string
-#define STRING_VERSION "0.0.1"
+#define STRING_VERSION "0.0.2"
 
 //Values for default AP to try
 #define SSID "default"
