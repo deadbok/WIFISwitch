@@ -154,7 +154,7 @@ $(TOOLS_DIR):
 	$(MKDIR) $@
 	
 flash: all 
-	tools/testsize.sh $@ $(FS_MAX_SIZE)
+	tools/testsize.sh $(FW_FS) $(FS_MAX_SIZE)
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_2_ADDR) $(FW_FILE_2) $(FS_START_OFFSET) $(FW_FS)
 	
 flashblank:
