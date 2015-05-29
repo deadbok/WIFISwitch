@@ -171,7 +171,7 @@ char ICACHE_FLASH_ATTR *idx(char *uri, struct http_request *request)
  */
 void ICACHE_FLASH_ATTR connected_cb(void)
 {
-    init_http(g_builtin_uris, N_BUILTIN_URIS);
+    init_http("/", g_builtin_uris, N_BUILTIN_URIS);
 }
 
 /**

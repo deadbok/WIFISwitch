@@ -37,7 +37,7 @@
 /**
  * @brief Server version.
  */
-#define HTTP_SERVER_VERSION         "0.0.2"
+#define HTTP_SERVER_VERSION         "0.0.3"
 /**
  * @brief Version of HTTP that is supported.
  */
@@ -169,6 +169,8 @@ struct  http_builtin_uri
     uri_callback    handler;
 };
 
-void init_http(struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris);
+extern char *http_fs_doc_root;
+
+extern void init_http(char *path, struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris);
 
 #endif

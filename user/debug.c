@@ -76,9 +76,12 @@ void ICACHE_FLASH_ATTR *db_alloc(size_t size, bool zero, char *info)
 
 void ICACHE_FLASH_ATTR db_dealloc(void *ptr)
 {
+#ifdef DEBUG_MEM_LIST
 	unsigned short i = 0;
+#endif
 	
 	os_printf("Freeing %p.\n", ptr);
+#ifdef DEBUG_MEM_LIST
 	os_printf("Listing memory allocations:\n");
 	while(i < dbg_mem_n_alloc)
 	{
@@ -101,7 +104,7 @@ void ICACHE_FLASH_ATTR db_dealloc(void *ptr)
 		}
 		i++;
 	}
-	
+#endif	
 	os_free(ptr);
 	dbg_mem_n_alloc--;
 	os_printf("Free heap (free): %d.\n", system_get_free_heap_size());

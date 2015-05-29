@@ -16,6 +16,9 @@
  * - POST requests.
  * - CRLF, LF, and space tolerance (never tested except for space).
  * 
+ * The server can have different document roots, but the error pages, 
+ * like `404.hrml` are always loaded from the root.
+ * 
  * **This server is not compliant with HTTP, to save space, stuff has been
  * omitted. It has been built to be small, not fast, and probably breaks in 100
  * places.**
@@ -65,15 +68,22 @@
 #include "http.h"
 
 /**
+ * @brief Where to serve files from, in the file system.
+ */
+char *http_fs_doc_root;
+/**
  * @brief Initialise the HTTP server,
  * 
+ * @param path Path to search as root of the server.
  * @param builtin_uris An array of built in handlers for URIs.
  * @param n_builtin_uris Number of URI handlers.
  */
-void ICACHE_FLASH_ATTR init_http(struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris)
+void ICACHE_FLASH_ATTR init_http(char *path, struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris)
 {
     n_static_uris = n_builtin_uris;
     static_uris = builtin_uris;
+    
+    http_fs_doc_root = path;
     
     //Initialise TCP and listen on port 80.
     init_tcp();

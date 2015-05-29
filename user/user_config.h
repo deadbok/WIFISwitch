@@ -24,6 +24,7 @@
 //Print extra debug info on the serial port
 #define DEBUG
 #define DEBUG_MEM
+//#define DEBUG_MEM_LIST
 
 //Macro for debugging. Prints the message if warnings is enabled.
 #ifdef WARNIGS

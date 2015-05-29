@@ -134,7 +134,7 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
     char *message;
     char *buffer = NULL;
     char *uri = NULL;
-    size_t uri_size;
+    size_t uri_size, doc_root_size;
     
     //Get memory for response.
     response = db_malloc(sizeof(struct http_response), "response http_generate_response");
@@ -162,7 +162,23 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 	}
 	else
 	{
-		//Change an '/' uri into '/index.html'.
+		//Change an '/' uri into '/index.html' and add document root.
+		//Check if we have a document root path.
+		if (http_fs_doc_root)
+		{
+			if (http_fs_doc_root[1] == '\0')
+			{
+				doc_root_size = 0;
+			}
+			else
+			{
+				doc_root_size = os_strlen(http_fs_doc_root);
+			}
+		}
+		else
+		{
+			doc_root_size = 0;
+		}
 		//Find the last '/'.
 		for (i = 0; request->uri[i] != '\0'; i++)
 		{
@@ -178,13 +194,35 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 			//The uri ends on '/', add 'index.html'.
 			//Get mem.
 			uri_size = os_strlen(request->uri);
-			uri = db_malloc(sizeof(char) * ( uri_size+ 11), "uri http_generate_response");
-			os_memcpy(uri, request->uri, sizeof(char) * uri_size);
-			os_memcpy(uri + uri_size, "index.html\0", 11);
+			if (doc_root_size)
+			{
+				uri = db_malloc(uri_size + doc_root_size  + 11, 
+								"uri http_generate_response");
+				os_memcpy(uri, http_fs_doc_root, doc_root_size);
+				os_memcpy(uri + doc_root_size, request->uri, uri_size);
+				os_memcpy(uri + doc_root_size + uri_size, "index.html\0", 11);
+			}
+			else
+			{
+				uri = db_malloc(uri_size + 11, "uri http_generate_response");
+				os_memcpy(uri, request->uri, uri_size);
+				os_memcpy(uri + uri_size, "index.html\0", 11);
+			}
 		}
 		else
 		{
-			uri = request->uri;
+			if (doc_root_size)
+			{
+				uri_size = os_strlen(request->uri);
+				uri = db_malloc(uri_size + doc_root_size, 
+								"uri http_generate_response");
+				os_memcpy(uri, http_fs_doc_root, doc_root_size);
+				os_memcpy(uri + doc_root_size, request->uri, uri_size);
+			}
+			else
+			{
+				uri = request->uri;
+			}
 		}
 	}
 	debug(" Final request URI: %s.\n", uri);
@@ -276,7 +314,12 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
     }
 	//Last escape 404 page.
 	response->status_line = http_status_line_404;
-	response->headers[3].value = "#HTTP_400_HTML_LENGTH";
+    
+    //Could just do "response->headers[3].value = "#HTTP_400_HTML_LENGTH";"
+    //but this makes sure we can always free it.
+    response->headers[3].value = db_malloc(sizeof(char) * digits(HTTP_400_HTML_LENGTH), "response->headers[3].value http_generate_response");
+    os_sprintf(response->headers[3].value, "%d", HTTP_400_HTML_LENGTH);
+	
 	response->message = HTTP_404_HTML;
 		
     debug("Didn't find a usable page.\n");
