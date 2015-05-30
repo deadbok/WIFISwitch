@@ -1,6 +1,6 @@
-/** @file strxtra.h
+/** @file tmpl.h
  *
- * @brief Extra functions for srings.
+ * @brief Simple template enginde
  *
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -20,13 +20,24 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
+ */ 
+#ifndef TMPL_H
+#define TMPL_H
+
+/**
+ * @brief Template context, that stores information about a template.
  */
-#ifndef STRXTRA_H
-#define STRXTRA_H
+struct tmpl_context
+{
+	/**
+	 * @brief The actual template.
+	 */
+	char *template;
+	size_t tmpl_size;
+};
 
-extern char *strchrs(char *str, char *chrs);
-extern char *strlwr(char *str);
-extern int digits(long n);
-extern char *strrpl(char *src, char *rpl, size_t pos);
+extern struct tmpl_context *init_tmpl(char *template);
+extern char *tmpl_apply(struct tmpl_context *context);
+extern void tmpl_destroy(struct tmpl_context *context);
 
-#endif //STRXTRA_H
+#endif //TMPL_H

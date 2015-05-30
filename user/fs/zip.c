@@ -65,7 +65,13 @@ static struct zip_file_hdr ICACHE_FLASH_ATTR *zip_load_header(unsigned int addre
     //Test the signature
     if (!flash_read(&signature, offset, sizeof(signature)))
     {
-        debug("No more files, reading the ZIP file header signature at %d.\n", address);
+        debug("Could not read ZIP file header signature at %d.\n", offset);
+        db_free(file_hdr);
+        return(NULL);
+    }
+    if (signature != ZIP_FILE_HEADER_SIGNATURE)
+    {
+        debug("No more files, reading the ZIP file header signature at %d.\n", offset);
         db_free(file_hdr);
         return(NULL);
     }

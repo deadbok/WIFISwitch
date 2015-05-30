@@ -1,15 +1,16 @@
-/* wifi_connect.c
+/**
+ * @file wifi_connect.c
  *
- * Routines for connecting th ESP8266 to a WIFI network.
+ * @brief Routines for connecting th ESP8266 to a WIFI network.
  *
  * - Load a WIFI configuration.
- * - If unsuccessful create an AP presenting a HTTP to configure the 
- *   connection values.
+ * - If unsuccessful create an AP presenting a HTTP server to configure 
+ *   the connection values.
  * 
  * What works:
  * - Try to connect to the AP.
  * 
- * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
+ * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,14 +33,38 @@
 #include "user_config.h"
 #include "tools/itoa.h"
 #include "tools/missing_dec.h"
+#include "slighttp/http.h"
+#include "wifi_config.h"
 #include "wifi_connect.h"
 
-//The current station config.
+/**
+ * @brief The current station config.
+ * 
+ * Configuration used, when connecting to an AP.
+ */
 struct station_config station_conf = {{0}};
-//The current AP configuration
+/**
+ * @brief The current AP configuration.
+ * 
+ * Configuration used when in connection config mode.
+ */
 struct softap_config  ap_config = {{0}};
-//Connection status
+/**
+ * @brief Connection status.
+ */
 unsigned char         connect_status = 0;
+/**
+ * @brief Number of built in URIs in the #g_builtin_uris array.
+ */
+#define WIFI_CONFIG_N_URIS  1
+
+/**
+ * @brief Array of built in handlers and their URIs.
+ */
+struct http_builtin_uri g_wifi_config_uris[WIFI_CONFIG_N_URIS] =
+{
+    {wifi_conf_test, wifi_conf_html, wifi_conf_destroy}
+};
 
 //Connection callback function.
 void (*wifi_connected_cb)(void);
@@ -208,7 +233,10 @@ static void ICACHE_FLASH_ATTR create_softap(char *ssid, char *passwd, unsigned c
     }
 }
 
-//This functions is called when a WIFI connection attempt has timed out.
+/**
+ * @brief This functions is called when a WIFI connection attempt has
+ *        timed out.
+ */
 void timeout_cb(void)
 {
     unsigned char           mac[6];
@@ -248,6 +276,9 @@ void timeout_cb(void)
 
     //Create the AP.
     create_softap(ssid, passwd, 6);
+    
+    //Init HTTP server.
+	init_http("/connect", g_wifi_config_uris, WIFI_CONFIG_N_URIS);
 }
 
 /* Connect to the configured Access Point.

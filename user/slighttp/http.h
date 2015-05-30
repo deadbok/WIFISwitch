@@ -141,15 +141,28 @@ struct http_response
 /**
  * @brief Callback function for static URIs.
  * 
- * These are called if no other way is found of generating the response.
+ * These are called to generate the response message.
+ * 
+ * @param uri The uri to generate the response message for.
+ * @param request The request that led us here.
+ * @return The HTML to send to the client.
  */
-typedef char *(*uri_callback)(char *uri, struct http_request *request);
+typedef char *(*uri_html_callback)(char *uri, struct http_request *request);
 /**
- * @brief Callback function for static URIs.
+ * @brief Callback function to test static URIs.
  * 
  * This is called to test if the handler associated with it, will handle the URI.
+ * 
+ * @param uri The URI to generate the response message for.
+ * @return True if we can handle the URI, false if not.
  */
 typedef bool (*uri_comp_callback)(char *uri);
+/**
+ * @brief Callback function to cleanup after a response.
+ * 
+ * @param ptr Pointer to the HTML response.
+ */
+typedef void (*uri_destroy_callback)(char *ptr);
 
 /** 
  * @brief Structure to store information for a built in URI.
@@ -160,13 +173,17 @@ typedef bool (*uri_comp_callback)(char *uri);
 struct  http_builtin_uri
 {
     /**
-     * @brief Function to test if this handler will handle the URI.
+     * @brief A function to test if this handler will handle the URI.
      */
-	uri_comp_callback      test_uri;
+	uri_comp_callback test_uri;
 	/**
      * @brief A function pointer to a function, that renders the answer.
      */
-    uri_callback    handler;
+    uri_html_callback handler;
+    /**
+     * @brief A function pointer to a function, that cdoes cleanup if needed.
+     */
+    uri_destroy_callback destroy;
 };
 
 extern char *http_fs_doc_root;

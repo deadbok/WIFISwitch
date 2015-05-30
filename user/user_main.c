@@ -65,9 +65,9 @@ bool idx_test(char *uri);
  */
 struct http_builtin_uri g_builtin_uris[N_BUILTIN_URIS] =
 {
-    {idx_test, idx},
-    {hello_test, hello},
-    {led_test, led_html}
+    {idx_test, idx, NULL},
+    {hello_test, hello, NULL},
+    {led_test, led_html, NULL}
 };
 
 bool ICACHE_FLASH_ATTR hello_test(char *uri)

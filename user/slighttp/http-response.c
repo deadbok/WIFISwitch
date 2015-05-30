@@ -166,6 +166,7 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 		//Check if we have a document root path.
 		if (http_fs_doc_root)
 		{
+			//Document root is non emtpy, find its length.
 			if (http_fs_doc_root[1] == '\0')
 			{
 				doc_root_size = 0;
@@ -189,13 +190,17 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 		}
 		//Check if it is at the end of the uri.
 		uri++;
+		uri_size = os_strlen(request->uri);
 		if (*uri == '\0')
 		{
+			debug(" Adding index.html.\n");
 			//The uri ends on '/', add 'index.html'.
 			//Get mem.
-			uri_size = os_strlen(request->uri);
+			
 			if (doc_root_size)
 			{
+				debug(" Adding root %s.\n", http_fs_doc_root);
+				//With document root.
 				uri = db_malloc(uri_size + doc_root_size  + 11, 
 								"uri http_generate_response");
 				os_memcpy(uri, http_fs_doc_root, doc_root_size);
@@ -204,6 +209,7 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 			}
 			else
 			{
+				//Without document root
 				uri = db_malloc(uri_size + 11, "uri http_generate_response");
 				os_memcpy(uri, request->uri, uri_size);
 				os_memcpy(uri + uri_size, "index.html\0", 11);
@@ -211,13 +217,16 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 		}
 		else
 		{
+			//A specific page was requested, add document root if needed.
 			if (doc_root_size)
 			{
-				uri_size = os_strlen(request->uri);
+				debug(" Adding root %s.\n", http_fs_doc_root);
+
 				uri = db_malloc(uri_size + doc_root_size, 
 								"uri http_generate_response");
 				os_memcpy(uri, http_fs_doc_root, doc_root_size);
 				os_memcpy(uri + doc_root_size, request->uri, uri_size);
+				uri[uri_size + doc_root_size] = '\0';
 			}
 			else
 			{

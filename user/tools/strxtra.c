@@ -30,8 +30,9 @@
  */
 #include <stdlib.h>
 #include <ctype.h>
+#include <limits.h>
 #include "c_types.h"
-
+#include "osapi.h"
 
 /**
  *  @brief Find a character in a string.
@@ -92,16 +93,75 @@ char ICACHE_FLASH_ATTR *strlwr(char *str)
 }
 
 /**
- * @brief Count the number of digits in a number.
+ * @brief Find the length of a number, when converted to a string.
+ * 
+ * @param n Count the number of tenth in this number.
+ * @return The number of characters needed for the string version of
+ *         the number.
  */
 int ICACHE_FLASH_ATTR digits(long n)
 {
 	int i = 1;
+	unsigned long digit = 1;
 	
-	while(n)
+	//Check sign, and adjust intitial values.
+	if (n < 0)
 	{
-		n /= 10;
+		//An extra chacarter for the sign.
+		i++;
+		//Make positive.
+		n -= n;
+	}
+	
+	//Keep increasing digits until we have enough.
+	while((n > digit) && (digit < LONG_MAX))
+	{
+		digit *= 10;
 		i++;
 	}
 	return(i);
+}
+
+/**
+ * @brief Replace a string within another.
+ * 
+ * Replace a string within another. This function allocates a new
+ * string, and never touches the original, except for copying it.
+ * 
+ * @param src The string to operate on.
+ * @param rpl The string to replace the old.
+ * @param pos Position from where to start overwriting the old string.
+ * @return A new string with the replacement done. NULL on error.
+ */
+char ICACHE_FLASH_ATTR *strrpl(char *src, char *rpl, size_t pos)
+{
+	size_t src_size, rpl_size;
+	char *new_str;
+	
+	src_size = os_strlen(src);
+	rpl_size = os_strlen(rpl);
+	if ((!src_size) || (!rpl_size))
+	{
+		//There is no string.
+		return(NULL);
+	}
+	if ((pos + rpl_size) >= src_size)
+	{
+		//The new string is to long.
+		return(NULL);
+	}
+	
+	//Get mem.
+	new_str = db_malloc(src_size +1, "new_str strrpl");
+	if (new_str)
+	{
+		//Copy old string.
+		os_memcpy(new_str, src, pos);
+		//Add replacement string.
+		os_memcpy(new_str + pos, rpl, rpl_size);
+		//Add zero byte for good measure.
+		new_str[src_size] = '\0';
+	}
+	
+	return(new_str);
 }

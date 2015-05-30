@@ -1,7 +1,8 @@
-/** @file strxtra.h
+/**
+ * @file wifi_config.h
  *
- * @brief Extra functions for srings.
- *
+ * @brief Routines for showing an AP configuration page.
+ * 
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
@@ -21,12 +22,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-#ifndef STRXTRA_H
-#define STRXTRA_H
+#ifndef WIFI_CONFIG_H
+#define WIFI_CONFIG_H
 
-extern char *strchrs(char *str, char *chrs);
-extern char *strlwr(char *str);
-extern int digits(long n);
-extern char *strrpl(char *src, char *rpl, size_t pos);
+#include "c_types.h"
 
-#endif //STRXTRA_H
+extern bool wifi_conf_test(char *uri);
+extern char *wifi_conf_html(char *uri, struct http_request *request);
+extern void wifi_conf_destroy(char *html);
+
+#endif //WIFI_CONFIG_H

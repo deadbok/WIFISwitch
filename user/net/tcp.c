@@ -448,12 +448,12 @@ char ICACHE_FLASH_ATTR tcp_disconnect(struct tcp_connection *connection)
  * 
  * This creates a listening connection for the TCP server.
  * 
- * @param port The port to bind listen to.
+ * @param port The port to listen to.
  * @param connect_cb Callback when a connection is made.
  * @param reconnect_cb Callback on a reconnect. According to the SDK 
  *                     documentation, this should be considered an error
  *                     callback. If an error happens somewhere in the espconn 
- *                     code this is called.
+ *                     code, this is called.
  * @param disconnect_cb Callback when disconnected.
  * @param write_finish_cb Callback when a write has been done.
  * @param recv_cb Callback when something has been received.
@@ -477,8 +477,6 @@ void ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
         connection = (struct tcp_cb_connection *)db_zalloc(sizeof(struct tcp_cb_connection), "connection tcp_listen");
         connection->conn = (struct espconn *)db_zalloc(sizeof(struct espconn), "espconn tcp_listen");
         connection->conn->proto.tcp = (esp_tcp *)db_zalloc(sizeof(esp_tcp), "esp_tcp tcp_listen");
-        //Save our connection data
-        connection->conn->reverse = NULL;
         
         debug(" Created connection %p.\n", connection);        
         conn = connection->conn;
@@ -555,3 +553,16 @@ void ICACHE_FLASH_ATTR init_tcp(void)
 #endif
 }
 
+void ICACHE_FLASH_ATTR tcp_stop(void)
+{
+	int ret;
+	
+	debug("Closing TCP connection %p.\n", listening_connection);
+	
+	ret = espconn_delete(listening_connection->conn);
+
+#ifdef DEBUG
+    print_status(ret);
+#endif
+
+}
