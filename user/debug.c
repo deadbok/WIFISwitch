@@ -32,17 +32,42 @@
 #include "mem.h"
 
 
-
+/**
+ * @brief Information for an allocated memory block.
+ */
 struct dbg_mem_alloc_info
 {
+	/**
+	 * @brief Size of the allocated block.
+	 */
 	size_t size;
+	/**
+	 * @brief Pointer to a descriptive string.
+	 */
 	char *info;
+	/**
+	 * @brief Pointer to the memory block.
+	 */
 	void *ptr;
 };
 
+/**
+ * @brief Number of allocated blocks.
+ */
 int dbg_mem_n_alloc;
+/**
+ * @brief Array holding info on maximum #DBG_MEM_MAX_INFOS number of allocated blocks.
+ */
 struct dbg_mem_alloc_info dbg_mem_alloc_infos[DBG_MEM_MAX_INFOS];
 
+/**
+ * @brief Generic alloc function for memory debugging.
+ * 
+ * @param size Number of bytes to allocate.
+ * @param zero Set to true if the memory block should be filled with zeroes.
+ * @param info A string with info on the allocated memory.
+ * @return A pointer to the allocated memory.
+ */
 void ICACHE_FLASH_ATTR *db_alloc(size_t size, bool zero, char *info)
 {
 	void *ptr;
@@ -74,6 +99,11 @@ void ICACHE_FLASH_ATTR *db_alloc(size_t size, bool zero, char *info)
     return(ptr);
 }
 
+/**
+ * @brief Generic dealloc function for memory debugging.
+ * 
+ * @param ptr Pointer to the memory to deallocate.
+ */
 void ICACHE_FLASH_ATTR db_dealloc(void *ptr)
 {
 #ifdef DEBUG_MEM_LIST

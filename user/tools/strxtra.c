@@ -4,10 +4,12 @@
  * 
  * Some extra utility functions for string handling.
  * 
- * First Header  | Second Header
- * ------------- | -------------
- * Content Cell  | Content Cell 
- * Content Cell  | Content Cell 
+ * Name    | Function
+ * --------|-------------------------------------------------------------------
+ * strchrs | Find a char from a set in a string.    
+ * strlwr  | Convert string to lower case.
+ * digits  | Find the size in characters of a string representation of an long.
+ * strrpl  | Replace a string within another string.
  *
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -93,15 +95,15 @@ char ICACHE_FLASH_ATTR *strlwr(char *str)
 }
 
 /**
- * @brief Find the length of a number, when converted to a string.
+ * @brief Find the length of a long, when converted to a string.
  * 
  * @param n Count the number of tenth in this number.
  * @return The number of characters needed for the string version of
  *         the number.
  */
-int ICACHE_FLASH_ATTR digits(long n)
+unsigned short ICACHE_FLASH_ATTR digits(long n)
 {
-	int i = 1;
+	unsigned short i = 1;
 	unsigned long digit = 1;
 	
 	//Check sign, and adjust intitial values.
@@ -120,6 +122,22 @@ int ICACHE_FLASH_ATTR digits(long n)
 		i++;
 	}
 	return(i);
+}
+
+/**
+ * @brief Find the length of a float, when converted to a string.
+ * 
+ * @param n Count the number of digits in this float.
+ * @para, fractional_digits Number of digits after the decimal separator.
+ * @return The number of characters needed for the string version of
+ *         the number.
+ */
+unsigned short ICACHE_FLASH_ATTR digits_f(float n, unsigned char fractional_digits)
+{
+	long int_part = n;
+	
+	//Add seperator and fractional characters.
+	return(digits(int_part) + fractional_digits + 1);
 }
 
 /**

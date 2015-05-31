@@ -26,7 +26,8 @@
 
 extern char *strchrs(char *str, char *chrs);
 extern char *strlwr(char *str);
-extern int digits(long n);
+extern unsigned short digits(long n);
+extern unsigned short digits_f(float n, unsigned char fractional_digits);
 extern char *strrpl(char *src, char *rpl, size_t pos);
 
 #endif //STRXTRA_H

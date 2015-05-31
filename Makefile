@@ -40,7 +40,7 @@ ESPSPEED	?= 921600
 TARGET		= wifiswitch
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES			= user user/fs user/net user/slighttp user/tools
+MODULES			= user user/fs user/net user/slighttp user/tools user/tmpl
 EXTRA_INCDIR    = include
 
 # Directory to use when creating the file system image.

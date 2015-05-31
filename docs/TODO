@@ -5,3 +5,4 @@ LOTS!
  - Find out if the file system image, should be loaded after the 0x40000 data
    in the flash.
  - WIFI AP configuration through web server.
+ - Test what happens if a template sends a NULL page to the server.

@@ -33,8 +33,8 @@ extern void *_irom0_text_start;
 extern void *_irom0_text_end;
 
 //Flash access functions.
-extern void flash_dump(unsigned int src_addr, unsigned int size);
-extern void flash_dump_mem(unsigned int src_addr, unsigned int size);
+extern void flash_dump(unsigned int src_addr, size_t size);
+extern void flash_dump_mem(unsigned int src_addr, size_t size);
 extern bool flash_read(const void *data, unsigned int read_addr, size_t size);
 
 

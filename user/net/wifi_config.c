@@ -39,6 +39,7 @@ static struct tmpl_context *wifi_conf_context = NULL;
  * @brief Tell if we will handle a certain URI.
  * 
  * @param uri The URI to test.
+ * @return True if we can handle the URI.
  */
 bool ICACHE_FLASH_ATTR wifi_conf_test(char *uri)
 {
@@ -60,7 +61,6 @@ char ICACHE_FLASH_ATTR *wifi_conf_html(char *uri, struct http_request *request)
 {
     char *html = NULL;
     char *tmpl = NULL;
-    struct tmpl_context *context;
     FS_FILE_H file;
     size_t	size;
     char *tmpl_uri = NULL;
