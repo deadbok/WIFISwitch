@@ -90,9 +90,7 @@
 /**
  * @brief HTTP 404 response HTML.
  */
-#define HTTP_404_HTML               "<!DOCTYPE html><head><title>Resource not found.\
-                                    </title></head><body><h1>404 Not Found</h1>\
-                                    <br />Resource not found.</body></html>"                                    
+#define HTTP_404_HTML               "<!DOCTYPE html><head><title>Resource not found.</title></head><body><h1>404 Not Found</h1><br />Resource not found.</body></html>"                                    
 #define HTTP_404_HTML_LENGTH		129
 /**
  * @brief HTTP 501 response HTML.

@@ -290,6 +290,11 @@ void ICACHE_FLASH_ATTR http_process_request(struct tcp_connection *connection)
     http_free_request(request);
 }
 
+/**
+ * @brief Free data allocated by a request.
+ * 
+ * @param request Pointer to the request to free.
+ */
 void ICACHE_FLASH_ATTR http_free_request(struct http_request *request)
 {
 	/*Most pointers can't be freed here, since they point to espconn

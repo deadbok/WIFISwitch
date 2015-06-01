@@ -65,20 +65,20 @@ char ICACHE_FLASH_ATTR *wifi_conf_html(char *uri, struct http_request *request)
     size_t	size;
     char *tmpl_uri = NULL;
     
-    debug("In network config page generator.\n");
+    debug("In network config page generator (%s).\n", uri);
     
     //Change extension.
     size = os_strlen(uri);
-    tmpl_uri = strrpl(uri, ".tmpl", size - 4);
-    
+    tmpl_uri = db_malloc(size, "tmpl_uri wifi_conf_html");
+    tmpl_uri = os_memcpy(tmpl_uri, uri, size - 1);
+    tmpl_uri = strrpl(tmpl_uri, ".tmpl", size - 5);
+    tmpl_uri[size] = '\0';
     
     //Try to open the URI as a file.
     file = fs_open(tmpl_uri);
     //Check if it went okay.
-    if (file > FS_EOF)
+    if (file > -1)
     {
-        debug(" Found file: %s.\n", uri);
-        
         //Get the size of the message.
         size = fs_size(file);
         //Get memory for the message.
@@ -89,11 +89,19 @@ char ICACHE_FLASH_ATTR *wifi_conf_html(char *uri, struct http_request *request)
         tmpl[size] = '\0';
         fs_close(file);        
     }
-    
+	else
+	{
+		error("Could not open template.\n");
+		return(NULL);
+	}
+
     db_free(tmpl_uri);
     
     //Run through the template engine.
     wifi_conf_context = init_tmpl(tmpl);
+    //Add variables to template.
+    tmpl_add_var(wifi_conf_context, "network", SSID_PASSWORD, TMPL_STRING);
+    //Render template.
     html = tmpl_apply(wifi_conf_context);
     
     return(html);

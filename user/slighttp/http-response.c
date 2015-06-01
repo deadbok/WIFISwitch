@@ -33,14 +33,35 @@
 #include "http.h"
 #include "http-response.h"
 
+/**
+ * @brief Number of headers that #http_generate_response response will create.
+ */
 #define HTTP_N_RESPONSE_HEADERS 4
 
+/**
+ * @brief 200 status-line.
+ */
 char *http_status_line_200 = HTTP_STATUS_200;
+/**
+ * @brief 400 status-line.
+ */
 char *http_status_line_400 = HTTP_STATUS_400;
+/**
+ * @brief 404 status-line.
+ */
 char *http_status_line_404 = HTTP_STATUS_404;
+/**
+ * @brief 501 status-line.
+ */
 char *http_status_line_501 = HTTP_STATUS_501;
 
+/**
+ * @brief Server header.
+ */
 struct http_header http_hdr_server = HTTP_HDR_SERVER;
+/**
+ * @brief Connection header.
+ */
 struct http_header http_hdr_connection_close = HTTP_HDR_CONNECTION_CLOSE;
 
 /**
@@ -61,6 +82,7 @@ void ICACHE_FLASH_ATTR http_send_response(struct http_response *response,
 	char *s_status_code;
 	unsigned short i;
 	bool close = false;
+	const size_t msg_size = os_strlen(response->message);
 	
 	//Probably would be better to put the whole thing in a buffer, and
 	//send it at once.
@@ -70,7 +92,7 @@ void ICACHE_FLASH_ATTR http_send_response(struct http_response *response,
 	debug(" Status-line: %s.\n", response->status_line);
 	debug(" Headers: %p.\n", response->headers);
 	debug(" Number of headers: %d.\n", response->n_headers);
-	debug(" Message: %p.\n", response->message);
+	debug(" Message (%d bytes): %p.\n", msg_size, response->message);
 	
     //Send the status-line.
     tcp_send(connection, response->status_line);
@@ -103,11 +125,11 @@ void ICACHE_FLASH_ATTR http_send_response(struct http_response *response,
     if (s_status_code)
     {
         os_memcpy(status_code, s_status_code, 3);
-        print_clf_status(connection, status_code, os_strlen(response->message));
+        print_clf_status(connection, status_code, msg_size);
     }
     else
     {
-        print_clf_status(connection, "-", os_strlen(response->message));
+        print_clf_status(connection, "-", msg_size);
     }
     if (close)
     {
@@ -116,11 +138,11 @@ void ICACHE_FLASH_ATTR http_send_response(struct http_response *response,
 }
 
 /**
- * @brief Handle a request.
+ * @brief Generate a HTTP response.
  * 
  * @param connection Pointer to the connection used.
- * @param headers_only Send only headers, make this usable for HEAD requests
- *                     as well.
+ * @param status_code Status code of the response.
+ * @return A pointer to a #http_response struct.
  */
 struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 									struct tcp_connection *connection,
@@ -282,12 +304,12 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 			//Get a pointer to the message.
 			message = static_uris[i].handler(uri, request);
 			//Get size of the message.
-			data_size = os_strlen(message) + 1;
+			data_size = os_strlen(message);
 			//Allocate memory. The message is copied to a buffer, so it can
 			//always be freed.
 			buffer = db_malloc((int)data_size, "buffer http_generate_response");
 			//Copy the message into the buffer.
-			os_memcpy(buffer, message, data_size + 1);
+			os_memcpy(buffer, message, data_size);
 		}
 	}
 
@@ -323,11 +345,11 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
     }
 	//Last escape 404 page.
 	response->status_line = http_status_line_404;
-    
-    //Could just do "response->headers[3].value = "#HTTP_400_HTML_LENGTH";"
+    response->status_code = 404;
+    //Could just do "response->headers[3].value = "#HTTP_404_HTML_LENGTH";"
     //but this makes sure we can always free it.
-    response->headers[3].value = db_malloc(sizeof(char) * digits(HTTP_400_HTML_LENGTH), "response->headers[3].value http_generate_response");
-    os_sprintf(response->headers[3].value, "%d", HTTP_400_HTML_LENGTH);
+    response->headers[3].value = db_malloc(sizeof(char) * digits(HTTP_404_HTML_LENGTH), "response->headers[3].value http_generate_response");
+    os_sprintf(response->headers[3].value, "%d", HTTP_404_HTML_LENGTH);
 	
 	response->message = HTTP_404_HTML;
 		
@@ -335,6 +357,11 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 	return(response);
 }
 
+/**
+ * @brief Free data allocated by a response.
+ * 
+ * @param response Pointer to the response to free.
+ */
 void ICACHE_FLASH_ATTR http_free_response(struct http_response *response)
 {
 	debug("Freeing response data at %p.\n", response);

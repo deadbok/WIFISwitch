@@ -1,4 +1,26 @@
-1025-05-30 Martin Grønholdt (committed)
+2015-06-01 Martin Grønholdt
+
+* tmpl/tmpl.c (global): Added get_var.
+* tmpl/tmpl.c (tmpl_apply): Still not done. Can count and find tokens.
+* slighttp/http-response.c (http_send_response): Added message size to debug output.
+* fs/connect/index.html: Renamed to index.tmpl.
+
+
+2015-05-31 Martin Grønholdt
+
+* slighttp/http-response.c (http_generate_response): Fixed a bug where 404
+													 status was not set and
+													 the wrong content length
+													 was returned.
+* tools/strxtra.c (strrpl): No longer creates a new string.
+* Makefile: Made file system generation delete the old zip first.
+* tmpl/tmpl.c (global): Added get_token_size.
+			  (global): Added struct tmpl_token.
+* tmpl/tmpl.h (global): Added TMPL_TOKEN_ID.
+
+
+2015-05-30 Martin Grønholdt (committed)
+
 * fs/int_flash.h (flash_dump): Fixed parameter type from unsigned int to size_t.
 * 				 (flash_dump_mem): Fixed parameter type from unsigned int to size_t.
 * dl_list.h: moved to tools/dl_list.h
@@ -42,6 +64,7 @@
 				   (global): Added destroy to struct http_builtin_uri.
 * slighttp/http-response.c (http_generate_response): Fixed a bug in URI generation.
 
+
 2015-05-29  Martin Grønholdt
 
 * slighttp/http.c (init_http): Added path.
@@ -68,6 +91,7 @@ V0.0.2
 M	user/slighttp/http.h
 M	user/user_config.h
 
+
 Thu May 28 23:30:57 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 MIME support.
 
@@ -89,15 +113,18 @@ M	user/slighttp/http.h
 M	user/tools/strxtra.c
 M	user/user_config.h
 
+
 Thu May 28 14:27:06 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Liveware fault in the previous commit.
 
 M	Makefile
 
+
 Thu May 28 14:13:52 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Moved fs size check. Available space in flash might change without remaking the filesystem.
 
 M	Makefile
+
 
 Tue May 26 23:28:23 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Mostly back on track, needs some fixes.
@@ -112,11 +139,13 @@ M	user/slighttp/http-tcp.c
 M	user/slighttp/http.c
 M	user/slighttp/http.h
 
+
 Tue May 26 22:01:52 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Addit digits function.
 
 M	user/tools/strxtra.c
 M	user/tools/strxtra.h
+
 
 Tue May 26 19:21:50 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 THIS IS BROKEN! I am commiting anyway since I'm about to change a lot of code.
@@ -131,10 +160,12 @@ A	docs/specs/rfc7540.txt
 A	docs/specs/rfc7541.txt
 A	tools/testsize.sh
 
+
 Mon May 25 22:13:20 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Corrected the debug target, to not need everything to be build.
 
 M	Makefile
+
 
 Sat May 23 19:08:52 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Reorganised slighttp.
@@ -151,6 +182,7 @@ A	user/slighttp/http-tcp.c
 A	user/slighttp/http-tcp.h
 M	user/slighttp/http.c
 
+
 Sat May 23 15:13:53 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Basic file support for slighttp.
 
@@ -164,10 +196,12 @@ M	user/fs/zip.h
 M	user/slighttp/http.c
 M	user/user_main.c
 
+
 Sat May 23 14:26:27 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Added min CSS framework (http://mincss.com).
 
 A	fs/css/min.css
+
 
 Sat May 23 11:22:18 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Added fs_gets(str, count, file).
@@ -177,6 +211,7 @@ M	user/fs/fs.c
 M	user/fs/fs.h
 M	user/fs/zip.c
 M	user/user_main.c
+
 
 Fri May 22 23:39:07 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 More fine grained debug messages and a little more file API.
@@ -189,6 +224,7 @@ M	user/net/wifi_connect.c
 M	user/slighttp/http.c
 M	user/user_config.h
 M	user/user_main.c
+
 
 Fri May 22 22:14:48 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 ZIP work and docs mostly.
@@ -203,6 +239,7 @@ A	user/fs/zip.c
 A	user/fs/zip.h
 M	user/user_main.c
 
+
 Wed May 20 23:23:04 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Basic file access.
 
@@ -215,10 +252,12 @@ M	user/fs/memzip.h
 M	user/user_config.h
 M	user/user_main.c
 
+
 Wed May 20 19:45:38 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Forgot a header.
 
 M	user/led.c
+
 
 Wed May 20 19:41:32 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Oops, the user/tools folder was ignored.
@@ -230,10 +269,12 @@ A	user/tools/missing_dec.h
 A	user/tools/strxtra.c
 A	user/tools/strxtra.h
 
+
 Tue May 19 23:54:32 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Proper sizes on all alloc functions when debugging.
 
 M	user/user_config.h
+
 
 Tue May 19 23:48:12 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Basic ZIP parsing ported.
@@ -244,15 +285,18 @@ M	user/fs/memzip.c
 M	user/fs/memzip.h
 M	user/user_main.c
 
+
 Tue May 19 23:47:20 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Size of allocation in memory debug output.
 
 M	user/user_config.h
 
+
 Tue May 19 20:45:45 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Fixed a bug in zip creation.
 
 M	Makefile
+
 
 Tue May 19 00:56:15 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Little work on file system.
@@ -265,10 +309,12 @@ D	user/int_flash.c
 D	user/int_flash.h
 M	user/user_main.c
 
+
 Mon May 18 22:48:29 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 So clever i forget myself.
 
 M	Makefile
+
 
 Mon May 18 22:45:36 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Rearranged, dropped spiffs, and added minizip code by Dave Hylands.
@@ -301,6 +347,7 @@ M	user/user_main.c
 D	user/wifi_connect.c
 D	user/wifi_connect.h
 
+
 Sat May 16 17:31:39 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Spiffs image generation done.
 
@@ -309,6 +356,7 @@ M	Makefile
 D	fs/admin/index.html
 D	fs/connect/index.html
 M	spiffy
+
 
 Sat May 16 13:54:22 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 More spiffly integration.
@@ -320,12 +368,14 @@ D	fs/default/index.html
 A	fs/index.html
 M	spiffy
 
+
 Sat May 16 08:57:50 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Added spiffy.
 
 M	.gitmodules
 M	Makefile
 A	spiffy
+
 
 Sat May 16 00:46:08 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Add file system skeleton.
@@ -334,11 +384,13 @@ A	fs/admin/index.html
 A	fs/connect/index.html
 A	fs/default/index.html
 
+
 Fri May 15 22:21:10 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 TCP include fix, and CLF logging fromweb server to console.
 
 M	user/http.c
 M	user/tcp.h
+
 
 Fri May 15 18:34:36 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Better HTTP 1.1 support.
@@ -352,12 +404,14 @@ A	user/strxtra.h
 M	user/tcp.c
 M	user/user_main.c
 
+
 Tue May 12 23:15:46 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Doxygen docs and refinements.
 
 M	user/http.c
 M	user/led.c
 M	user/user_main.c
+
 
 Tue May 12 02:02:10 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Raw POST support.
@@ -367,6 +421,7 @@ M	user/http.h
 M	user/led.c
 M	user/led.h
 M	user/user_main.c
+
 
 Mon May 11 22:41:27 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 ULT version. Ugly LED Toggle.
@@ -378,25 +433,30 @@ A	user/led.h
 M	user/tcp.c
 M	user/user_main.c
 
+
 Mon May 11 22:39:18 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Document local structs.
 
 M	.doxyfile
+
 
 Mon May 11 00:02:04 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 POST ang GET tests.
 
 M	user/user_main.c
 
+
 Mon May 11 00:01:06 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Include static stuff..
 
 M	.doxyfile
 
+
 Mon May 11 00:00:08 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Cleanup and doc.
 
 M	user/http.c
+
 
 Sun May 10 22:04:20 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Another way for gnomes to say strstr.
@@ -404,20 +464,24 @@ Another way for gnomes to say strstr.
 M	user/http.c
 M	user/http.h
 
+
 Sun May 10 21:59:52 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Using C99, will propably go back.
 
 M	Makefile
+
 
 Sun May 10 21:56:41 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Forgot to reenable this.
 
 M	user/tcp.c
 
+
 Sun May 10 19:16:13 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Longer disconnect timeout.
 
 M	user/tcp.c
+
 
 Sun May 10 12:46:19 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Doxygen doc.
@@ -425,16 +489,19 @@ Doxygen doc.
 M	user/tcp.c
 M	user/tcp.h
 
+
 Sun May 10 12:20:25 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 HTTP headers are made available.
 
 M	user/http.c
 M	user/tcp.c
 
+
 Sun May 10 12:19:39 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Allocated memory blocks debugging info.
 
 M	user/user_config.h
+
 
 Sat May 9 17:42:01 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Fixes and minor stuff.
@@ -444,15 +511,18 @@ M	user/http.h
 M	user/tcp.c
 M	user/user_config.h
 
+
 Sat May 9 17:35:24 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Fix for first entry in list.
 
 M	user/dl_list.h
 
+
 Sat May 9 17:34:00 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 This seems to work better.
 
 M	Makefile
+
 
 Sat May 9 10:42:52 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 debug target, and smarter debug logs.
@@ -460,15 +530,18 @@ debug target, and smarter debug logs.
 M	.gitignore
 M	Makefile
 
+
 Sat May 9 09:23:07 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Added free user pointer to struct tcp_connection.
 
 M	user/tcp.h
 
+
 Sat May 9 09:22:01 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Checking that a callback exists, before blindly calling it.
 
 M	user/tcp.c
+
 
 Fri May 8 23:17:25 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 More Doxygen and some more HTTP error handling.
@@ -478,6 +551,7 @@ M	user/http.h
 M	user/tcp.c
 M	user/tcp.h
 M	user/user_main.c
+
 
 Fri May 8 07:01:24 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Minor fixes. Mostly Dosygen documentation.
@@ -489,6 +563,7 @@ M	user/http.h
 M	user/tcp.c
 M	user/tcp.h
 
+
 Thu May 7 19:37:10 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Initial doxygen support, and almost nothing is documented.
 
@@ -498,16 +573,19 @@ M	Makefile
 M	user/http.c
 M	user/http.h
 
+
 Thu May 7 19:31:26 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 TCP seems to work again, and a lot of debugging stuff has been removed.
 
 M	user/tcp.c
 M	user/tcp.h
 
+
 Thu May 7 17:15:54 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 I have come as close as I am able, to finding a reason for the strange behavior. Now it is time to work around it.
 
 M	user/tcp.c
+
 
 Thu May 7 00:10:28 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 There's a major malfunction in the TCP library. TCP the disconnect callback, gets a strange espconn pointer, mostly because the member reverse, seem to magicly have changed.
@@ -515,16 +593,19 @@ There's a major malfunction in the TCP library. TCP the disconnect callback, get
 M	user/http.c
 M	user/tcp.c
 
+
 Mon May 4 00:13:04 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Fixes.
 
 M	user/dl_list.h
 M	user/tcp.c
 
+
 Sun May 3 23:27:41 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Clearer error reporting.
 
 M	user/wifi_connect.c
+
 
 Sun May 3 23:26:55 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Multiply TCP connections support.
@@ -534,15 +615,18 @@ M	user/http.c
 M	user/tcp.c
 M	user/tcp.h
 
+
 Sun May 3 23:24:54 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Commented changes.
 
 M	Makefile
 
+
 Sun May 3 21:40:41 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Added debugflash target, which start the serial console right after flashing the firmware.
 
 M	Makefile
+
 
 Sun May 3 18:11:47 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Added memory usage info.
@@ -550,10 +634,12 @@ Added memory usage info.
 M	Makefile
 A	mem_usage.sh
 
+
 Sun May 3 12:11:29 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Auto dependencies.
 
 M	Makefile
+
 
 Sat May 2 07:51:35 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 404.
@@ -561,10 +647,12 @@ Sat May 2 07:51:35 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 M	user/http.c
 M	user/http.h
 
+
 Sat May 2 07:33:43 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 A few fixes.
 
 M	user/wifi_connect.c
+
 
 Sat May 2 07:33:18 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 More advanced Hello World.
@@ -575,15 +663,18 @@ M	user/tcp.c
 M	user/tcp.h
 M	user/user_main.c
 
+
 Tue Apr 28 00:10:08 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Ignore serial log file.
 
 M	.gitignore
 
+
 Mon Apr 27 23:52:06 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Added baud rate config.
 
 M	Makefile
+
 
 Mon Apr 27 21:33:09 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Beginnings of a more complete HTTP server.
@@ -591,10 +682,12 @@ Beginnings of a more complete HTTP server.
 A	user/http.c
 A	user/http.h
 
+
 Fri Apr 24 14:26:01 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Made blooper.
 
 M	user/wifi_connect.c
+
 
 Fri Apr 24 09:13:08 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Fixed include guards.
@@ -604,15 +697,18 @@ M	user/tcp.h
 M	user/user_config.h
 M	user/wifi_connect.h
 
+
 Fri Apr 24 00:12:05 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Hello world http server.
 
 M	user/tcp.c
 
+
 Fri Apr 24 00:11:25 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Fixed an status print error and comments.
 
 M	user/wifi_connect.c
+
 
 Thu Apr 23 18:46:33 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Initital TCP stuff.
@@ -623,10 +719,12 @@ A	user/tcp.h
 M	user/user_config.h
 M	user/user_main.c
 
+
 Thu Apr 23 18:45:34 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Stupid mistake, would only try to show IP if not connected.
 
 M	user/wifi_connect.c
+
 
 Thu Apr 23 18:02:40 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Added IP information display.
@@ -634,10 +732,12 @@ Added IP information display.
 M	user/wifi_connect.c
 M	user/wifi_connect.h
 
+
 Thu Apr 23 17:30:12 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Rebuilds everyting if headers change.
 
 M	Makefile
+
 
 Thu Apr 23 17:28:00 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Basic soft AP mode working.
@@ -646,6 +746,7 @@ M	user/user_config.h
 M	user/wifi_connect.c
 M	user/wifi_connect.h
 
+
 Thu Apr 23 15:29:19 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Basic connecting to a WIFI works.
 
@@ -653,10 +754,12 @@ M	user/user_main.c
 M	user/wifi_connect.c
 M	user/wifi_connect.h
 
+
 Wed Apr 22 11:42:57 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Fixed some SPIFFS warnings.
 
 M	spiffs
+
 
 Wed Apr 22 11:41:11 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Fixes for a lot of warnings.
@@ -665,15 +768,18 @@ A	user/missing_dec.h
 M	user/user_main.c
 M	user/wifi_connect.c
 
+
 Wed Apr 22 11:40:06 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Added blanking of upper flash and all warnings from gcc.
 
 M	Makefile
 
+
 Wed Apr 22 08:58:55 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Still WIFI connect dows not work.
 
 M	user/wifi_connect.c
+
 
 Wed Apr 22 00:19:33 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Working on WIFI.
@@ -683,20 +789,24 @@ M	user/user_main.c
 M	user/wifi_connect.c
 M	user/wifi_connect.h
 
+
 Wed Apr 22 00:18:45 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 TODO: Need to depend on .h files in Makefile..
 
 M	Makefile
+
 
 Wed Apr 22 00:16:59 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Ignore more bin files.
 
 M	.gitignore
 
+
 Tue Apr 21 11:56:20 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Reenabled proper make output.
 
 M	Makefile
+
 
 Sat Apr 18 09:30:25 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Forked spiffs, to save local changes.
@@ -704,17 +814,20 @@ Forked spiffs, to save local changes.
 M	.gitmodules
 M	spiffs
 
+
 Sat Apr 18 02:24:30 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Forgot these the last time.
 
 M	.gitignore
 M	Makefile
 
+
 Sat Apr 18 02:23:39 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Imported spiffs sources.
 
 A	.gitmodules
 A	spiffs
+
 
 Sat Apr 18 01:57:13 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 Initial commit. Almost nothing works.
@@ -727,6 +840,7 @@ A	user/user_config.h
 A	user/user_main.c
 A	user/wifi_connect.c
 A	user/wifi_connect.h
+
 
 Sat Apr 18 01:51:06 2015 +0200 by Martin Bo Kristensen Grønholdt (martin.groenholdt@gmail.com)
 Initial commit

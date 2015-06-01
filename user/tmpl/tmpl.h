@@ -25,6 +25,11 @@
 #define TMPL_H
 
 #include "tools/dl_list.h"
+
+/**
+ * @brief Characters uses to identify a token in the template.
+ */
+#define TMPL_TOKEN_ID "${}"
 /**
  * @brief Variable types known by the template engine.
  */
@@ -54,7 +59,7 @@ union tmpl_val_type
 	 */
 	char *v_str;
 	/**
-	 * @brief Interger representation.
+	 * @brief Integer representation.
 	 */
 	long v_int;
 	/**
@@ -111,7 +116,7 @@ struct tmpl_context
 
 extern struct tmpl_context *init_tmpl(char *template);
 extern void tmpl_add_var(struct tmpl_context *context, char *name,
-									union tmpl_val_type value, 
+									void *value, 
 									enum tmpl_var_type type);
 extern char *tmpl_apply(struct tmpl_context *context);
 extern void tmpl_destroy(struct tmpl_context *context);

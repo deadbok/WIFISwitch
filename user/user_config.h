@@ -24,22 +24,33 @@
 #ifndef USER_CONFIG_H
 #define USER_CONFIG_H
 
-//Version string
+/**
+ * @brief Firmware version.
+ */
 #define STRING_VERSION "0.0.2"
 
-//Values for default AP to try
+/**
+ * @brief Name of the default network to try and connect to.
+ */
 #define SSID "default"
+/**
+ * @brief Password for the default network.
+ */
 #define SSID_PASSWORD "password"
 
-//Password for the configuration AP
+/**
+ * @brief Password for the configuration AP.
+ */
 #define SOFTAP_PASSWORD "0123456789"
 
-//Try to connect for X seconds.
+/**
+ * @brief Network connection time-out.
+ */
 #define CONNECT_DELAY_SEC   30
 
-#define HLT os_printf("Halt execution.\n");\
-            while(1);
-
+/**
+ * @brief Print an error message.
+ */
 #define error(...)     os_printf("ERROR: " __VA_ARGS__ )
 
 //Print warnings on the serial port.

@@ -143,43 +143,31 @@ unsigned short ICACHE_FLASH_ATTR digits_f(float n, unsigned char fractional_digi
 /**
  * @brief Replace a string within another.
  * 
- * Replace a string within another. This function allocates a new
- * string, and never touches the original, except for copying it.
+ * Replace a string within another.
  * 
  * @param src The string to operate on.
  * @param rpl The string to replace the old.
  * @param pos Position from where to start overwriting the old string.
- * @return A new string with the replacement done. NULL on error.
+ * @return Pointer to `src` or NULL on error.
  */
 char ICACHE_FLASH_ATTR *strrpl(char *src, char *rpl, size_t pos)
 {
 	size_t src_size, rpl_size;
-	char *new_str;
 	
 	src_size = os_strlen(src);
 	rpl_size = os_strlen(rpl);
 	if ((!src_size) || (!rpl_size))
 	{
+		error("No string in either %p, %p, or both.\n", src, rpl);
 		//There is no string.
 		return(NULL);
 	}
-	if ((pos + rpl_size) >= src_size)
+	if ((pos + rpl_size) > src_size)
 	{
+		error("Resulting string is to long %d, original %d.\n", pos + rpl_size, src_size);
 		//The new string is to long.
 		return(NULL);
-	}
-	
-	//Get mem.
-	new_str = db_malloc(src_size +1, "new_str strrpl");
-	if (new_str)
-	{
-		//Copy old string.
-		os_memcpy(new_str, src, pos);
-		//Add replacement string.
-		os_memcpy(new_str + pos, rpl, rpl_size);
-		//Add zero byte for good measure.
-		new_str[src_size] = '\0';
-	}
-	
-	return(new_str);
+	}	
+	os_memcpy(src + pos, rpl, rpl_size);
+	return(src);
 }
