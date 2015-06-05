@@ -31,7 +31,7 @@
 #include "os_type.h"
 #include "user_interface.h"
 #include "user_config.h"
-#include "tools/itoa.h"
+#include "tools/strxtra.h"
 #include "tools/missing_dec.h"
 #include "slighttp/http.h"
 #include "wifi_config.h"

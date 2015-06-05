@@ -1,5 +1,9 @@
 2015-06-04 Martin Grønholdt
 
+* net/wifi_config.c: Removed template stuff.
+* net/wifi_connect.c: Removed template stuff.
+* fs/connect/index.html: Removed template stuff.
+* fs/connect/index.tmpl: Moved to index.html
 * tools/itoa.h: Removed.
 
 
