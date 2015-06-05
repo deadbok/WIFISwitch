@@ -29,33 +29,6 @@
 #include "tmpl.h"
 
 /**
- * @brief Structure too keep track of tokens while parsing.
- */
-struct tmpl_token
-{
-	/**
-	 * @brief Pointer to the start of the token,
-	 */
-	char *start;
-	/**
-	 * @brief Pointer to the end of the token,
-	 */
-	char *end;
-	/**
-	 * @brief Size of the token.
-	 */
-	size_t size;
-	/**
-	 * @brief The token without indicator characters.
-	 */
-	char *token;
-	/**
-	 * @brief Make it a linked list.
-	 */
-	DL_LIST_CREATE(struct tmpl_token);
-};
-
-/**
  * @brief Initialise template engine.
  * 
  * @param template A pointer to the text of template to work with.
@@ -107,16 +80,21 @@ void ICACHE_FLASH_ATTR tmpl_add_var(struct tmpl_context *context, char *name,
 	{
 		var->value.v_int = *(int *)(value);
 		var->char_size = digits(var->value.v_int);
+		var->str = db_malloc(var->char_size, "var->str tmpl_add_var");
+		itoa(var->value.v_int, var->str, 10);
 	}
 	else if (var->type == TMPL_STRING)
 	{
 		var->value.v_str = (char *)(value);
 		var->char_size = os_strlen(var->value.v_str);
+		var->str = var->value.v_str;
 	}
 	else if (var->type == TMPL_FLOAT)
 	{
 		var->value.v_flt = *(float *)(value);
-		var->char_size = digits_f(var->value.v_flt, 2);
+		var->char_size = digits_f(var->value.v_flt, TMPL_FRAG_DIGITS);
+		var->str = db_malloc(var->char_size, "var->str tmpl_add_var");
+		ftoa(var->value.v_flt, var->str, TMPL_FRAG_DIGITS);
 	}
 	else
 	{
@@ -124,6 +102,7 @@ void ICACHE_FLASH_ATTR tmpl_add_var(struct tmpl_context *context, char *name,
 		db_free(var);
 		return;
 	}
+	debug(" Value: %s.\n", var->str);
 	
 	if (context->vars)
 	{
@@ -184,25 +163,25 @@ static size_t ICACHE_FLASH_ATTR get_token_size(char *token)
 	}
 	return(size);
 }
-		
+
 /**
- * @brief Convert template to text.
+ * @brief Get all tokens in a template into a nice structure,.
  * 
  * @param context The context to convert.
- * @return The final result.
+ * @return A pointer to a struct #tmpl_tokens, with all tokens in it.
  */
-char ICACHE_FLASH_ATTR *tmpl_apply(struct tmpl_context *context)
+static struct tmpl_tokens ICACHE_FLASH_ATTR *get_tokens(struct tmpl_context *context)
 {
-	struct tmpl_token *tokens;
+	struct tmpl_tokens *tokens;
 	struct tmpl_token *token;
 	struct tmpl_var *var;
 	char *current_var;
-	char *str;
-	size_t total_token_chars = 0;
-	size_t n_tokens = 0;
-	size_t total_var_chars = 0;
+	size_t offset = 0;
 	
-	debug("Converting template %p.\n", context);
+	debug("Finding tokens in template %p.\n", context);
+	
+	//Get mem.
+	tokens = db_malloc(sizeof(struct tmpl_tokens), "tokens get_tokens");
 
 	//Count tokens.
 	//Find every instance of the first character in the token.
@@ -214,16 +193,16 @@ char ICACHE_FLASH_ATTR *tmpl_apply(struct tmpl_context *context)
 		if (*(current_var + 1 ) == TMPL_TOKEN_ID[1])
 		{
 			current_var = os_strchr(current_var, TMPL_TOKEN_ID[2]);
-			n_tokens++;
+			tokens->n_tokens++;
 			debug(".");
 		}
 		current_var = os_strchr(current_var, TMPL_TOKEN_ID[0]);
 	}
-	debug("%d\n", n_tokens);
+	debug("%d\n", tokens->n_tokens);
 	
 	//Get mem for tokens.
-	tokens = db_malloc(sizeof(struct tmpl_token) * n_tokens, "tokens tmpl_apply");
-	token = tokens;
+	tokens->tokens = db_malloc(sizeof(struct tmpl_token) * tokens->n_tokens, "tokens tmpl_apply");
+	token = tokens->tokens;
 	//Find every instance of the first character in the token.
 	current_var = os_strchr(context->template, TMPL_TOKEN_ID[0]);
 	while (current_var != NULL)
@@ -233,31 +212,102 @@ char ICACHE_FLASH_ATTR *tmpl_apply(struct tmpl_context *context)
 		if (*(current_var + 1 ) == TMPL_TOKEN_ID[1])
 		{
 			//Gather infos on the token.
-			token->start = current_var;
+			token->start = (current_var - context->template) - offset;
+
 			token->size = get_token_size(current_var);
 			//Add space for ${}
-			token->end = current_var + token->size;
+			token->end = token->start + token->size + 3;
+			//Save offset for next token.
+			offset = token->end;
 			
-			token->token = db_malloc(token->size + 2, "token->token tmpl_apply");
-			os_memcpy(token->token, token->start + 2, token->size - 2);
-			token->token[token->size - 2] = '\0';
+			token->token = db_malloc(token->size, "token->token tmpl_apply");
+			os_memcpy(token->token, current_var + 2, token->size - 2);
+			token->token[token->size] = '\0';
 			
-			debug(" Found token \"%s\" at %p size %d.\n", token->token, token->start, token->size);
+			debug(" Found token \"%s\" at %d size %d.\n", token->token, token->start, token->size);
 			
 			//Add to the total characters count of all tokens.
-			total_token_chars += token->size;
+			tokens->token_chars += token->size;
 			
 			var = get_var(context, token->token);
-			total_var_chars += var->char_size;
+			if (var)
+			{
+				tokens->var_chars += var->char_size;
+				token->value = var->str;
+			}
+			else
+			{
+				error("Could not find template variable \"%s\".\n", token->token);
+			}
 			
-			current_var = os_strchr(token->end, TMPL_TOKEN_ID[0]);
+			current_var = os_strchr(½	token->end, TMPL_TOKEN_ID[0]);
 			token++;
 		}
 	}
-	debug("Total characters in tokens %d.\n", total_token_chars);
-	debug("Total characters in substituted variable values %d.\n", total_var_chars);
+	debug("Total characters in tokens %d.\n", tokens->token_chars);
+	debug("Total characters in substituted variable values %d.\n", tokens->var_chars);
 	
-	return(context->template);
+	return(tokens);
+}
+		
+/**
+ * @brief Convert template to text.
+ * 
+ * @param context The context to convert.
+ * @return The final result.
+ */
+char ICACHE_FLASH_ATTR *tmpl_apply(struct tmpl_context *context)
+{
+	struct tmpl_tokens *tokens;
+	struct tmpl_token *token;
+	size_t n_tokens = 0;
+	struct tmpl_var *var;
+	char *current_var;
+	char *result;
+	size_t i;
+	size_t result_offset = 0;
+	size_t tmpl_offset = 0;
+	size_t block_size = 0;
+	
+	debug("Converting template %p.\n", context);
+
+	tokens = get_tokens(context);
+	context->tokens = tokens;
+	
+	//Replace the tokens with their value.
+	if (!tokens->n_tokens)
+	{
+		//Nothing to do.
+		result = tmpl_context->template;
+	}
+	else
+	{
+		result = (char *)db_malloc(context->tmpl_size - tokens->token_chars + tokens->var_chars,
+							       "result tmpl_apply");
+
+		while (i < context->tokens->n_tokens)
+		{
+			//Copy the string up until the token.
+			block_size = tokens->tokens[i].start;
+			//Do it.
+			os_memcpy(result + result_offset, context->template + tmpl_offset, block_size);
+			//Forward to the end of the block we've just copied.
+			result_offset = block_size;
+			//And the template to the end of the token.
+			tmpl_offset = tokens->tokens[i].end;
+			//Copy the token value.
+			block_size = tokens->tokens[i].char_size;
+			//Do it.
+			os_memcpy(result + result_offset, tokens->tokens[i].value, block_size);
+			//Add to the position of the result.
+			result_offset += block_size;
+		}
+		//Copy the end.
+		block_size = context->tmpl_size - tokens->tokens[i].end;
+		memcpy(result + result_offset, context->template, block_size);
+	}
+							   
+	return(result);
 }
 
 /**
@@ -267,10 +317,14 @@ char ICACHE_FLASH_ATTR *tmpl_apply(struct tmpl_context *context)
  */
 void ICACHE_FLASH_ATTR tmpl_destroy(struct tmpl_context *context)
 {
+	struct tmpl_var *vars = context->vars;
+	
 	debug("Destroying template context %p.\n", context);
-	if (context->vars)
+	while (vars)
 	{
+		context->vars = vars;
 		db_free(context->vars);
+		vars = vars->next;
 	}
 	db_free(context);
 }

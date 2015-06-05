@@ -1,6 +1,37 @@
-2015-06-01 Martin Grønholdt
+2015-06-04 Martin Grønholdt
 
-* tmpl/tmpl.c (global): Added get_var.
+* tmpl/tmpl.h (global): Moved struct token and struct tokens here.
+* tmpl/tmpl.c (global): Moved struct token and struct tokens to tmpl.h
+
+
+2015-06-04 Martin Grønholdt
+
+* tmpl/tmpl.c (tmpl_add_var): More debug output.
+			  (tmpl_token): Changed type of start and end to size_t.
+			  (get_tokens): Changed start and end to offset.
+* tmpl/tmpl.h (tmpl_context): Added tokens.
+
+
+2015-06-03 Martin Grønholdt
+
+* tmpl/tmpl.c: Added get_tokens.
+			 : Added struct tmpl_tokens.
+* tmpl/tmpl.h: Added TMPL_FRAG_DIGITS.
+* tools/ftoa.c: Added file.
+			  : Added ftoa.
+* net/wifi_connect: Included strxtra.h instead of itoa.h.
+* tools/itoa.c (itoa): Error checking.
+			   (itoa): Negative number handling.
+			   (itoa): Value is now long type.
+			   (itoa): Base is unsigned char.
+* tools/itoa.h: Removed.
+* toold(strxtra.h: Moved itoa here.
+				 : Added ftoa.
+
+
+2015-06-01 Martin Grønholdt (comitted)
+
+* tmpl/tmpl.c: Added get_var.
 * tmpl/tmpl.c (tmpl_apply): Still not done. Can count and find tokens.
 * slighttp/http-response.c (http_send_response): Added message size to debug output.
 * fs/connect/index.html: Renamed to index.tmpl.
@@ -14,9 +45,9 @@
 													 was returned.
 * tools/strxtra.c (strrpl): No longer creates a new string.
 * Makefile: Made file system generation delete the old zip first.
-* tmpl/tmpl.c (global): Added get_token_size.
-			  (global): Added struct tmpl_token.
-* tmpl/tmpl.h (global): Added TMPL_TOKEN_ID.
+* tmpl/tmpl.c: Added get_token_size.
+			 : Added struct tmpl_token.
+* tmpl/tmpl.h: Added TMPL_TOKEN_ID.
 
 
 2015-05-30 Martin Grønholdt (committed)
@@ -26,64 +57,64 @@
 * dl_list.h: moved to tools/dl_list.h
 * fs/zip.c (zip_load_header): Didn't actually check for he right header signature.
 * Makefile: Added user/tmpl to MODULES, so it compiles.
-* tmpl/tmpl.c (global): Created file.
-			  (global): Added init_tmpl.
-			  (global): Added tmpl_apply.
-			  (global): Added tmpl_destroy.
-			  (global): Added tmpl_add_var.
-			  (global): Included tools/strxtra.h
-* tmpl/tmpl.h (global): Created file.
-			  (global): Added struct tmpl_context.
-			  (global): Added init_tmpl.
-			  (global): Added tmpl_apply.
-			  (global): Added tmpl_destroy.
-			  (global): Added tmpl_add_var.		  
-* net/wifi_config.c (global): Added file.
-					(global): Added wifi_conf_test.
-					(global): Added wifi_conf__html.
-					(global): Added wifi_conf_destroy.
-					(global): Included tmpl/tmpl.h.
-					(global): Added wifi_conf_context.
+* tmpl/tmpl.c: Created file.
+			 : Added init_tmpl.
+			 : Added tmpl_apply.
+			 : Added tmpl_destroy.
+			 : Added tmpl_add_var.
+			 : Included tools/strxtra.h
+* tmpl/tmpl.h: Created file.
+			 : Added struct tmpl_context.
+			 : Added init_tmpl.
+			 : Added tmpl_apply.
+			 : Added tmpl_destroy.
+			 : Added tmpl_add_var.		  
+* net/wifi_config.c: Added file.
+				   : Added wifi_conf_test.
+				   : Added wifi_conf__html.
+				   : Added wifi_conf_destroy.
+				   : Included tmpl/tmpl.h.
+				   : Added wifi_conf_context.
 					(wifi_conf_html): Added template functions.
 					(wifi_conf_destroy): Added freeing of template context.
-* net/wifi_config.h (global): Added file.
-					(global): Added wifi_conf_test.
-					(global): Added wifi_conf__html.
-					(global): Added wifi_conf_destroy.
-* net/wifi_connect.c (global): Added static URI struct
-					 (global): Added static page provided by wifi_config.c.
-* tools/strxtra.c (global): Added strrpl.
-				  (global): Added digits_f.
+* net/wifi_config.h: Added file.
+				   : Added wifi_conf_test.
+				   : Added wifi_conf__html.
+				   : Added wifi_conf_destroy.
+* net/wifi_connect.c: Added static URI struct
+					: Added static page provided by wifi_config.c.
+* tools/strxtra.c: Added strrpl.
+				 : Added digits_f.
 				  (digits): Optimized a div to a mul.
 				  (digits): Changed return type to unsigned short.
-* tools/strxtra.h (global): Added strrpl.
-				  (global): Added digits_f.
+* tools/strxtra.h: Added strrpl.
+				 : Added digits_f.
 				  (digits): Changed return type to unsigned short.
-* sligthttp/http.h (global): Added uri_destroy_callback.
-				   (global): Renamed uri_callback to uri_html_callback.
-				   (global): Added destroy to struct http_builtin_uri.
+* sligthttp/http.h: Added uri_destroy_callback.
+				  : Renamed uri_callback to uri_html_callback.
+				  : Added destroy to struct http_builtin_uri.
 * slighttp/http-response.c (http_generate_response): Fixed a bug in URI generation.
 
 
 2015-05-29  Martin Grønholdt
 
 * slighttp/http.c (init_http): Added path.
-				  (global)	 : Added http_fs_doc_root.
+				  : Added http_fs_doc_root.
 * slighttp/http.h (init_http): Added path.
 							   Added extern.
-				  (global)   : Upped version.
-				  (global)	 : Added http_fs_doc_root.
+				  : Upped version.
+				  : Added http_fs_doc_root.
 * slighttp/http-response.c (http_generate_response): Document root handling.
 												     Fixed a deallocation issue.
 * user_main.c (connected_cb): Added path to init_http call.
-* user_config.h (global): Added DEBUG_MEM_LIST.
+* user_config.h: Added DEBUG_MEM_LIST.
 * debug.c (db_dealloc): Made memory allocation listning optional.
-* net/tcp.h (global): Added tcp_stop.
-				      Added extern.
-* net/tcp.c (global): Added tcp_stop.
+* net/tcp.h: Added tcp_stop.
+		     Added extern.
+* net/tcp.c: Added tcp_stop.
 * net/wifi_connect (timeout_cb): Added HTTP server.
 * CHANGELOG: Added commit history.
-* fs/ (global): Added connect directory and files.
+* fs/: Added connect directory and files.
 
 Thu May 28 23:38:34 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 V0.0.2

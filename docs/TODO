@@ -1,8 +1,11 @@
-LOTS!
+TODO
+=====
 
- - Test if the file system image exceeds the available space, in a way, where
-   I am sure what is going on.
- - Find out if the file system image, should be loaded after the 0x40000 data
-   in the flash.
- - WIFI AP configuration through web server.
- - Test what happens if a template sends a NULL page to the server.
+ File              | scope                    | Item
+ :----------------:|:------------------------:|-------------------------------------------------
+ Makefile          | *na*                     | Properly test if the file system image overflow.
+ Makefile          | *na*                     | Decide on where the file system is loaded.
+ wifi_connect.c    | global                   | WIFI AP configuration through web server.
+ http-responce.c   | http_generate_response   | Check for NULL return in static pages.
+ tmplc.            | tmpl_destroy             | Free tokens and maybe other stuff.
+

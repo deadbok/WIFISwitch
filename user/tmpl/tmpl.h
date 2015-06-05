@@ -27,6 +27,65 @@
 #include "tools/dl_list.h"
 
 /**
+ * @brief Fractional sigits used when converting a float to a string.
+ */
+#define TMPL_FRAG_DIGITS 2
+
+/**
+ * @brief Structure too keep track a token while parsing.
+ */
+struct tmpl_token
+{
+	/**
+	 * @brief Offset of the token start.
+	 */
+	size_t start;
+	/**
+	 * @brief Offset of the token end.
+	 */
+	size_t end;
+	/**
+	 * @brief Size of the token.
+	 */
+	size_t size;
+	/**
+	 * @brief The token without indicator characters.
+	 */
+	char *token;
+	/**
+	 * @brief Replacement for the token.
+	 */
+	char *value; 
+	/**
+	 * @brief Make it a linked list.
+	 */
+	DL_LIST_CREATE(struct tmpl_token);
+};
+
+/**
+ * @brief Structure too keep track of tokens while parsing.
+ */
+struct tmpl_tokens
+{
+	/**
+	 * @brief Pointer to the tokens.
+	 */
+	struct tmpl_token *tokens;
+	/**
+	 * @brief Number of tokens.
+	 */
+	 unsigned short n_tokens;
+	/**
+	 * @brief Number of characters that all tokens takes up.
+	 */
+	size_t token_chars;
+	/**
+	 * @brief Number of characters the token substitutions take up.
+	 */
+	size_t var_chars;
+};
+
+/**
  * @brief Characters uses to identify a token in the template.
  */
 #define TMPL_TOKEN_ID "${}"
@@ -91,6 +150,10 @@ struct tmpl_var
 	 */
 	size_t char_size;
 	/**
+	 * @brief String version of the variable.
+	 */
+	char *str;
+	/**
 	 * @brief Make it a linked list.
 	 */
 	DL_LIST_CREATE(struct tmpl_var);
@@ -112,6 +175,10 @@ struct tmpl_context
 	 * @brief Linked list of template variables.
 	 */
 	struct tmpl_var *vars;
+	/**
+	 * @brief All tokens found in the template.
+	 */
+	struct tmpl_tokens tokens;
 };
 
 extern struct tmpl_context *init_tmpl(char *template);

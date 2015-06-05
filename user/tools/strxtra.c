@@ -128,7 +128,7 @@ unsigned short ICACHE_FLASH_ATTR digits(long n)
  * @brief Find the length of a float, when converted to a string.
  * 
  * @param n Count the number of digits in this float.
- * @para, fractional_digits Number of digits after the decimal separator.
+ * @param fractional_digits Number of digits after the decimal separator.
  * @return The number of characters needed for the string version of
  *         the number.
  */
