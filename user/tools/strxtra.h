@@ -29,5 +29,7 @@ extern char *strlwr(char *str);
 extern unsigned short digits(long n);
 extern unsigned short digits_f(float n, unsigned char fractional_digits);
 extern char *strrpl(char *src, char *rpl, size_t pos);
+extern char *itoa(long value, char *result, const unsigned char base);
+extern char *ftoa(float value, char *result, const unsigned char fractional_digits);
 
 #endif //STRXTRA_H

@@ -1,3 +1,20 @@
+2015-06-04 Martin Grønholdt
+
+* tools/itoa.h: Removed.
+
+
+2015-06-03 Martin Grønholdt
+
+* tools/ftoa.c: Added file.
+			  : Added ftoa.
+* tools/itoa.c (itoa): Error checking.
+			   (itoa): Negative number handling.
+			   (itoa): Value is now long type.
+			   (itoa): Base is unsigned char.
+* tools(strxtra.h): Moved itoa here.
+			 	  : Added ftoa.
+
+
 2015-06-01 Martin Grønholdt
 
 * tmpl/tmpl.c (global): Added get_var.
