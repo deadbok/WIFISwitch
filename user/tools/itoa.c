@@ -24,7 +24,7 @@ char ICACHE_FLASH_ATTR *itoa(long value, char *result, const unsigned char base)
 	char *ptr1 = result;
 	char tmp_char;
 	long tmp_value;
-	bool sign;
+	bool sign = false;
 	
 	if ((base == 0) || (base > 16))
 	{

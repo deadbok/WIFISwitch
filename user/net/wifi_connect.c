@@ -34,7 +34,7 @@
 #include "tools/strxtra.h"
 #include "tools/missing_dec.h"
 #include "slighttp/http.h"
-#include "wifi_config.h"
+#include "rest/rest.h"
 #include "wifi_connect.h"
 
 /**
@@ -63,7 +63,7 @@ unsigned char         connect_status = 0;
  */
 struct http_builtin_uri g_wifi_config_uris[WIFI_CONFIG_N_URIS] =
 {
-    {wifi_conf_test, wifi_conf_html, wifi_conf_destroy}
+    {rest_net_names_test, rest_net_names_html, rest_net_names_destroy}
 };
 
 //Connection callback function.
@@ -184,6 +184,7 @@ static void connect(void *arg)
         //Stop calling me.
         os_timer_disarm(&connected_timer);
         
+        wifi_disconnect();
         //Call the timeout callback.
         int_timeout_cb();
     }
@@ -205,7 +206,7 @@ static void ICACHE_FLASH_ATTR create_softap(char *ssid, char *passwd, unsigned c
           channel);
           
     //Set AP mode.
-    ret = wifi_set_opmode(SOFTAP_MODE);
+    ret = wifi_set_opmode(STATIONAP_MODE);
     if (!ret)
     {
         error("Cannot set soft AP mode (%d).", ret);
@@ -333,7 +334,7 @@ void ICACHE_FLASH_ATTR wifi_connect(void (*connect_cb)())
     //Start connection task
     //Disarm timer
     os_timer_disarm(&connected_timer);
-    //Setup timer, pass callbaack as parameter.
+    //Setup timer, pass callback as parameter.
     os_timer_setfn(&connected_timer, (os_timer_func_t *)connect, NULL);
     //Arm the timer, run every 1 second.
     os_timer_arm(&connected_timer, 1000, 1);

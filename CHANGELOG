@@ -1,5 +1,19 @@
+2015-06-05 Martin Grønholdt
+
+* slighttp/http-response.c (http_generate_response): Only file system uses root path.
+* 												   : Better handling of NULL message from static callback.
+
+
 2015-06-04 Martin Grønholdt
 
+* tools/itoa.c (itoa): Fixed sign bug.
+* net/wifi_connect.c: Included rest/rest.h.
+				    : Added net names to static URI's.
+				     (create_softap): Create in SOFTAP + STATION mode.
+* Makefile: Added rest directory to MODULES.
+* rest/rest.h: Added file.
+*            : Added net names call backs.
+* rest/net-names.c: Added file.
 * net/wifi_config.c: Removed template stuff.
 * net/wifi_connect.c: Removed template stuff.
 * fs/connect/index.html: Removed template stuff.

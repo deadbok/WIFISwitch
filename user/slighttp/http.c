@@ -16,8 +16,8 @@
  * - POST requests.
  * - CRLF, LF, and space tolerance (never tested except for space).
  * 
- * The server can have different document roots, but the error pages, 
- * like `404.hrml` are always loaded from the root.
+ * The server can have different document roots for pages loaded from the file
+ * system, but the error pages like `404.html` are always loaded from the root.
  * 
  * **This server is not compliant with HTTP, to save space, stuff has been
  * omitted. It has been built to be small, not fast, and probably breaks in 100
@@ -74,7 +74,7 @@ char *http_fs_doc_root;
 /**
  * @brief Initialise the HTTP server,
  * 
- * @param path Path to search as root of the server.
+ * @param path Path to search as root of the server in the file system.
  * @param builtin_uris An array of built in handlers for URIs.
  * @param n_builtin_uris Number of URI handlers.
  */

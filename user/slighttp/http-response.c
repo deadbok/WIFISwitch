@@ -156,6 +156,7 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
     char *message;
     char *buffer = NULL;
     char *uri = NULL;
+    char *fs_uri = NULL;
     size_t uri_size, doc_root_size;
     
     //Get memory for response.
@@ -180,28 +181,12 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
     {
 		uri = db_malloc(sizeof(char) * (digits(status_code) + 7), "uri  http_generate_response");
 		os_sprintf(uri, "/%d.html", status_code);
+		fs_uri = uri;
 		debug(" HTTP error response.\n");
 	}
 	else
 	{
-		//Change an '/' uri into '/index.html' and add document root.
-		//Check if we have a document root path.
-		if (http_fs_doc_root)
-		{
-			//Document root is non emtpy, find its length.
-			if (http_fs_doc_root[1] == '\0')
-			{
-				doc_root_size = 0;
-			}
-			else
-			{
-				doc_root_size = os_strlen(http_fs_doc_root);
-			}
-		}
-		else
-		{
-			doc_root_size = 0;
-		}
+		//Change an '/' uri into '/index.html'.
 		//Find the last '/'.
 		for (i = 0; request->uri[i] != '\0'; i++)
 		{
@@ -217,46 +202,34 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 		{
 			debug(" Adding index.html.\n");
 			//The uri ends on '/', add 'index.html'.
-			//Get mem.
-			
-			if (doc_root_size)
-			{
-				debug(" Adding root %s.\n", http_fs_doc_root);
-				//With document root.
-				uri = db_malloc(uri_size + doc_root_size  + 11, 
-								"uri http_generate_response");
-				os_memcpy(uri, http_fs_doc_root, doc_root_size);
-				os_memcpy(uri + doc_root_size, request->uri, uri_size);
-				os_memcpy(uri + doc_root_size + uri_size, "index.html\0", 11);
-			}
-			else
-			{
-				//Without document root
-				uri = db_malloc(uri_size + 11, "uri http_generate_response");
-				os_memcpy(uri, request->uri, uri_size);
-				os_memcpy(uri + uri_size, "index.html\0", 11);
-			}
+			uri = db_malloc(uri_size + 11, "uri http_generate_response");
+			os_memcpy(uri, request->uri, uri_size);
+			os_memcpy(uri + uri_size, "index.html\0", 11);
 		}
 		else
 		{
-			//A specific page was requested, add document root if needed.
-			if (doc_root_size)
-			{
-				debug(" Adding root %s.\n", http_fs_doc_root);
-
-				uri = db_malloc(uri_size + doc_root_size, 
-								"uri http_generate_response");
-				os_memcpy(uri, http_fs_doc_root, doc_root_size);
-				os_memcpy(uri + doc_root_size, request->uri, uri_size);
-				uri[uri_size + doc_root_size] = '\0';
-			}
-			else
-			{
-				uri = request->uri;
-			}
+			uri = request->uri;
+		}
+		fs_uri = uri;
+		//Add document root to file system path.
+		//Check if we have a document root path.
+		if (http_fs_doc_root)
+		{
+			debug(" Adding root %s.\n", http_fs_doc_root);
+			//Document root is non emtpy, find its length.
+			doc_root_size = os_strlen(http_fs_doc_root);
+			uri_size = os_strlen(uri);
+			//Get mem.
+			fs_uri = db_malloc(uri_size + doc_root_size, 
+							"fs_uri http_generate_response");
+			os_memcpy(fs_uri, http_fs_doc_root, doc_root_size);
+			os_memcpy(fs_uri + doc_root_size, uri, uri_size);
+			fs_uri[uri_size + doc_root_size] = '\0';
 		}
 	}
-	debug(" Final request URI: %s.\n", uri);
+
+	debug(" Final static request URI: %s.\n", uri);
+	debug(" Final file system request URI: %s.\n", fs_uri);
     
     //Try to open the URI as a file.
     file = fs_open(uri);
@@ -303,17 +276,24 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 			debug(" Found static page.\n");
 			//Get a pointer to the message.
 			message = static_uris[i].handler(uri, request);
-			//Get size of the message.
-			data_size = os_strlen(message);
-			//Allocate memory. The message is copied to a buffer, so it can
-			//always be freed.
-			buffer = db_malloc((int)data_size, "buffer http_generate_response");
-			//Copy the message into the buffer.
-			os_memcpy(buffer, message, data_size);
+			if (message)
+			{
+				//Get size of the message.
+				data_size = os_strlen(message);
+				//Allocate memory. The message is copied to a buffer, so it can
+				//always be freed.
+				buffer = db_malloc((int)data_size, "buffer http_generate_response");
+				//Copy the message into the buffer.
+				os_memcpy(buffer, message, data_size);
+			}
 		}
 	}
 
 	//Dealloc uri mem, if it has been malloced.
+	if (fs_uri != uri)
+	{
+		db_free(fs_uri);
+	}
 	if (uri != request->uri)
 	{
 		db_free(uri);
