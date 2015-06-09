@@ -4,3 +4,9 @@
 [submodule "spiffy"]
 	path = spiffy
 	url = https://github.com/deadbok/spiffy
+[submodule "parson"]
+	path = parson
+	url = https://github.com/kgabis/parson
+[submodule "user/parson"]
+	path = user/parson
+	url = https://github.com/deadbok/parson

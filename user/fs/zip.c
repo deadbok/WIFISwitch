@@ -38,6 +38,9 @@
  * From the "local file header" only useful information is parsed, and used to
  * locate the file data. Since the ZIP structure is only used to emulate a file
  * system structure, no decompression is implemented.
+ * 
+ * Since there is no caching, the more files you add to the zip, the slower
+ * the file lookup may be.
  *
  * Based on: https://github.com/micropython/micropython/blob/master/teensy/memzip.c
  */

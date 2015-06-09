@@ -61,5 +61,9 @@ extern void *vPortMalloc(size_t xWantedSize);
 extern void ets_delay_us(int us);
 
 extern void slop_wdt_feed();
+extern void ets_wdt_enable(void);
+extern void ets_wdt_disable(void);
+extern void wdt_feed(void);
+
 
 #endif

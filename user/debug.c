@@ -76,12 +76,12 @@ void ICACHE_FLASH_ATTR *db_alloc(size_t size, bool zero, char *info)
 	if (zero)
 	{
 		ptr = os_zalloc(size);
-		os_printf("Free heap (malloc): %d.\n", system_get_free_heap_size());
+		os_printf("Free heap (zalloc): %d.\n", system_get_free_heap_size());
 	}
 	else
 	{
 		ptr = os_malloc(size);
-		os_printf("Free heap (zalloc): %d.\n", system_get_free_heap_size());
+		os_printf("Free heap (malloc): %d.\n", system_get_free_heap_size());
 	}
 	
 

@@ -6,5 +6,4 @@ TODO
  Makefile          | *na*                     | Properly test if the file system image overflow.
  Makefile          | *na*                     | Decide on where the file system is loaded.
  wifi_connect.c    | global                   | WIFI AP configuration through web server.
- http-responce.c   | http_generate_response   | Check for NULL return in static pages.
  http-responce.c   | http_generate_response   | Return 404 page, when the function itself has not found a page.

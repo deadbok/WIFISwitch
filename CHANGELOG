@@ -1,3 +1,26 @@
+2015-06-08 Martin Grønholdt (commited)
+
+* rest/net-names.c (rest_net_names_destroy): Added code.
+				   (json_create_string_array): Free lengths.
+* debug.c (db_alloc): The type of alloc call was switched.
+* slighttp/http-response.c (http_generate_response): Added boolean check of whether a page is found.
+						   (http_generate_response): Initialise message pointer to NULL.
+						   (http_free_response): Check if message is NULL before dealloc.
+						   (http_send_response): Check if message is NULL before using it.
+						   (http_generate_response): Call static page clean up call back.
+
+2015-06-07 Martin Grønholdt
+
+* rest/net-names.c: Added json_create_string_array.
+* Makefile: Removed cjson from MODULES.
+
+
+2015-06-06 Martin Grønholdt
+
+* rest/net-names.c: Added cjson include.
+* cjson: Added files from http://sourceforge.net/projects/cjson/.
+* Makefile: Added cjson to MODULES.
+
 2015-06-05 Martin Grønholdt
 
 * slighttp/http-response.c (http_generate_response): Only file system uses root path.

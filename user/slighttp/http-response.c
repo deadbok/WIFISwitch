@@ -82,7 +82,7 @@ void ICACHE_FLASH_ATTR http_send_response(struct http_response *response,
 	char *s_status_code;
 	unsigned short i;
 	bool close = false;
-	const size_t msg_size = os_strlen(response->message);
+	size_t msg_size = 0;
 	
 	//Probably would be better to put the whole thing in a buffer, and
 	//send it at once.
@@ -118,7 +118,11 @@ void ICACHE_FLASH_ATTR http_send_response(struct http_response *response,
     //Send content.
     if (send_content)
     {
-        tcp_send(connection, response->message);
+		if (response->message)
+		{
+			tcp_send(connection, response->message);
+			msg_size = os_strlen(response->message);
+		}
     }
     //Find status code and skip spaces.
     for (s_status_code = os_strstr(response->status_line, " "); *s_status_code == ' '; s_status_code++);
@@ -153,11 +157,12 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
     unsigned short  i;
     FS_FILE_H file;
     long data_size = 0;
-    char *message;
+    char *message = NULL;
     char *buffer = NULL;
     char *uri = NULL;
     char *fs_uri = NULL;
     size_t uri_size, doc_root_size;
+    bool found = false;
     
     //Get memory for response.
     response = db_malloc(sizeof(struct http_response), "response http_generate_response");
@@ -236,6 +241,7 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
     //Check if it went okay.
     if (file > FS_EOF)
     {
+		found = true;
         debug(" Found file: %s.\n", uri);
         
         //Get the size of the message.
@@ -263,7 +269,7 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 		}
     }
     
-    if (!data_size)
+    if (!found)
     {
 		//Check in static uris, go through and stop if URIs match.
 		for (i = 0; 
@@ -273,6 +279,7 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 		//Send response if URI is found
 		if (i < n_static_uris)
 		{
+			found = true;
 			debug(" Found static page.\n");
 			//Get a pointer to the message.
 			message = static_uris[i].handler(uri, request);
@@ -285,6 +292,11 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 				buffer = db_malloc((int)data_size, "buffer http_generate_response");
 				//Copy the message into the buffer.
 				os_memcpy(buffer, message, data_size);
+			}
+			//Clean up call back.
+			if (static_uris[i].destroy)
+			{
+				static_uris[i].destroy(message);
 			}
 		}
 	}
@@ -299,7 +311,7 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 		db_free(uri);
 	}
 	//If there is a response.
-	if (data_size)
+	if (found)
 	{
 		switch (status_code)
 		{
@@ -317,8 +329,9 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 		}
 		debug(" Message size: %ld.\n", data_size);
 		//Fill in the rest of the response.
-        response->headers[3].value = db_malloc(sizeof(char) * digits(data_size), "response->headers[3].value http_generate_response");
+        response->headers[3].value = db_malloc(sizeof(char) * digits(data_size) + 1, "response->headers[3].value http_generate_response");
         os_sprintf(response->headers[3].value, "%ld", data_size);
+        response->headers[3].value[data_size] = '\0';
         response->message = buffer;
 
         return(response);
@@ -347,6 +360,9 @@ void ICACHE_FLASH_ATTR http_free_response(struct http_response *response)
 	debug("Freeing response data at %p.\n", response);
 	db_free(response->headers[3].value);
 	db_free(response->headers);
-	db_free(response->message);
+	if (response->message)
+	{
+		db_free(response->message);
+	}
 	db_free(response);
 }
