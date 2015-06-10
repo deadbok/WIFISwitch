@@ -95,17 +95,17 @@ void ICACHE_FLASH_ATTR http_send_response(struct http_response *response,
 	debug(" Message (%d bytes): %p.\n", msg_size, response->message);
 	
     //Send the status-line.
-    tcp_send(connection, response->status_line);
-    tcp_send(connection, "\r\n");
+    tcp_send(connection, response->status_line, os_strlen(response->status_line));
+    tcp_send(connection, "\r\n", 2);
     //Send headers.
     for (i = 0; i < response->n_headers; i++)
     {
 		if (response->headers[i].name && response->headers[i].value)
 		{
 			debug(" Header pointers: %p, %p.\n", response->headers[i].name, response->headers[i].value);
-			tcp_send(connection, response->headers[i].name);
-			tcp_send(connection, ": ");
-			tcp_send(connection, response->headers[i].value);
+			tcp_send(connection, response->headers[i].name, os_strlen(response->headers[i].name));
+			tcp_send(connection, ": ", 2);
+			tcp_send(connection, response->headers[i].value, os_strlen(response->headers[i].value));
 			//Check to see if we can close the connection.
 			if (os_strncmp(response->headers[i].name, "Connection", 10) == 0)
 			{
@@ -116,16 +116,17 @@ void ICACHE_FLASH_ATTR http_send_response(struct http_response *response,
 				}
 			}
 		}
-		tcp_send(connection, "\r\n");
+		tcp_send(connection, "\r\n", 2);
 	}
-    tcp_send(connection, "\r\n");
+    tcp_send(connection, "\r\n", 2);
     //Send content.
     if (send_content)
     {
 		if (response->message)
 		{
-			tcp_send(connection, response->message);
 			msg_size = os_strlen(response->message);
+			tcp_send(connection, response->message, msg_size);
+			
 		}
     }
     //Find status code and skip spaces.
@@ -332,7 +333,7 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 					  response->status_line = http_status_line_501;
 					  break;
 		}
-		debug(" Message size: %ld.\n", os_strlen(buffer));
+		//debug(" Message size: %ld.\n", os_strlen(buffer));
 		//Fill in the rest of the response.
         response->headers[3].value = db_malloc(sizeof(char) * digits(data_size) + 1, "response->headers[3].value http_generate_response");
         os_sprintf(response->headers[3].value, "%ld", data_size);
@@ -341,9 +342,9 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
         //response->headers[3].value[data_size] = '\0';
         response->message = buffer;
         
-        debug(" Buffer size: %ld.\n", os_strlen(buffer));
-        debug(" Message size: %ld.\n", os_strlen(response->message));
-		debug(" Message: %s\n", response->message);
+        //debug(" Buffer size: %ld.\n", os_strlen(buffer));
+        //debug(" Message size: %ld.\n", os_strlen(response->message));
+		//debug(" Message: %s\n", response->message);
         
         return(response);
     }

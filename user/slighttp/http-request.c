@@ -285,9 +285,6 @@ void ICACHE_FLASH_ATTR http_process_request(struct tcp_connection *connection)
     }
     response = http_generate_response(connection, status_code);
     debug("Response: %p.\n", response);
-    
-    debug("Message length: %d\n", os_strlen(response->message));
-    
     http_send_response(response, !headers_only);
     http_free_response(response);
     http_free_request(request);

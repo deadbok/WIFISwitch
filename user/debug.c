@@ -72,7 +72,7 @@ void ICACHE_FLASH_ATTR *db_alloc(size_t size, bool zero, char *info)
 {
 	void *ptr;
 
-	os_printf("Allocating size %d bytes.\n", size);	
+	os_printf("Allocating %d bytes.\n", size);	
 	if (zero)
 	{
 		ptr = os_zalloc(size);

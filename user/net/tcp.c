@@ -46,6 +46,7 @@
 const char *state_names[] = {"ESPCONN_NONE", "ESPCONN_WAIT", "ESPCONN_LISTEN",\
                              "ESPCONN_CONNECT", "ESPCONN_WRITE", "ESPCONN_READ",\
                              "ESPCONN_CLOSE"};
+                             
 /**
  * @brief Callback functions for handling TCP events.
  * 
@@ -105,7 +106,7 @@ struct tcp_cb_connection
      */
     struct tcp_callback_data    callback_data;
 };
-
+	
 /**
  * @brief Number of active connections.
  */
@@ -114,6 +115,10 @@ static unsigned char n_tcp_connections;
  * @brief Doubly-linked list of active connections.
  */
 static struct tcp_connection *tcp_connections = NULL;
+/**
+ * @brief Tell if TCP data is being send.
+ */
+static bool sending;
 
 /**
  * @brief The listening connection.
@@ -192,6 +197,12 @@ void ICACHE_FLASH_ATTR tcp_free(struct tcp_connection *connection)
     DL_LIST_UNLINK(connection, tcp_connections);
     debug(" Unlinked.\n");
     
+    //Maybe try to send the data if any (send_buffer != current_buffer_pos)?
+    if (connection->send_buffer)
+    {
+		db_free(connection->send_buffer);
+	}
+		
     if (connection != NULL)
     {
         db_free(connection);
@@ -223,6 +234,10 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
         connection->conn->proto.tcp->write_finish_fn = tcp_write_finish_cb;
         connection->conn->recv_callback = tcp_recv_cb;
         connection->conn->sent_callback = tcp_sent_cb;
+        
+        //No buffer yet.
+        connection->send_buffer = NULL;
+		connection->current_buffer_pos = NULL;
         
         //Save our connection data
         connection->conn->reverse = connection;
@@ -388,6 +403,39 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short 
 }
 
 /**
+ * @brief Send the send buffer.
+ * 
+ * @param connection Pointer to the connection to handle.
+ */
+static void ICACHE_FLASH_ATTR send_buffer(struct tcp_connection *connection)
+{
+	size_t buffer_size = 0;
+	
+	sending = true;
+	debug("Sending TCP data from buffer.\n");
+	
+	if (!connection->send_buffer)
+	{
+		debug(" No buffer.\n");
+		sending = false;
+		return;
+	}
+	else if (connection->send_buffer == connection->current_buffer_pos)
+	{
+		debug(" Buffer is empty.\n");
+		sending = false;
+		return;
+	}
+	
+	buffer_size = connection->current_buffer_pos - connection->send_buffer;
+	debug(" Sending buffer at %p, %d bytes.\n", connection->send_buffer, buffer_size);
+    espconn_sent(connection->conn, connection->send_buffer, buffer_size);
+    
+    //Back to start
+    connection->current_buffer_pos = connection->send_buffer;
+}
+
+/**
  * @brief Internal callback, called when TCP data has been sent.
  * 
  * @param arg Pointer to an espconn connection structure.
@@ -395,7 +443,7 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short 
 static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
 {
     struct espconn *conn = arg;
-    struct tcp_connection   *connection = conn->reverse;
+    struct tcp_connection *connection = conn->reverse;
     
     debug("TCP sent (%p).\n", connection);
     
@@ -407,22 +455,63 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
     if (listening_connection->callbacks.sent_callback != NULL)
     {
         listening_connection->callbacks.sent_callback(connection);
-    }    
-}
+    }
+    
+    connection->current_buffer_pos = connection->send_buffer;
+	sending = false;
+}	
 
 /** 
  * @brief Send TCP data.
  * 
  * @param connection Connection used for sending the data.
  * @param data Pointer to the data to send.
+ * @param size Length of data in bytes.
  * 
- * @returns espconn error status.
+ * @return true on success, false otherwise.
  */
-char ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char * const data)
+bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, size_t size)
 {
-    debug("Sending TCP: %s\n", data);
+	size_t buffer_size = 0;
+	size_t buffer_free = 0;
+	size_t data_left = size;
+	
+    debug("Queueing outgoing TCP data (%p),\n", data);
 
-    return(espconn_sent(connection->conn, (unsigned char *)data, os_strlen(data)));
+	//Create a buffer if there is none.
+    if (!connection->send_buffer)
+    {
+		connection->send_buffer = db_malloc(TCP_SEND_BUFFER_SIZE, "connection->send_buffer tcp_send");
+		debug(" Created new send buffer %p.\n", connection->send_buffer);
+		connection->current_buffer_pos = connection->send_buffer;
+	}
+	
+	buffer_size = connection->current_buffer_pos - connection->send_buffer;
+	buffer_free = TCP_SEND_BUFFER_SIZE - buffer_size;
+	
+	while (data_left)
+	{
+		if (!sending)
+		{
+			if (data_left > buffer_free)
+			{
+				debug(" Adding %d bytes to buffer at %p.\n", buffer_free, connection->current_buffer_pos);
+				os_memcpy(connection->current_buffer_pos, data, buffer_free);
+				connection->current_buffer_pos += buffer_free;
+				data_left -= buffer_free;
+			}
+			else
+			{
+				debug(" Adding %d bytes to buffer at %p.\n", data_left, connection->current_buffer_pos);
+				os_memcpy(connection->current_buffer_pos, data, data_left);
+				connection->current_buffer_pos += data_left;
+				data_left = 0;
+			}
+		}
+		send_buffer(connection);
+		debug(" %d bytes left to send.\n", data_left);
+	}
+	return(true);
 }
 
 /**
@@ -508,7 +597,7 @@ void ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
         callbacks->write_finish_fn = write_finish_cb;
         callbacks->recv_callback = recv_cb;
         callbacks->sent_callback = sent_cb;
-        
+            
         debug(" Accepting connections on port %d...", port);
         ret = espconn_accept(conn);
 #ifdef DEBUG

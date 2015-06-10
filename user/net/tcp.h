@@ -30,9 +30,14 @@
 #include "tools/dl_list.h"
 
 /**
- * Maximum number of TCP connections supported.
+ * @brief Maximum number of TCP connections supported.
  */
 #define TCP_MAX_CONNECTIONS 10
+
+/**
+ * @brief Bytes in a send buffer.
+ */
+#define TCP_SEND_BUFFER_SIZE 2048
 
 /**
  * @brief Data used by the callback functions.
@@ -93,9 +98,17 @@ struct tcp_connection
      * @brief Pointer to the data meant for the current callback.
      */
     struct tcp_callback_data callback_data;
+     /**
+      * @brief Start of current send buffer.
+      */
+     unsigned char *send_buffer;
+     /**
+      * @brief Current position in the send buffer, where new data should go.
+      */
+     unsigned char *current_buffer_pos;
     /**
      * @brief A pointer for the user, never touched.
-     */ 
+     */
     void *free;
     /**
      * @brief Pointers for the prev and next entry in the list.
@@ -109,7 +122,7 @@ extern void tcp_listen(int port, tcp_callback connect_cb,
                                 tcp_callback write_finish_cb, 
                                 tcp_callback recv_cb, 
                                 tcp_callback sent_cb);
-extern char tcp_send(struct tcp_connection *connection, char * const data);
+extern bool tcp_send(struct tcp_connection *connection, char *data, size_t size);
 extern char tcp_disconnect(struct tcp_connection *connection);
 extern void init_tcp(void);
 extern void tcp_stop(void);

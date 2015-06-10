@@ -1,3 +1,27 @@
+2015-06-10 Martin Grønholdt
+
+* slighttp/http-response.c (http_send_response): Changed for added size parameter to tcp_send.
+* debug.c (db_alloc): Fixed debug message.
+* net/tcp.c (send_buffer): Added function to send the buffer.
+			(tcp_send): Buffering.
+			(tcp_send): Added size paramerter.
+			(tcp_sent_cb): Initialise buffer pointers.			.
+			(tcp_free): Free buffer.
+* net/tcp.h: Added TCP_SEND_BUFFER_SIZE.
+		    (tcp_connection): Added send_buffer to struct.
+		    (tcp_connection): Added current_buffer_pos to struct.
+			(tcp_send): Added size paramerter.		    
+* tools/ring.h: Added file.
+			  : Added struct ring_buffer.
+			  : Added init_ring.
+			  : Added ring_push_back.
+			  : Added ring_pop_front.
+* tools/ring.c: Added file.
+			  : Added init_ring.
+			  : Added ring_push_back.
+			  : Added ring_pop_front.
+
+
 2015-06-09 Martin Grønholdt
 
 * net/tcp.c (tcp_connect_cb): Set recv_callback and sent_callback.
