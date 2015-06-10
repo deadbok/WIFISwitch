@@ -54,10 +54,10 @@
  */
 #define N_BUILTIN_URIS  3
 
-char *hello(char *uri, struct http_request *request);
+char *hello(char *uri, struct http_request *request, struct http_response *response);
 bool hello_test(char *uri);
 
-char *idx(char *uri, struct http_request *request);
+char *idx(char *uri, struct http_request *request, struct http_response *response);
 bool idx_test(char *uri);
 
 /**
@@ -79,7 +79,7 @@ bool ICACHE_FLASH_ATTR hello_test(char *uri)
     return(false);
 }
 
-char ICACHE_FLASH_ATTR *hello(char *uri, struct http_request *request)
+char ICACHE_FLASH_ATTR *hello(char *uri, struct http_request *request, struct http_response *response)
 {
     char    *html = "<!DOCTYPE html><head><title>Web server test.</title></head>\
                      <body>Hello world.</body></html>";
@@ -103,7 +103,7 @@ bool ICACHE_FLASH_ATTR idx_test(char *uri)
     return(false);  
 }
 
-char ICACHE_FLASH_ATTR *idx(char *uri, struct http_request *request)
+char ICACHE_FLASH_ATTR *idx(char *uri, struct http_request *request, struct http_response *response)
 {
     unsigned char i;
     unsigned char offset = 0;

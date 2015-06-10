@@ -147,7 +147,7 @@ struct http_response
  * @param request The request that led us here.
  * @return The HTML to send to the client.
  */
-typedef char *(*uri_html_callback)(char *uri, struct http_request *request);
+typedef char *(*uri_html_callback)(char *uri, struct http_request *request, struct http_response *response);
 /**
  * @brief Callback function to test static URIs.
  * 

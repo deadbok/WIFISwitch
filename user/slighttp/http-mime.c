@@ -32,6 +32,7 @@ struct http_mime_type http_mime_types[HTTP_N_MIME_TYPES] =
 	{"html", "text/html"},
 	{"css", "text/css"},
 	{"js", "text/javascript"},
+	{"json", "application/json"},
 	{"txt", "text/plain"},
 	{"jpg", "image/jpeg"},
 	{"jpeg", "image/jpeg"},

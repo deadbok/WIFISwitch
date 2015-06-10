@@ -32,6 +32,7 @@
 #include "tools/missing_dec.h"
 #include "tools/strxtra.h"
 #include "slighttp/http.h"
+#include "slighttp/http-mime.h"
 #include "fs/fs.h"
 
 static char **ap_ssids;
@@ -95,7 +96,7 @@ static char ICACHE_FLASH_ATTR *json_create_string_array(char **values, size_t en
  */
 bool ICACHE_FLASH_ATTR rest_net_names_test(char *uri)
 {
-    if (os_strncmp(uri, "/rest/net/networks/", 19) == 0)
+    if (os_strncmp(uri, "/rest/net/networks", 19) == 0)
     {
         return(true);
     }
@@ -176,10 +177,11 @@ static void scan_done_cb(void *arg, STATUS status)
  * @param request Data for the request that got us here.
  * @return The HTML.
  */
-char ICACHE_FLASH_ATTR *rest_net_names_html(char *uri, struct http_request *request)
+char ICACHE_FLASH_ATTR *rest_net_names_html(char *uri, struct http_request *request, struct http_response *response)
 {
     char *ret = NULL;
 	char *scan_str[1]={"scanning..."};
+	unsigned char i;
 	    
     debug("In network names REST handler (%s).\n", uri);
 
@@ -208,6 +210,15 @@ char ICACHE_FLASH_ATTR *rest_net_names_html(char *uri, struct http_request *requ
 	{
 		ret = json_create_string_array(scan_str, 1);
 	}
+	//Find the MIME-type
+	for (i = 0; i < HTTP_N_MIME_TYPES; i++)
+	{
+		if (os_strncmp(http_mime_types[i].ext, "json", 4) == 0)
+		{
+			response->headers[0].value = http_mime_types[i].type;
+			break;
+		}
+	}
     return(ret);
 }
 
@@ -218,7 +229,7 @@ char ICACHE_FLASH_ATTR *rest_net_names_html(char *uri, struct http_request *requ
  */
 void ICACHE_FLASH_ATTR rest_net_names_destroy(char *html)
 {
-	unsigned short i;
+	//unsigned short i;
 	
 	debug("Freeing network names REST data.\n");
 	if (html)

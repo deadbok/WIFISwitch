@@ -82,7 +82,7 @@ void ICACHE_FLASH_ATTR http_send_response(struct http_response *response,
 	char *s_status_code;
 	unsigned short i;
 	bool close = false;
-	size_t msg_size = 0;
+	size_t msg_size = os_strlen(response->message);
 	
 	//Probably would be better to put the whole thing in a buffer, and
 	//send it at once.
@@ -100,16 +100,20 @@ void ICACHE_FLASH_ATTR http_send_response(struct http_response *response,
     //Send headers.
     for (i = 0; i < response->n_headers; i++)
     {
-		tcp_send(connection, response->headers[i].name);
-		tcp_send(connection, ": ");
-		tcp_send(connection, response->headers[i].value);
-		//Check to see if we can close the connection.
-		if (os_strncmp(response->headers[i].name, "Connection", 10) == 0)
+		if (response->headers[i].name && response->headers[i].value)
 		{
-			if (os_strncmp(response->headers[i].value, "close", 5) == 0)
+			debug(" Header pointers: %p, %p.\n", response->headers[i].name, response->headers[i].value);
+			tcp_send(connection, response->headers[i].name);
+			tcp_send(connection, ": ");
+			tcp_send(connection, response->headers[i].value);
+			//Check to see if we can close the connection.
+			if (os_strncmp(response->headers[i].name, "Connection", 10) == 0)
 			{
-				debug("Closing connection when done.\n");
-				close = true;
+				if (os_strncmp(response->headers[i].value, "close", 5) == 0)
+				{
+					debug("Closing connection when done.\n");
+					close = true;
+				}
 			}
 		}
 		tcp_send(connection, "\r\n");
@@ -161,7 +165,7 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
     char *buffer = NULL;
     char *uri = NULL;
     char *fs_uri = NULL;
-    size_t uri_size, doc_root_size;
+    size_t uri_size, doc_root_size, ext_size;
     bool found = false;
     
     //Get memory for response.
@@ -237,12 +241,12 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 	debug(" Final file system request URI: %s.\n", fs_uri);
     
     //Try to open the URI as a file.
-    file = fs_open(uri);
+    file = fs_open(fs_uri);
     //Check if it went okay.
     if (file > FS_EOF)
     {
 		found = true;
-        debug(" Found file: %s.\n", uri);
+        debug(" Found file: %s.\n", fs_uri);
         
         //Get the size of the message.
         data_size = fs_size(file);
@@ -250,14 +254,15 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
         buffer = db_malloc((int)data_size + 1, "buffer http_generate_response");
         //Read the message from the file to the buffer.
         fs_read(buffer, data_size, sizeof(char), file);
-        //Zero treminate, to make sure.
+        //Zero terminate, to make sure.
         buffer[data_size] = '\0';
         fs_close(file);
         
         //Find the MIME-type
         for (i = 0; i < HTTP_N_MIME_TYPES; i++)
         {
-			if (os_strncmp(http_mime_types[i].ext, uri + os_strlen(uri) - 3, 3) == 0)
+			ext_size = os_strlen(http_mime_types[i].ext);
+			if (os_strncmp(http_mime_types[i].ext, fs_uri + os_strlen(fs_uri) - ext_size, ext_size) == 0)
 			{
 				response->headers[0].value = http_mime_types[i].type;
 				break;
@@ -282,7 +287,7 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 			found = true;
 			debug(" Found static page.\n");
 			//Get a pointer to the message.
-			message = static_uris[i].handler(uri, request);
+			message = static_uris[i].handler(uri, request, response);
 			if (message)
 			{
 				//Get size of the message.
@@ -327,13 +332,19 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 					  response->status_line = http_status_line_501;
 					  break;
 		}
-		debug(" Message size: %ld.\n", data_size);
+		debug(" Message size: %ld.\n", os_strlen(buffer));
 		//Fill in the rest of the response.
         response->headers[3].value = db_malloc(sizeof(char) * digits(data_size) + 1, "response->headers[3].value http_generate_response");
         os_sprintf(response->headers[3].value, "%ld", data_size);
-        response->headers[3].value[data_size] = '\0';
+        //Commented out the following line, it seems to introduce a bug, where
+        //the message is somehow shortened.
+        //response->headers[3].value[data_size] = '\0';
         response->message = buffer;
-
+        
+        debug(" Buffer size: %ld.\n", os_strlen(buffer));
+        debug(" Message size: %ld.\n", os_strlen(response->message));
+		debug(" Message: %s\n", response->message);
+        
         return(response);
     }
 	//Last escape 404 page.
@@ -358,7 +369,7 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 void ICACHE_FLASH_ATTR http_free_response(struct http_response *response)
 {
 	debug("Freeing response data at %p.\n", response);
-	db_free(response->headers[3].value);
+	//db_free(response->headers[3].value);
 	db_free(response->headers);
 	if (response->message)
 	{

@@ -125,7 +125,8 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg);
 static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err);
 static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg);
 static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg);
-
+static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short length);
+static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg);
 /**
  * @brief Internal function to print espconn status.
  * 
@@ -220,6 +221,8 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
         connection->conn->proto.tcp->reconnect_callback = tcp_reconnect_cb;
         connection->conn->proto.tcp->disconnect_callback = tcp_disconnect_cb;
         connection->conn->proto.tcp->write_finish_fn = tcp_write_finish_cb;
+        connection->conn->recv_callback = tcp_recv_cb;
+        connection->conn->sent_callback = tcp_sent_cb;
         
         //Save our connection data
         connection->conn->reverse = connection;

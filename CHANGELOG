@@ -1,3 +1,23 @@
+2015-06-09 Martin Grønholdt
+
+* net/tcp.c (tcp_connect_cb): Set recv_callback and sent_callback.
+* File system: Added atomic.js from https://github.com/toddmotto/atomic.
+*			 : Added jsonhttprequest.js from https://pixelsvsbytes.com/2011/12/teach-your-xmlhttprequest-some-json/.
+* fs/fs.c (fs_read): Return count.
+* user_main.c: Added response as parameter to static HTML generators.
+* rest/net-names.c (rest_net_names_html): Added JSON MIME type.
+				   					    : Added response as parameter.
+* slighttp/http-mime.c (http_mime_types): Added JSON MIME type.
+* slighttp/http-mime.h: Upped number of MIME types.
+* slighttp/http.h: Added parameter response to uri_html_callback.
+* slighttp/http-response.c (http_generate_response): Uses fs_uri for file system access.
+						   (http_generate_response): Passes response to static call back.
+						   (http_generate_response): Corrected bug in MIME detection.
+						   (http_send_response): Really print message size when debugging.
+						   (http_send_response): Added check for header pointer before sending.
+						   (http_send_response): Added more header debugging messages.
+
+
 2015-06-08 Martin Grønholdt (commited)
 
 * rest/net-names.c (rest_net_names_destroy): Added code.
@@ -61,7 +81,7 @@
 * tmpl/tmpl.c (global): Added get_var.
 * tmpl/tmpl.c (tmpl_apply): Still not done. Can count and find tokens.
 * slighttp/http-response.c (http_send_response): Added message size to debug output.
-* fs/connect/index.html: Renamed to index.tmpl.
+* File system: fs/connect/index.html renamed to index.tmpl.
 
 
 2015-05-31 Martin Grønholdt
@@ -141,7 +161,7 @@
 * net/tcp.c (global): Added tcp_stop.
 * net/wifi_connect (timeout_cb): Added HTTP server.
 * CHANGELOG: Added commit history.
-* fs/ (global): Added connect directory and files.
+* File system:: fs/ added connect directory and files.
 
 Thu May 28 23:38:34 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 V0.0.2

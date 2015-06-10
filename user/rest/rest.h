@@ -25,7 +25,7 @@
 #define REST_H
 
 extern bool rest_net_names_test(char *uri);
-extern char *rest_net_names_html(char *uri, struct http_request *request);
+extern char *rest_net_names_html(char *uri, struct http_request *request, struct http_response *response);
 extern void rest_net_names_destroy(char *html);
 
 #endif

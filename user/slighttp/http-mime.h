@@ -24,7 +24,7 @@
 #ifndef HTTP_MIME_H
 #define HTTP_MIME_H
 
-#define HTTP_N_MIME_TYPES 8
+#define HTTP_N_MIME_TYPES 9
 
 /**
  * @brief Structure to represent a MIME-type.

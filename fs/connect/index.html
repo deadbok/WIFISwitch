@@ -11,5 +11,19 @@ Networks:
 <option value="nets" class="smooth">Networks...</option>
 </select>
 </form>
+<p id="json"></p>
+<script src="js/atomic.min.js"></script>
+<script>
+atomic.get('/rest/net/networks')
+.success(function (data, xhr) 
+{
+	var network_names = JSON.parse(data);
+	document.getElementById("json").innerHTML = network_names[0];
+})
+.error(function (data, xhr) 
+{
+
+});
+</script>
 </body>
-</html>
+</html>vbvbv  bb 

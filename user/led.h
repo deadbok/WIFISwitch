@@ -28,6 +28,6 @@
 #include "c_types.h"
 
 bool led_test(char *uri);
-char *led_html(char *uri, struct http_request *request);
+char *led_html(char *uri, struct http_request *request, struct http_response *response);
 
 #endif

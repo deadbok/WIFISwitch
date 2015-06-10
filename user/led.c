@@ -38,7 +38,7 @@ bool ICACHE_FLASH_ATTR led_test(char *uri)
     return(false);  
 }
 
-char ICACHE_FLASH_ATTR *led_html(char *uri, struct http_request *request)
+char ICACHE_FLASH_ATTR *led_html(char *uri, struct http_request *request, struct http_response *response)
 {
     char    *html = "<!DOCTYPE html><head><title>Led toggle.</title></head>\
                      <body>Toggle LED.<br /><div name=\"status\">LED status: Off\
