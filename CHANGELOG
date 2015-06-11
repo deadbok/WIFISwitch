@@ -1,5 +1,7 @@
 2015-06-10 Martin Grønholdt
 
+* net/wifi_config.c: Removed file.
+* net/wifi_config.h: Removed file.
 * slighttp/html-response.c (http_send_response): More debug output.
 * net/wifi_connect.c: Added static network REST handler.
 * rest/network.c: Added file. Return the current network name.
