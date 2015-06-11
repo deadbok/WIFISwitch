@@ -111,7 +111,7 @@ bool ICACHE_FLASH_ATTR flash_read(const void *data, unsigned int read_addr, size
 {
     unsigned int addr = FS_ADDR + read_addr;
     
-    debug("Reading %d bytes of flash at 0x%x...", size, addr);
+    debug("Reading %d bytes of flash at 0x%x (absolute 0x%x)...", size, read_addr, addr);
     
     if (spi_flash_read(addr, (uint32 *)data, size) == SPI_FLASH_RESULT_OK)
     {

@@ -39,9 +39,6 @@
  * locate the file data. Since the ZIP structure is only used to emulate a file
  * system structure, no decompression is implemented.
  * 
- * Since there is no caching, the more files you add to the zip, the slower
- * the file lookup may be.
- *
  * Based on: https://github.com/micropython/micropython/blob/master/teensy/memzip.c
  */
 
@@ -50,6 +47,33 @@
 #include "int_flash.h"
 #include "user_config.h"
 #include "zip.h"
+
+/**
+ * @brief Entry in the file look up table.
+ */
+struct zip_flut_entry
+{
+	/**
+	 * @brief File name.
+	 */
+	char *filename;
+	/**
+	 * @brief Address of the file header in the ZIP file.
+	 */
+	unsigned int hdr_offset;
+	/**
+	 * @brief Address of the file data in the ZIP file.
+	 */
+	unsigned int data_offset;
+};
+/**
+ * @brief File look up table.
+ */
+static struct zip_flut_entry *zip_flut;
+/**
+ * @brief Number of entries in the flut.
+ */
+static unsigned short zip_flut_entries;
 
 /**
  * @brief Load a local file header.
@@ -127,57 +151,82 @@ struct zip_file_hdr *zip_find_file_header(char *path)
 {
     struct zip_file_hdr *file_hdr;
     unsigned int offset = 0;
+    size_t path_length;
+    size_t filename_length;
 
     debug("Finding file header for path: %s.\n", path);
-    file_hdr = zip_load_header(0);
-    if (!file_hdr)
-    {
-        return(NULL);
-    }    
-
+    
     //Zip file filenames don't have a leading /, so we strip it off.
     if (*path == '/') 
     {
         path++;
     }
-    //Run while there are more headers.
-    while (file_hdr) 
+    path_length = os_strlen(path);
+    
+    //Use look up if possible.
+    if (zip_flut)
     {
-        //Test bit 3 of the flags, to see if a data descriptor is used.
-        if ((file_hdr->flags & ( 1 << 2)))
-        {
-            error("ZIP data descriptors are not supported.\n");
-            return(NULL);
-        }
-        //Calculate the position of the file data.
-        offset += ZIP_REAL_FILE_HEADER_SIZE;
-        offset += file_hdr->filename_len;
-        offset += file_hdr->extra_len;
-        
-        if ((!os_strncmp(file_hdr->filename, path, file_hdr->filename_len)) &&
-            (file_hdr->filename_len == os_strlen(path))) 
-        {
-            //We found a match .
-            debug("Found.\n");
-            file_hdr->data_pos = offset;
-            return(file_hdr);
-        }
-        
-        //Free the memory again
-        zip_free_header(file_hdr);
-        
-        //Skip to next header.
-        offset += file_hdr->uncompressed_size;
-        //Read it.
-        file_hdr = zip_load_header(offset);
-        if (!file_hdr)
-        {
-            return(NULL);
-        }    
+		while ((offset < zip_flut_entries))
+		{
+			filename_length = os_strlen(zip_flut[offset].filename);			
+			if ((!os_strncmp(zip_flut[offset].filename, path, filename_length)) &&
+            (filename_length == path_length))
+			{
+				debug(" Found file in flut at %d.\n", offset);
+				file_hdr = zip_load_header(zip_flut[offset].hdr_offset);
+				file_hdr->data_pos = zip_flut[offset].data_offset;
+				return(file_hdr);
+			}
+			offset++;
+		}
+	}
+	else
+	{
+		debug(" No flut.\n");
+	
+		offset = 0;
+		file_hdr = zip_load_header(0);
+		if (!file_hdr)
+		{
+			return(NULL);
+		}    
+
+		//Run while there are more headers.
+		while (file_hdr) 
+		{
+			//Test bit 3 of the flags, to see if a data descriptor is used.
+			if ((file_hdr->flags & ( 1 << 2)))
+			{
+				error("ZIP data descriptors are not supported.\n");
+				return(NULL);
+			}
+			//Calculate the position of the file data.
+			offset += ZIP_REAL_FILE_HEADER_SIZE;
+			offset += file_hdr->filename_len;
+			offset += file_hdr->extra_len;
+			
+			if ((!os_strncmp(file_hdr->filename, path, file_hdr->filename_len)) &&
+				(file_hdr->filename_len == path_length))
+			{
+				//We found a match .
+				debug("Found.\n");
+				file_hdr->data_pos = offset;
+				return(file_hdr);
+			}
+			
+			//Skip to next header.
+			offset += file_hdr->uncompressed_size;
+			
+			//Free the memory again
+			zip_free_header(file_hdr);
+			
+			//Read it.
+			file_hdr = zip_load_header(offset);
+		}
     }
-    zip_free_header(file_hdr);
+
     debug("Not found!\n"); 
-    return NULL;
+    return(NULL);
 }
 
 /**
@@ -211,7 +260,7 @@ bool zip_is_dir(char *path)
 
     if (filename_len < file_hdr->filename_len &&
         os_strncmp(file_hdr->filename, path, filename_len) == 0 &&
-        file_hdr->filename[filename_len] == '/') 
+        file_hdr->filename[filename_len - 1] == '/') 
     {
         return(true);
     }
@@ -225,6 +274,93 @@ bool zip_is_dir(char *path)
  */
 void ICACHE_FLASH_ATTR zip_free_header(struct zip_file_hdr *file_hdr)
 {
-    db_free(file_hdr->filename);
-    db_free(file_hdr);
+	if (file_hdr->filename)
+	{
+		db_free(file_hdr->filename);
+	}
+	if (file_hdr)
+	{
+		db_free(file_hdr);
+	}
+}
+
+/**
+ * @brief Initialise the zip routines.
+ */
+void ICACHE_FLASH_ATTR init_zip(void)
+{
+	struct zip_file_hdr *file_hdr;
+    unsigned int offset = 0;
+    unsigned int data_offset;
+    unsigned short files = 0;
+
+    debug("Initialising ZIP support.\n");
+
+	debug(" Counting files.\n");
+	file_hdr = zip_load_header(0);
+    //Run while there are more headers.
+    while (file_hdr) 
+    {
+        //Test bit 3 of the flags, to see if a data descriptor is used.
+        if (!(file_hdr->flags & ( 1 << 2)))
+        {
+			//Ignore directories.
+			if (file_hdr->filename[file_hdr->filename_len - 1] != '/')
+			{
+				files++;
+			}
+		}
+		else
+        {
+            warn("\nZIP data descriptors are not supported.\n");
+        }
+        //Calculate the position of the file data.
+        offset += ZIP_REAL_FILE_HEADER_SIZE;
+        offset += file_hdr->filename_len;
+        offset += file_hdr->extra_len;
+		//Skip to next header.
+        offset += file_hdr->uncompressed_size;                
+        
+        //Free the memory again
+        zip_free_header(file_hdr);
+        
+        //Read it.
+        file_hdr = zip_load_header(offset);  
+    }
+    debug(" %d files.\n", files); 
+	zip_flut_entries = files;
+	zip_flut = db_malloc(sizeof(struct zip_flut_entry) * files, "zip_flut init_zip");
+	
+	debug(" Adding files to file look up table.\n");
+	files = 0;
+	offset = 0;
+	file_hdr = zip_load_header(0);
+    //Run while there are more headers.
+    while (file_hdr) 
+    {
+		data_offset = offset + ZIP_REAL_FILE_HEADER_SIZE + file_hdr->filename_len + file_hdr->extra_len;
+        //Test bit 3 of the flags, to see if a data descriptor is used.
+        if (!(file_hdr->flags & ( 1 << 2)))
+        {
+			//Ignore directories.
+			if (file_hdr->filename[file_hdr->filename_len - 1] != '/')
+			{
+				debug(" Adding \"%s\" at 0x%x.\n", file_hdr->filename, offset);
+				zip_flut[files].filename = db_malloc(os_strlen(file_hdr->filename), "zip_flut[files].filename init_zip.");
+				os_strcpy(zip_flut[files].filename, file_hdr->filename);
+				zip_flut[files].hdr_offset = offset;
+				zip_flut[files].data_offset = data_offset;
+				files++;
+			}
+		}
+        offset = data_offset;
+		//Skip to next header.
+        offset += file_hdr->uncompressed_size;                
+        
+        //Free the memory again
+        zip_free_header(file_hdr);
+        
+        //Read it.
+        file_hdr = zip_load_header(offset);  
+    }
 }

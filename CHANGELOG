@@ -1,5 +1,12 @@
 2015-06-10 Martin Grønholdt
 
+* fs/fs.c (fs_read): Fixed was always readin from start of file.
+* fs/int_flash.c (flash_read): More debug output.
+* fs/zip.h: Added init_zip.
+* fs/zip.c: Added init_zip.
+*		   (zip_find_file_header): Fixed access to data after they were freed.
+								 : File look up caching.
+		   (zip_is_dir): Fixed a string index.
 * net/wifi_config.c: Removed file.
 * net/wifi_config.h: Removed file.
 * slighttp/html-response.c (http_send_response): More debug output.

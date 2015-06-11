@@ -65,6 +65,7 @@ static FS_FILE_H n_open_files = 0;
  */
 void ICACHE_FLASH_ATTR fs_init(void)
 {
+	init_zip();
 }
 
 /**
@@ -153,6 +154,8 @@ FS_FILE_H ICACHE_FLASH_ATTR fs_open(char *filename)
     //Assign to current file
     fs_open_files[i] = file;    
     debug(" File handle: %d.\n", i);
+    debug(" Size: %d.\n", file->size);
+    debug(" Start: 0x%x.\n", file->start_pos);
     return(i);
 }
 
@@ -185,6 +188,7 @@ void ICACHE_FLASH_ATTR fs_close(FS_FILE_H handle)
 size_t ICACHE_FLASH_ATTR fs_read(void *buffer, size_t size, size_t count, FS_FILE_H handle)
 {
     size_t total_size = size * count;
+    unsigned int abs_pos = fs_open_files[handle]->start_pos + fs_open_files[handle]->pos;
     
     debug("Reading %d bytes from %d.\n", total_size, handle);
     if (!fs_test_handle(handle))
@@ -192,13 +196,13 @@ size_t ICACHE_FLASH_ATTR fs_read(void *buffer, size_t size, size_t count, FS_FIL
         return(0);
     }
     //Don't read beyond the data.
-    if( total_size > fs_open_files[handle]->size)
+    if (total_size > (fs_open_files[handle]->size - fs_open_files[handle]->pos))
     {
         warn("Truncating read to file size.\n");
-        total_size = fs_open_files[handle]->size;
+        total_size = fs_open_files[handle]->size - fs_open_files[handle]->pos;
     }
 
-    if (!flash_read(buffer, fs_open_files[handle]->start_pos, total_size))
+    if (!flash_read(buffer, abs_pos, total_size))
     {
         error("Failed reading %d bytes from %d.\n", total_size, handle);
         return(0);

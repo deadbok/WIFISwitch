@@ -61,5 +61,6 @@ struct __attribute__ ((__packed__)) zip_file_hdr
 extern struct zip_file_hdr *zip_find_file_header(char *path);
 extern bool zip_is_dir(char *path);
 extern void zip_free_header(struct zip_file_hdr *file_hdr);
+extern void init_zip(void);
 
 #endif //ZIP_H
