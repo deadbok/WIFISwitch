@@ -96,7 +96,7 @@ static char ICACHE_FLASH_ATTR *json_create_string_array(char **values, size_t en
  */
 bool ICACHE_FLASH_ATTR rest_net_names_test(char *uri)
 {
-    if (os_strncmp(uri, "/rest/net/networks", 19) == 0)
+    if (os_strncmp(uri, "/rest/net/networks", 18) == 0)
     {
         return(true);
     }
@@ -171,13 +171,13 @@ static void scan_done_cb(void *arg, STATUS status)
 }
 
 /**
- * @brief Generate the HTML for configuring the network connection.
+ * @brief Generate a JSON array of available access points.
  * 
  * @param uri The URI to answer.
  * @param request Data for the request that got us here.
- * @return The HTML.
+ * @return The JSON.
  */
-char ICACHE_FLASH_ATTR *rest_net_names_html(char *uri, struct http_request *request, struct http_response *response)
+char ICACHE_FLASH_ATTR *rest_net_names(char *uri, struct http_request *request, struct http_response *response)
 {
     char *ret = NULL;
 	unsigned char i;
@@ -224,19 +224,19 @@ char ICACHE_FLASH_ATTR *rest_net_names_html(char *uri, struct http_request *requ
 }
 
 /**
- * @brief Deallocate memory used for the HTML.
+ * @brief Deallocate memory used for the response.
  * 
- * @param html A pointer to the mem to deallocate.
+ * @param response A pointer to the mem to deallocate.
  */
-void ICACHE_FLASH_ATTR rest_net_names_destroy(char *html)
+void ICACHE_FLASH_ATTR rest_net_names_destroy(char *response)
 {
 	//unsigned short i;
 	
 	debug("Freeing network names REST data.\n");
-	if (html)
+	if (response)
 	{
-		debug(" Freeing HTML (%p).\n", html);
-		db_free(html);
+		debug(" Freeing response (%p).\n", response);
+		db_free(response);
 	}
 	/*if (ap_ssids)
 	{

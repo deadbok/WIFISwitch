@@ -4,7 +4,7 @@
 </head>
 <body>
 <h1>Network connection setup</h1>
-<p>Current configured network: </p>
+<p>Current configured network: <pre id="network"></pre></p>
 <form action="/ap_set.html" method="POST">
 Networks: 
 <select id="networks">
@@ -61,6 +61,18 @@ function retryGet()
 		setTimeout(retryGet, 2000);
 	}
 }
+
+var network = document.getElementById("network");
+
+atomic.get('/rest/net/network')
+.success(function (data, xhr) 
+{
+	network.innerHTML = data.network;
+})
+.error(function (data, xhr) 
+{
+	network.innerHTML = "Error: Could not get default network name.";
+});
 	
 retryGet();
 </script>

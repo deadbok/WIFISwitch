@@ -56,14 +56,15 @@ unsigned char         connect_status = 0;
 /**
  * @brief Number of built in URIs in the #g_builtin_uris array.
  */
-#define WIFI_CONFIG_N_URIS  1
+#define WIFI_CONFIG_N_URIS  2
 
 /**
  * @brief Array of built in handlers and their URIs.
  */
 struct http_builtin_uri g_wifi_config_uris[WIFI_CONFIG_N_URIS] =
 {
-    {rest_net_names_test, rest_net_names_html, rest_net_names_destroy}
+	{rest_network_test, rest_network, rest_network_destroy},
+    {rest_net_names_test, rest_net_names, rest_net_names_destroy}
 };
 
 //Connection callback function.

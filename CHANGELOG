@@ -1,7 +1,16 @@
 2015-06-10 Martin Grønholdt
 
+* slighttp/html-response.c (http_send_response): More debug output.
+* net/wifi_connect.c: Added static network REST handler.
+* rest/network.c: Added file. Return the current network name.
 * rest/net-names (rest_net_names_html): Return an empty JSON array while scanning.
-* rest/net-names (rest_net_names_html): Added more debug output.
+*                                     : Added more debug output.
+*									  : Changed name to rest_net_names.
+*				 (rest_net_names_destroy): Renamed parameter html to response.
+* rest/rest.h: Changed rest_net_names_html to rest_net_names.
+*			 : Added rest_network_test, rest_network, and rest_network_destroy.
+			 (rest_net_names_destroy): Renamed parameter html to response.
+* rest/net-names.c (rest_net_names_test): Fixed comparison length.
 * fs/connect/index.html: Implemented REST data for network selection.
 
 

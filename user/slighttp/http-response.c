@@ -92,7 +92,8 @@ void ICACHE_FLASH_ATTR http_send_response(struct http_response *response,
 	debug(" Status-line: %s.\n", response->status_line);
 	debug(" Headers: %p.\n", response->headers);
 	debug(" Number of headers: %d.\n", response->n_headers);
-	debug(" Message (%d bytes): %p.\n", msg_size, response->message);
+	debug(" Message (%d bytes) at: %p.\n", msg_size, response->message);
+	debug(" Message: \n\n%s\n\n", response->message);
 	
     //Send the status-line.
     tcp_send(connection, response->status_line, os_strlen(response->status_line));
