@@ -1,5 +1,12 @@
 2015-06-10 Martin Grønholdt
 
+* rest/net-names (rest_net_names_html): Return an empty JSON array while scanning.
+* rest/net-names (rest_net_names_html): Added more debug output.
+* fs/connect/index.html: Implemented REST data for network selection.
+
+
+2015-06-10 Martin Grønholdt (committed)
+
 * slighttp/http-response.c (http_send_response): Changed for added size parameter to tcp_send.
 * debug.c (db_alloc): Fixed debug message.
 * net/tcp.c (send_buffer): Added function to send the buffer.
@@ -42,7 +49,7 @@
 						   (http_send_response): Added more header debugging messages.
 
 
-2015-06-08 Martin Grønholdt (commited)
+2015-06-08 Martin Grønholdt (committed)
 
 * rest/net-names.c (rest_net_names_destroy): Added code.
 				   (json_create_string_array): Free lengths.

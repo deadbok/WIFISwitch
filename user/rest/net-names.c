@@ -1,3 +1,4 @@
+
 /**
  * @file net-names.c
  *
@@ -60,7 +61,6 @@ static char ICACHE_FLASH_ATTR *json_create_string_array(char **values, size_t en
 		{
 			total_length++;
 		}
-
 	}
 	//']'
 	total_length++;
@@ -104,7 +104,7 @@ bool ICACHE_FLASH_ATTR rest_net_names_test(char *uri)
 }
 
 /**
- * @brief Callback for when the ESP8266 is done fincing access points.
+ * @brief Callback for when the ESP8266 is done finding access points.
  * 
  * @param arg Pointer to a ESP8266 scaninfo struct, with an AP list.
  * @param status ESP8266 enum STATUS, telling how the scan went.
@@ -180,7 +180,6 @@ static void scan_done_cb(void *arg, STATUS status)
 char ICACHE_FLASH_ATTR *rest_net_names_html(char *uri, struct http_request *request, struct http_response *response)
 {
     char *ret = NULL;
-	char *scan_str[1]={"scanning..."};
 	unsigned char i;
 	    
     debug("In network names REST handler (%s).\n", uri);
@@ -208,7 +207,8 @@ char ICACHE_FLASH_ATTR *rest_net_names_html(char *uri, struct http_request *requ
 	
 	if (!ret)
 	{
-		ret = json_create_string_array(scan_str, 1);
+		ret = db_malloc(sizeof(char) * 3, "ret rest_net_names_html");
+		os_memcpy(ret, "[]\0", sizeof(char) * 3);
 	}
 	//Find the MIME-type
 	for (i = 0; i < HTTP_N_MIME_TYPES; i++)
@@ -219,6 +219,7 @@ char ICACHE_FLASH_ATTR *rest_net_names_html(char *uri, struct http_request *requ
 			break;
 		}
 	}
+	debug(" Response: %s.\n", ret);
     return(ret);
 }
 

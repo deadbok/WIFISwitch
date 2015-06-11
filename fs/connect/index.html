@@ -7,23 +7,62 @@
 <p>Current configured network: </p>
 <form action="/ap_set.html" method="POST">
 Networks: 
-<select>
+<select id="networks">
 <option value="nets" class="smooth">Networks...</option>
 </select>
 </form>
 <p id="json"></p>
 <script src="js/atomic.min.js"></script>
 <script>
-atomic.get('/rest/net/networks')
-.success(function (data, xhr) 
-{
-	var network_names = JSON.parse(data);
-	document.getElementById("json").innerHTML = network_names[0];
-})
-.error(function (data, xhr) 
-{
+	
+var done = false;
+var pending = false;
 
-});
+function populateNetworks(networks)
+{
+	var netSelect = document.getElementById("networks");
+	
+	netSelect.options.length = 0;
+	
+	if (networks.length === 0)
+	{
+		netSelect.options[netSelect.options.length] = new Option("Scanning...", "", false, false);
+		return;
+	}
+	for (var i = 0; i < networks.length; i++)
+	{
+		netSelect.options[netSelect.options.length] = new Option(networks[i], networks[i], false, false);
+	}
+}
+	
+function getNetworks()
+{
+	pending = true;
+	atomic.get('/rest/net/networks')
+	.success(function (data, xhr) 
+	{
+		populateNetworks(data);
+		done = true;
+		pending = false;
+	})
+	.error(function (data, xhr) 
+	{
+		populateNetworks(new Array("Error..."));
+		pending = false;
+	});
+}
+
+function retryGet()
+{
+	var data = getNetworks();
+	
+	if (!done && !pending)
+	{
+		setTimeout(retryGet, 2000);
+	}
+}
+	
+retryGet();
 </script>
 </body>
-</html>vbvbv  bb 
+</html>
