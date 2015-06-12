@@ -51,7 +51,7 @@ char ICACHE_FLASH_ATTR *http_parse_headers(struct tcp_connection *connection,
     char *next_data = raw_headers;
     char *value;
     //Array where all headers are pointed to.
-    struct http_header *headers;
+    struct http_header *headers = NULL;
     //Number of headers.
     unsigned short n_headers;
     //True if something is done doing stuff.
@@ -91,71 +91,78 @@ char ICACHE_FLASH_ATTR *http_parse_headers(struct tcp_connection *connection,
             }
         }
     }
-    //Go back to where the headers start.
-    next_data = raw_headers;
-    //Run through the response headers.
-    debug("Parsing headers (%p):\n", data);
-    //Allocate memory for the array of headers
-    headers = db_malloc(sizeof(struct http_header) * n_headers, "headers http_parse_headers");
-    //Start from scratch.
-    n_headers = 0;
-    //Not done.
-    done = false;
-    //Go go go.
-    while (!done && next_data)
+    if (n_headers)
     {
-        next_data = strchrs(next_data, "\r\n");
-        if (next_data)
-        {
-            //Is it the end?
-            if ((os_strncmp(next_data, "\r\n\r\n ", 4) == 0) ||
-                (os_strncmp(next_data, "\n\n ", 2) == 0))
-            {
-                debug(" Last header.\n");
-                HTTP_EAT_CRLF(next_data, 2);
-                //Get out.
-                done = true;
-            }
-            else
-            {
-                HTTP_EAT_CRLF(next_data, 1);
-            }
-            //Find end of name.
-            value = os_strstr(data, ":");
-            if (!value)
-            {
-                error("Could not parse request header: %s\n", data);
-                //Bail out
-                return(NULL);
-            }
-            //Spec. says to return 400 on space before the colon.
-            if (*(value - 1) == ' ')
-            {
-                return(NULL);
-            }
-            //End name string.
-            *value++ = '\0';
-            //Convert to lower case.
-            data = strlwr(data);
-            //Get some memory for the pointers.
-            headers[n_headers].name = data;
-            debug(" Name (%p): %s\n", headers[n_headers].name, 
-				  headers[n_headers].name);
-            
-            //Eat spaces in front of value.
-            HTTP_EAT_SPACES(value);
-            //Save value.
-            headers[n_headers].value = value;
-            debug(" Value (%p): %s\n", headers[n_headers].value,
-				  headers[n_headers].value);
-            //Go to the next entry
-            data = next_data;
-        }
-        else
-        {
-            debug("Done (%p).", next_data);
-        }
-    }
+		//Go back to where the headers start.
+		next_data = raw_headers;
+		//Run through the response headers.
+		debug("Parsing headers (%p):\n", data);
+		//Allocate memory for the array of headers
+		headers = db_malloc(sizeof(struct http_header) * n_headers, "headers http_parse_headers");
+		//Start from scratch.
+		n_headers = 0;
+		//Not done.
+		done = false;
+		//Go go go.
+		while (!done && next_data)
+		{
+			next_data = strchrs(next_data, "\r\n");
+			if (next_data)
+			{
+				//Is it the end?
+				if ((os_strncmp(next_data, "\r\n\r\n ", 4) == 0) ||
+					(os_strncmp(next_data, "\n\n ", 2) == 0))
+				{
+					debug(" Last header.\n");
+					HTTP_EAT_CRLF(next_data, 2);
+					//Get out.
+					done = true;
+				}
+				else
+				{
+					HTTP_EAT_CRLF(next_data, 1);
+				}
+				//Find end of name.
+				value = os_strstr(data, ":");
+				if (!value)
+				{
+					error("Could not parse request header: %s\n", data);
+					//Bail out
+					return(NULL);
+				}
+				//Spec. says to return 400 on space before the colon.
+				if (*(value - 1) == ' ')
+				{
+					return(NULL);
+				}
+				//End name string.
+				*value++ = '\0';
+				//Convert to lower case.
+				data = strlwr(data);
+				//Get some memory for the pointers.
+				headers[n_headers].name = data;
+				debug(" Name (%p): %s\n", headers[n_headers].name, 
+					  headers[n_headers].name);
+				
+				//Eat spaces in front of value.
+				HTTP_EAT_SPACES(value);
+				//Save value.
+				headers[n_headers].value = value;
+				debug(" Value (%p): %s\n", headers[n_headers].value,
+					  headers[n_headers].value);
+				//Go to the next entry
+				data = next_data;
+			}
+			else
+			{
+				debug("Done (%p).", next_data);
+			}
+		}
+	}
+	else
+	{
+		debug(": 0\n");
+	}
     ((struct http_request *)connection->free)->headers = headers;
     ((struct http_request *)connection->free)->n_headers = n_headers;
     return(next_data);
@@ -217,9 +224,7 @@ char ICACHE_FLASH_ATTR *http_parse_request(struct tcp_connection *connection,
 void ICACHE_FLASH_ATTR http_process_request(struct tcp_connection *connection)
 {
     struct http_request *request = connection->free;
-    struct http_response *response;
     unsigned short status_code = 200;
-    bool headers_only = false;
     
     //Parse the request header
 	if (os_strncmp(connection->callback_data.data, "GET ", 4) == 0)
@@ -249,10 +254,6 @@ void ICACHE_FLASH_ATTR http_process_request(struct tcp_connection *connection)
         {
             status_code = 400;
         }
-        else
-        {
-			headers_only = true;
-		}
 	}
     else if(os_strncmp(connection->callback_data.data, "PUT ", 4) == 0)
     {
@@ -283,10 +284,7 @@ void ICACHE_FLASH_ATTR http_process_request(struct tcp_connection *connection)
         error("Unknown request: %s\n", connection->callback_data.data);
 		status_code = 501;
     }
-    response = http_generate_response(connection, status_code);
-    debug("Response: %p.\n", response);
-    http_send_response(response, !headers_only);
-    http_free_response(response);
+    http_send_response(connection, status_code);
     http_free_request(request);
 }
 

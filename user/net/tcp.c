@@ -429,6 +429,7 @@ static void ICACHE_FLASH_ATTR send_buffer(struct tcp_connection *connection)
 	
 	buffer_size = connection->current_buffer_pos - connection->send_buffer;
 	debug(" Sending buffer at %p, %d bytes.\n", connection->send_buffer, buffer_size);
+	debug(" Data: %s.\n", connection->send_buffer);
     espconn_sent(connection->conn, connection->send_buffer, buffer_size);
     
     //Back to start

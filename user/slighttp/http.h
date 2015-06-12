@@ -25,10 +25,11 @@
 #define HTTP_H
 
 #include "net/tcp.h"
+
 /**
- * @brief Close connection when the server is done.
+ * @brief The largest block to read from a file, at a time.
  */
-#define HTTP_CLOSE_CONNECTIONS  true
+#define HTTP_FILE_CHUNK_SIZE  256
 
 /**
  * @brief Server name.
@@ -141,13 +142,15 @@ struct http_response
 /**
  * @brief Callback function for static URIs.
  * 
- * These are called to generate the response message.
+ * This called to generate the response message. This functions is expected to
+ * send any headers and the message for the response. The function should 
+ * return the size of the response message in bytes.
  * 
  * @param uri The uri to generate the response message for.
  * @param request The request that led us here.
- * @return The HTML to send to the client.
+ * @return The size of the response message send.
  */
-typedef char *(*uri_html_callback)(char *uri, struct http_request *request, struct http_response *response);
+typedef size_t (*uri_response_callback)(char *uri, struct http_request *request);
 /**
  * @brief Callback function to test static URIs.
  * 
@@ -158,11 +161,9 @@ typedef char *(*uri_html_callback)(char *uri, struct http_request *request, stru
  */
 typedef bool (*uri_comp_callback)(char *uri);
 /**
- * @brief Callback function to cleanup after a response.
- * 
- * @param ptr Pointer to the HTML response.
+ * @brief Callback function to clean up after a response.
  */
-typedef void (*uri_destroy_callback)(char *ptr);
+typedef void (*uri_destroy_callback)(void);
 
 /** 
  * @brief Structure to store information for a built in URI.
@@ -179,7 +180,7 @@ struct  http_builtin_uri
 	/**
      * @brief A function pointer to a function, that renders the answer.
      */
-    uri_html_callback handler;
+    uri_response_callback handler;
     /**
      * @brief A function pointer to a function, that cdoes cleanup if needed.
      */

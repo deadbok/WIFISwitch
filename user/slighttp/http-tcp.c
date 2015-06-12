@@ -93,16 +93,12 @@ void ICACHE_FLASH_ATTR tcp_write_finish_cb(struct tcp_connection *connection)
  */
 void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 {
-	struct http_response *response;
-    
     debug("HTTP received (%p).\n", connection);
     if ((connection->callback_data.data == NULL) || 
         (os_strlen(connection->callback_data.data) == 0))
     {
         error("Emtpy request recieved.\n");
-        response = http_generate_response(connection, 400);
-        http_send_response(response, true);
-        http_free_response(response);
+        http_send_response(connection, 400);
         return;
     }
 

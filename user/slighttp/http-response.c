@@ -34,11 +34,6 @@
 #include "http-response.h"
 
 /**
- * @brief Number of headers that #http_generate_response response will create.
- */
-#define HTTP_N_RESPONSE_HEADERS 4
-
-/**
  * @brief 200 status-line.
  */
 char *http_status_line_200 = HTTP_STATUS_200;
@@ -56,136 +51,72 @@ char *http_status_line_404 = HTTP_STATUS_404;
 char *http_status_line_501 = HTTP_STATUS_501;
 
 /**
- * @brief Server header.
+ * @brief Send a header.
+ * 
+ * @param connection Pointer to the connection to use.
+ * @param name The name of the header.
+ * @param value The value of the header.
  */
-struct http_header http_hdr_server = HTTP_HDR_SERVER;
+void ICACHE_FLASH_ATTR http_send_header(struct tcp_connection *connection, char *name, char *value)
+{
+	char header[512];
+	size_t size;
+
+	debug("Sending header (%s: %s).\n", name, value);
+	size = os_sprintf(header, "%s: %s\r\n", name, value);
+	tcp_send(connection, header, size);
+}
+
 /**
- * @brief Connection header.
+ * @brief Send HTTP response status line.
+ * 
+ * @param connection Pointer to the connection to use. 
+ * @param code Status code to use in the status line.
  */
-struct http_header http_hdr_connection_close = HTTP_HDR_CONNECTION_CLOSE;
+static void ICACHE_FLASH_ATTR send_status_line(struct tcp_connection *connection, unsigned short code)
+{
+	debug("Sending status line with status code %d.\n", code);
+	
+	switch (code)
+	{
+		case 200: tcp_send(connection, http_status_line_200, os_strlen(http_status_line_200));
+				  break;
+		case 400: tcp_send(connection, http_status_line_400, os_strlen(http_status_line_400));
+				  break;
+		case 404: tcp_send(connection, http_status_line_404, os_strlen(http_status_line_404));
+				  break;
+		case 501: tcp_send(connection, http_status_line_501, os_strlen(http_status_line_501));
+				  break;
+		default:  warn(" Unknown response code: %d.\n", code);
+				  tcp_send(connection, http_status_line_501, os_strlen(http_status_line_501));
+				  break;
+	}
+	tcp_send(connection, "\r\n", 2);
+}
 
 /**
  * @brief Send a HTTP response.
  * 
- * Send a HTTP response, and close the connection, if the headers says
- * so.
- * 
- * @param connection Connection to use when sending.
- * @param response Pointer to a structure with the response data.
- * @param send_content If `false` only send headers.
-  */
-void ICACHE_FLASH_ATTR http_send_response(struct http_response *response, 
-                                     bool send_content)
-{
-	struct tcp_connection *connection = response->connection;
-	char status_code[4] = "000\0";
-	char *s_status_code;
-	unsigned short i;
-	bool close = false;
-	size_t msg_size = os_strlen(response->message);
-	
-	//Probably would be better to put the whole thing in a buffer, and
-	//send it at once.
-	
-	debug("Sending HTTP response %p.\n", response);
-	debug(" Status-code: %d.\n", response->status_code);
-	debug(" Status-line: %s.\n", response->status_line);
-	debug(" Headers: %p.\n", response->headers);
-	debug(" Number of headers: %d.\n", response->n_headers);
-	debug(" Message (%d bytes) at: %p.\n", msg_size, response->message);
-	debug(" Message: \n\n%s\n\n", response->message);
-	
-    //Send the status-line.
-    tcp_send(connection, response->status_line, os_strlen(response->status_line));
-    tcp_send(connection, "\r\n", 2);
-    //Send headers.
-    for (i = 0; i < response->n_headers; i++)
-    {
-		if (response->headers[i].name && response->headers[i].value)
-		{
-			debug(" Header pointers: %p, %p.\n", response->headers[i].name, response->headers[i].value);
-			tcp_send(connection, response->headers[i].name, os_strlen(response->headers[i].name));
-			tcp_send(connection, ": ", 2);
-			tcp_send(connection, response->headers[i].value, os_strlen(response->headers[i].value));
-			//Check to see if we can close the connection.
-			if (os_strncmp(response->headers[i].name, "Connection", 10) == 0)
-			{
-				if (os_strncmp(response->headers[i].value, "close", 5) == 0)
-				{
-					debug("Closing connection when done.\n");
-					close = true;
-				}
-			}
-		}
-		tcp_send(connection, "\r\n", 2);
-	}
-    tcp_send(connection, "\r\n", 2);
-    //Send content.
-    if (send_content)
-    {
-		if (response->message)
-		{
-			msg_size = os_strlen(response->message);
-			tcp_send(connection, response->message, msg_size);
-			
-		}
-    }
-    //Find status code and skip spaces.
-    for (s_status_code = os_strstr(response->status_line, " "); *s_status_code == ' '; s_status_code++);
-    if (s_status_code)
-    {
-        os_memcpy(status_code, s_status_code, 3);
-        print_clf_status(connection, status_code, msg_size);
-    }
-    else
-    {
-        print_clf_status(connection, "-", msg_size);
-    }
-    if (close)
-    {
-        tcp_disconnect(connection);
-    }
-}
-
-/**
- * @brief Generate a HTTP response.
- * 
  * @param connection Pointer to the connection used.
  * @param status_code Status code of the response.
- * @return A pointer to a #http_response struct.
  */
-struct http_response ICACHE_FLASH_ATTR *http_generate_response(
+void ICACHE_FLASH_ATTR http_send_response(
 									struct tcp_connection *connection,
 									unsigned short status_code)
 {
     struct http_request *request = connection->free;
-	struct http_response *response;
-    unsigned short  i;
+    unsigned short i;
+    unsigned short static_index;
     FS_FILE_H file;
-    long data_size = 0;
-    char *message = NULL;
-    char *buffer = NULL;
+    size_t msg_size = 0;
+    char *error_msg;
     char *uri = NULL;
     char *fs_uri = NULL;
+    char buffer[HTTP_FILE_CHUNK_SIZE];
     size_t uri_size, doc_root_size, ext_size;
     bool found = false;
     
-    //Get memory for response.
-    response = db_malloc(sizeof(struct http_response), "response http_generate_response");
-    debug("Generate HTTP response %p.\n", response);
-    //Set initial values for the response.
-    response->connection = connection;
-    response->status_code = status_code;
-    response->status_line = NULL;
-    response->headers = db_malloc(sizeof(struct http_header) * HTTP_N_RESPONSE_HEADERS, "response->headers  http_generate_response");
-    response->headers[0].name = "Content-Type";
-    response->headers[0].value = http_mime_types[1].type;
-    response->headers[1] = http_hdr_connection_close;
-    response->headers[2] = http_hdr_server;
-    response->headers[3].name = "Content-Length";
-    response->headers[3].value = NULL;
-    response->n_headers = HTTP_N_RESPONSE_HEADERS;
-    response->message = NULL;
+    debug("Generate HTTP response.\n");
     
     //If there is an error, respond with an error page.
     if (status_code != 200)
@@ -244,40 +175,13 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
     
     //Try to open the URI as a file.
     file = fs_open(fs_uri);
-    //Check if it went okay.
-    if (file > FS_EOF)
-    {
+   	if (file > FS_EOF)
+	{
+		//Found a file.
 		found = true;
-        debug(" Found file: %s.\n", fs_uri);
-        
-        //Get the size of the message.
-        data_size = fs_size(file);
-        //Get memory for the message.
-        buffer = db_malloc((int)data_size + 1, "buffer http_generate_response");
-        //Read the message from the file to the buffer.
-        fs_read(buffer, data_size, sizeof(char), file);
-        //Zero terminate, to make sure.
-        buffer[data_size] = '\0';
-        fs_close(file);
-        
-        //Find the MIME-type
-        for (i = 0; i < HTTP_N_MIME_TYPES; i++)
-        {
-			ext_size = os_strlen(http_mime_types[i].ext);
-			if (os_strncmp(http_mime_types[i].ext, fs_uri + os_strlen(fs_uri) - ext_size, ext_size) == 0)
-			{
-				response->headers[0].value = http_mime_types[i].type;
-				break;
-			}
-		}
-		if (!response->headers[0].value)
-		{
-			response->headers[0].value = http_mime_types[1].type;
-		}
-    }
-    
-    if (!found)
-    {
+	}
+	if (!found)
+	{
 		//Check in static uris, go through and stop if URIs match.
 		for (i = 0; 
 			 ((i < n_static_uris) && (!static_uris[i].test_uri(uri))); 
@@ -287,27 +191,122 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 		if (i < n_static_uris)
 		{
 			found = true;
-			debug(" Found static page.\n");
-			//Get a pointer to the message.
-			message = static_uris[i].handler(uri, request, response);
-			if (message)
-			{
-				//Get size of the message.
-				data_size = os_strlen(message);
-				//Allocate memory. The message is copied to a buffer, so it can
-				//always be freed.
-				buffer = db_malloc((int)data_size, "buffer http_generate_response");
-				//Copy the message into the buffer.
-				os_memcpy(buffer, message, data_size);
-			}
-			//Clean up call back.
-			if (static_uris[i].destroy)
-			{
-				static_uris[i].destroy(message);
-			}
+			static_index = i;
 		}
 	}
 
+	if (found)
+	{
+		send_status_line(connection, status_code);
+		
+		//Always send connections close and server info.
+		http_send_header(connection, "Connection", "close");
+		http_send_header(connection, "Server", HTTP_SERVER_NAME);
+
+		//Send file, if one was found.
+		if (file > FS_EOF)
+		{
+			debug(" Found file: %s.\n", fs_uri);
+			
+			//Send the rest of the headers.
+			//Find the MIME-type
+			for (i = 0; i < HTTP_N_MIME_TYPES; i++)
+			{
+				ext_size = os_strlen(http_mime_types[i].ext);
+				if (os_strncmp(http_mime_types[i].ext, fs_uri + os_strlen(fs_uri) - ext_size, ext_size) == 0)
+				{
+					break;
+				}
+			}
+			http_send_header(connection, "Content-Type", http_mime_types[i].type);
+			//Get the size of the message.
+			msg_size = fs_size(file);
+			os_sprintf(buffer, "%d", msg_size);
+			http_send_header(connection, "Content-Length", buffer);
+			tcp_send(connection, "\r\n", 2);
+			
+			//Only send data if not a HEAD request.		
+			if (request->type != HTTP_HEAD)
+			{
+				i = msg_size;
+				while (i < 0)
+				{
+					if (i > HTTP_FILE_CHUNK_SIZE)
+					{
+						//There is still more than HTTP_FILE_CHUNK_SIZE to read.
+						fs_read(buffer, HTTP_FILE_CHUNK_SIZE, sizeof(char), file);
+						tcp_send(connection, buffer, HTTP_FILE_CHUNK_SIZE);
+						i -= HTTP_FILE_CHUNK_SIZE;
+					}
+					else
+					{
+						//Last block.
+						fs_read(buffer, i, sizeof(char), file);
+						tcp_send(connection, buffer, i);
+						i = 0;
+					}
+				}
+			}
+			fs_close(file);
+		}
+		else
+		{
+			//No file.
+			//Call the handler.
+			msg_size = static_uris[static_index].handler(uri, request);
+			//Clean up call back.
+			if (static_uris[static_index].destroy)
+			{
+				static_uris[static_index].destroy();
+			}
+		}
+	}
+	else
+	{
+		//No page was found.
+		warn(" No page was found.\n");
+		if (status_code == 200)
+		{
+			status_code = 404;
+		}
+		
+		send_status_line(connection, status_code);
+		
+		//Always send connections close and server info.
+		http_send_header(connection, "Connection", "close");
+		http_send_header(connection, "Server", HTTP_SERVER_NAME);
+		http_send_header(connection, "Content-Type", http_mime_types[MIME_HTML].type);
+
+		switch (status_code)
+		{
+			case 400: error_msg = HTTP_400_HTML;
+					  msg_size = HTTP_400_HTML_LENGTH;
+					  break;
+			case 404: error_msg = HTTP_404_HTML;
+					  msg_size = HTTP_404_HTML_LENGTH;
+					  break;
+			case 501: error_msg = HTTP_501_HTML;
+					  msg_size = HTTP_501_HTML_LENGTH;
+					  break;
+			default:  warn("Unknown response code: %d.\n", status_code);
+					  error_msg = HTTP_501_HTML;
+					  msg_size = HTTP_501_HTML_LENGTH;
+					  break;
+		}
+		os_sprintf(buffer, "%d", msg_size);
+		http_send_header(connection, "Content-Length", buffer);
+		tcp_send(connection, "\r\n", 2);
+		
+		tcp_send(connection, error_msg, msg_size);
+	}
+		
+    //Print CLF output.
+	os_sprintf(buffer, "%d", status_code);
+    print_clf_status(connection, buffer, msg_size);
+    
+    //Close connection, now that we've threatened to do so.
+    tcp_disconnect(connection);
+	
 	//Dealloc uri mem, if it has been malloced.
 	if (fs_uri != uri)
 	{
@@ -317,65 +316,4 @@ struct http_response ICACHE_FLASH_ATTR *http_generate_response(
 	{
 		db_free(uri);
 	}
-	//If there is a response.
-	if (found)
-	{
-		switch (status_code)
-		{
-			case 200: response->status_line = http_status_line_200;
-					  break;
-			case 400: response->status_line = http_status_line_400;
-					  break;
-			case 404: response->status_line = http_status_line_404;
-					  break;
-			case 501: response->status_line = http_status_line_501;
-					  break;
-			default:  warn("Unknown response code: %d.\n", status_code);
-					  response->status_line = http_status_line_501;
-					  break;
-		}
-		//debug(" Message size: %ld.\n", os_strlen(buffer));
-		//Fill in the rest of the response.
-        response->headers[3].value = db_malloc(sizeof(char) * digits(data_size) + 1, "response->headers[3].value http_generate_response");
-        os_sprintf(response->headers[3].value, "%ld", data_size);
-        //Commented out the following line, it seems to introduce a bug, where
-        //the message is somehow shortened.
-        //response->headers[3].value[data_size] = '\0';
-        response->message = buffer;
-        
-        //debug(" Buffer size: %ld.\n", os_strlen(buffer));
-        //debug(" Message size: %ld.\n", os_strlen(response->message));
-		//debug(" Message: %s\n", response->message);
-        
-        return(response);
-    }
-	//Last escape 404 page.
-	response->status_line = http_status_line_404;
-    response->status_code = 404;
-    //Could just do "response->headers[3].value = "#HTTP_404_HTML_LENGTH";"
-    //but this makes sure we can always free it.
-    response->headers[3].value = db_malloc(sizeof(char) * digits(HTTP_404_HTML_LENGTH), "response->headers[3].value http_generate_response");
-    os_sprintf(response->headers[3].value, "%d", HTTP_404_HTML_LENGTH);
-	
-	response->message = HTTP_404_HTML;
-		
-    debug("Didn't find a usable page.\n");
-	return(response);
-}
-
-/**
- * @brief Free data allocated by a response.
- * 
- * @param response Pointer to the response to free.
- */
-void ICACHE_FLASH_ATTR http_free_response(struct http_response *response)
-{
-	debug("Freeing response data at %p.\n", response);
-	//db_free(response->headers[3].value);
-	db_free(response->headers);
-	if (response->message)
-	{
-		db_free(response->message);
-	}
-	db_free(response);
 }

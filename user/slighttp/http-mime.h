@@ -35,6 +35,19 @@ struct http_mime_type
 	char *type;
 };
 
+enum http_mime_enum
+{
+	MIME_HTM,
+	MIME_HTML,
+	MIME_CSS,
+	MIME_JS,
+	MIME_JSON,
+	MIME_TXT,
+	MIME_JPG,
+	MIME_JPEG,
+	MIME_PNG
+};
+
 extern struct http_mime_type http_mime_types[HTTP_N_MIME_TYPES];
 
 #endif //HTTP_TCP_H

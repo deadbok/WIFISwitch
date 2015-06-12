@@ -30,16 +30,9 @@
 #include "osapi.h"
 #include "user_interface.h"
 #include "user_config.h"
-#include "tools/missing_dec.h"
-#include "tools/strxtra.h"
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
-#include "fs/fs.h"
-
-/**
- * @brief Return string with JSON.
- */
-static char ret[49];
+#include "slighttp/http-response.h"
 
 /**
  * @brief Tell if we will handle a certain URI.
@@ -63,33 +56,47 @@ bool ICACHE_FLASH_ATTR rest_network_test(char *uri)
  * @param request Data for the request that got us here.
  * @return The HTML.
  */
-char ICACHE_FLASH_ATTR *rest_network(char *uri, struct http_request *request, struct http_response *response)
+size_t ICACHE_FLASH_ATTR rest_network(char *uri, struct http_request *request)
 {
 	struct station_config wifi_config;
-	char *ret_pos = ret;
+	char response[49];
+	char *response_pos = response;
+	char buffer[16];
+	size_t msg_size = 0;
 	    
     debug("In network name REST handler (%s).\n", uri);
 	
 	if (request->type == HTTP_GET)
 	{
-		os_strcpy(ret, "{ network : \"");
-		ret_pos += 13;
+		http_send_header(request->connection, "Content-Type", http_mime_types[MIME_JSON].type);
+
+		os_strcpy(response, "{ network : \"");
+		response_pos += 13;
 
 		if (!wifi_station_get_config(&wifi_config))
 		{
 			error(" Could not get station configuration.\n");
-			return(NULL);
+			return(0);
 		}
-		os_strcpy(ret_pos, (char *)wifi_config.ssid);
-		ret_pos += os_strlen((char *)wifi_config.ssid);
+		os_strcpy(response_pos, (char *)wifi_config.ssid);
+		response_pos += os_strlen((char *)wifi_config.ssid);
 		
-		os_strcpy(ret_pos, "\" }");
-		ret_pos += 3;
-		*ret_pos = '\0';
+		os_strcpy(response_pos, "\" }");
+		response_pos += 3;
+		*response_pos = '\0';
+		
+		//Get the size of the message.
+		msg_size = response_pos -response - 1;
+		os_sprintf(buffer, "%d", msg_size);
+		http_send_header(request->connection, "Content-Length", buffer);
+		tcp_send(request->connection, "\r\n", 2);
+		
+		debug(" Response: %s.\n", response);
+		tcp_send(request->connection, response, msg_size);
 	}
 	
-	debug(" Response: %s.\n", ret);
-    return(ret);
+	debug(" Response size: %d.\n", msg_size);
+    return(msg_size);
 }
 
 /**
@@ -97,6 +104,6 @@ char ICACHE_FLASH_ATTR *rest_network(char *uri, struct http_request *request, st
  * 
  * @param html A pointer to the mem to deallocate.
  */
-void ICACHE_FLASH_ATTR rest_network_destroy(char *response)
+void ICACHE_FLASH_ATTR rest_network_destroy(void)
 {
 }

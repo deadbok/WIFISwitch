@@ -30,11 +30,9 @@
 #include "osapi.h"
 #include "user_interface.h"
 #include "user_config.h"
-#include "tools/missing_dec.h"
-#include "tools/strxtra.h"
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
-#include "fs/fs.h"
+#include "slighttp/http-response.h"
 
 static char **ap_ssids;
 static unsigned short n_aps;
@@ -177,20 +175,23 @@ static void scan_done_cb(void *arg, STATUS status)
  * @param request Data for the request that got us here.
  * @return The JSON.
  */
-char ICACHE_FLASH_ATTR *rest_net_names(char *uri, struct http_request *request, struct http_response *response)
+size_t ICACHE_FLASH_ATTR rest_net_names(char *uri, struct http_request *request)
 {
-    char *ret = NULL;
-	unsigned char i;
+    char *response = NULL;
+	char buffer[16];
+	size_t msg_size = 0;
 	    
     debug("In network names REST handler (%s).\n", uri);
 
 	if (request->type == HTTP_GET)
 	{
+		http_send_header(request->connection, "Content-Type", http_mime_types[MIME_JSON].type);
+		
 		if (!updating)
 		{
 			if (n_aps && ap_ssids)
 			{
-				ret = json_create_string_array(ap_ssids, n_aps);
+				response = json_create_string_array(ap_ssids, n_aps);
 			}
 
 			debug(" Starting scan.\n");
@@ -203,24 +204,23 @@ char ICACHE_FLASH_ATTR *rest_net_names(char *uri, struct http_request *request, 
 				error(" Could not scan AP's.\n");
 			}				
 		}
+		if (!response)
+		{
+			response = db_malloc(sizeof(char) * 3, "ret rest_net_names_html");
+			os_memcpy(response, "[]\0", sizeof(char) * 3);
+		}
+		//Get the size of the message.
+		msg_size = os_strlen(response);
+		os_sprintf(buffer, "%d", msg_size);
+		http_send_header(request->connection, "Content-Length", buffer);
+		tcp_send(request->connection, "\r\n", 2);
+				
+		debug(" Response: %s.\n", response);
+		tcp_send(request->connection, response, msg_size);
 	}
 	
-	if (!ret)
-	{
-		ret = db_malloc(sizeof(char) * 3, "ret rest_net_names_html");
-		os_memcpy(ret, "[]\0", sizeof(char) * 3);
-	}
-	//Find the MIME-type
-	for (i = 0; i < HTTP_N_MIME_TYPES; i++)
-	{
-		if (os_strncmp(http_mime_types[i].ext, "json", 4) == 0)
-		{
-			response->headers[0].value = http_mime_types[i].type;
-			break;
-		}
-	}
-	debug(" Response: %s.\n", ret);
-    return(ret);
+	debug(" Response size: %d.\n", msg_size);
+    return(msg_size);
 }
 
 /**
@@ -228,25 +228,6 @@ char ICACHE_FLASH_ATTR *rest_net_names(char *uri, struct http_request *request, 
  * 
  * @param response A pointer to the mem to deallocate.
  */
-void ICACHE_FLASH_ATTR rest_net_names_destroy(char *response)
+void ICACHE_FLASH_ATTR rest_net_names_destroy(void)
 {
-	//unsigned short i;
-	
-	debug("Freeing network names REST data.\n");
-	if (response)
-	{
-		debug(" Freeing response (%p).\n", response);
-		db_free(response);
-	}
-	/*if (ap_ssids)
-	{
-		for (i = 0; i < n_aps; i++)
-		{
-			debug(" Freeing AP name %d (%p).\n", i, ap_ssids[i]);
-			db_free(ap_ssids[i]);
-		}
-		debug(" Freeing AP names array (%p).\n", ap_ssids);
-		db_free(ap_ssids);
-		n_aps = 0;
-	}*/
 }

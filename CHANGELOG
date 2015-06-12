@@ -1,5 +1,28 @@
+2015-06-11 Martin Grønholdt
+
+* net/tcp.c (send_buffer): More debug output.
+* rest/rest.h: Changes for slighttp.
+* rest(network.c: Changes for slighttp.
+* rest/net-names.c: Changes for slighttp.
+* slighttp/http-request.c (http_parse_headers): Fixed handling of no headers.
+* slighttp/http-response.h: Removed http_free_response.
+*						  : Added http_send_header.
+* slighttp/http-response.c: Removed http_free_response.
+*	                      : Added http_send_header.
+* user_main.c: Removed old static page code.
+*		      (g_builtin_uris): Added REST handlers instead.
+
+
 2015-06-10 Martin Grønholdt
 
+* slighttp/http-response.h: Removed header generation macros.
+* slighttp/http.h (uri_html_callback): Renamed uri_html_callback to uri_response_callback. 
+				  (uri_response_callback): Removed parameter response from uri_response_callback.
+				  (uri_response_callback): Changed return type to size_t.
+				 : Removed HTTP_CLOSE_CONNECTIONS.
+				 : Added HTTP_FILE_CHUNK_SIZE, to set where to split file reads.
+				 : Eliminated http_generate_response.
+* slighttp/http-mime.h: Added enum mime_type_enum.
 * fs/fs.c (fs_read): Fixed was always readin from start of file.
 * fs/int_flash.c (flash_read): More debug output.
 * fs/zip.h: Added init_zip.
