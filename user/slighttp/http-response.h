@@ -33,7 +33,7 @@
 /**
  * @brief Generate a status-line.
  */
-#define HTTP_STATUS_LINE(CODE, MSG) HTTP_STATUS_HTTP_VERSION " " CODE " " MSG
+#define HTTP_STATUS_LINE(CODE, MSG) HTTP_STATUS_HTTP_VERSION " " CODE " " MSG "\r\n"
 
 //Predefined response status-lines.
 /**

@@ -207,7 +207,7 @@ size_t ICACHE_FLASH_ATTR fs_read(void *buffer, size_t size, size_t count, FS_FIL
         error("Failed reading %d bytes from %d.\n", total_size, handle);
         return(0);
     }
-    fs_open_files[handle]->pos = total_size;
+    fs_open_files[handle]->pos += total_size;
     fs_check_eof(handle);
     return(count);
 }

@@ -59,7 +59,7 @@ bool ICACHE_FLASH_ATTR rest_network_test(char *uri)
 size_t ICACHE_FLASH_ATTR rest_network(char *uri, struct http_request *request)
 {
 	struct station_config wifi_config;
-	char response[49];
+	char response[51];
 	char *response_pos = response;
 	char buffer[16];
 	size_t msg_size = 0;
@@ -70,8 +70,8 @@ size_t ICACHE_FLASH_ATTR rest_network(char *uri, struct http_request *request)
 	{
 		http_send_header(request->connection, "Content-Type", http_mime_types[MIME_JSON].type);
 
-		os_strcpy(response, "{ network : \"");
-		response_pos += 13;
+		os_strcpy(response, "{ \"network\" : \"");
+		response_pos += 15;
 
 		if (!wifi_station_get_config(&wifi_config))
 		{
@@ -86,7 +86,7 @@ size_t ICACHE_FLASH_ATTR rest_network(char *uri, struct http_request *request)
 		*response_pos = '\0';
 		
 		//Get the size of the message.
-		msg_size = response_pos -response - 1;
+		msg_size = response_pos - response;
 		os_sprintf(buffer, "%d", msg_size);
 		http_send_header(request->connection, "Content-Length", buffer);
 		tcp_send(request->connection, "\r\n", 2);

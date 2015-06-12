@@ -1,14 +1,19 @@
 2015-06-11 Martin Grønholdt
 
+* fs/fs.c (fs_read): Did not advance position after reading.
 * net/tcp.c (send_buffer): More debug output.
+*					     : Zero terminate the buffer.
 * rest/rest.h: Changes for slighttp.
 * rest(network.c: Changes for slighttp.
 * rest/net-names.c: Changes for slighttp.
+* slighttp/http-tcp.c (tcp_connect_cb): Forgot to set the connection pointer in the request.
 * slighttp/http-request.c (http_parse_headers): Fixed handling of no headers.
 * slighttp/http-response.h: Removed http_free_response.
 *						  : Added http_send_header.
+*						  : Added newline and line feed to HTTP_STATUS_HTTP_VERSION.
 * slighttp/http-response.c: Removed http_free_response.
 *	                      : Added http_send_header.
+*						   (send_status_line): Removed seperate newline ad line feed.
 * user_main.c: Removed old static page code.
 *		      (g_builtin_uris): Added REST handlers instead.
 

@@ -21,20 +21,15 @@
  * 
  * **This server is not compliant with HTTP, to save space, stuff has been
  * omitted. It has been built to be small, not fast, and probably breaks in 100
- * places.**
- * 
- * I have gone to somewhat irresponsible length, to make this code dynamic
- * with regards to the size of the buffers for recieved data. This is probably
- * stupid and wastefull since, there isn't that much RAM to begin with, and the
- * failure modes, seems to become way more complex. 
+ * places.** 
  * 
  * Missing functionality:
  * - Does not understand any header fields.
- * - MIME types.
  * - File system access.
  * - 400 errors are not send in all situations where they should be.
  * - Persistent connections. The server closes every connection when the 
  *   response has been sent.
+ * - Chunked transfers.
  * 
  * Things that needs to be dealt with, from the specs:
  * - Space between start line, and header (RFC7230.txt Line 1095).

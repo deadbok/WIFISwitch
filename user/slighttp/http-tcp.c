@@ -49,6 +49,7 @@ void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
     request = (struct http_request *)db_zalloc(sizeof(struct http_request), "request tcp_connect_cb"); 
     debug(" Allocated memory for request data: %p.\n", request);
     connection->free = request;
+    request->connection = connection;
 }
 
 /**

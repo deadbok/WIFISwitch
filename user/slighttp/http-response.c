@@ -25,7 +25,7 @@
 #include "c_types.h"
 #include "osapi.h"
 #include "user_config.h"
-#include "tools/strxtra.h"
+//#include "tools/strxtra.h"
 #include "net/tcp.h"
 #include "fs/fs.h"
 #include "http-common.h"
@@ -73,11 +73,11 @@ void ICACHE_FLASH_ATTR http_send_header(struct tcp_connection *connection, char 
  * @param connection Pointer to the connection to use. 
  * @param code Status code to use in the status line.
  */
-static void ICACHE_FLASH_ATTR send_status_line(struct tcp_connection *connection, unsigned short code)
+static void ICACHE_FLASH_ATTR send_status_line(struct tcp_connection *connection, unsigned short status_code)
 {
-	debug("Sending status line with status code %d.\n", code);
+	debug("Sending status line with status code %d.\n", status_code);
 	
-	switch (code)
+	switch (status_code)
 	{
 		case 200: tcp_send(connection, http_status_line_200, os_strlen(http_status_line_200));
 				  break;
@@ -87,11 +87,10 @@ static void ICACHE_FLASH_ATTR send_status_line(struct tcp_connection *connection
 				  break;
 		case 501: tcp_send(connection, http_status_line_501, os_strlen(http_status_line_501));
 				  break;
-		default:  warn(" Unknown response code: %d.\n", code);
+		default:  warn(" Unknown response code: %d.\n", status_code);
 				  tcp_send(connection, http_status_line_501, os_strlen(http_status_line_501));
 				  break;
 	}
-	tcp_send(connection, "\r\n", 2);
 }
 
 /**
@@ -121,7 +120,7 @@ void ICACHE_FLASH_ATTR http_send_response(
     //If there is an error, respond with an error page.
     if (status_code != 200)
     {
-		uri = db_malloc(sizeof(char) * (digits(status_code) + 7), "uri  http_generate_response");
+		uri = db_malloc(sizeof(char) * 10, "uri  http_generate_response");
 		os_sprintf(uri, "/%d.html", status_code);
 		fs_uri = uri;
 		debug(" HTTP error response.\n");
@@ -229,7 +228,7 @@ void ICACHE_FLASH_ATTR http_send_response(
 			if (request->type != HTTP_HEAD)
 			{
 				i = msg_size;
-				while (i < 0)
+				while (i > 0)
 				{
 					if (i > HTTP_FILE_CHUNK_SIZE)
 					{
@@ -246,6 +245,10 @@ void ICACHE_FLASH_ATTR http_send_response(
 						i = 0;
 					}
 				}
+			}
+			else
+			{
+				debug(" HEAD request, not sending data.\n");
 			}
 			fs_close(file);
 		}

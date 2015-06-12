@@ -412,7 +412,7 @@ static void ICACHE_FLASH_ATTR send_buffer(struct tcp_connection *connection)
 	size_t buffer_size = 0;
 	
 	sending = true;
-	debug("Sending TCP data from buffer.\n");
+	debug("Sending TCP data from buffer (%p).\n", connection);
 	
 	if (!connection->send_buffer)
 	{
@@ -429,7 +429,7 @@ static void ICACHE_FLASH_ATTR send_buffer(struct tcp_connection *connection)
 	
 	buffer_size = connection->current_buffer_pos - connection->send_buffer;
 	debug(" Sending buffer at %p, %d bytes.\n", connection->send_buffer, buffer_size);
-	debug(" Data: %s.\n", connection->send_buffer);
+	debug(" Data: %s\n", connection->send_buffer);
     espconn_sent(connection->conn, connection->send_buffer, buffer_size);
     
     //Back to start
@@ -477,12 +477,12 @@ bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, s
 	size_t buffer_free = 0;
 	size_t data_left = size;
 	
-    debug("Queueing outgoing TCP data (%p),\n", data);
+    debug("Queueing outgoing TCP data (%p using %p),\n", data, connection);
 
 	//Create a buffer if there is none.
     if (!connection->send_buffer)
     {
-		connection->send_buffer = db_malloc(TCP_SEND_BUFFER_SIZE, "connection->send_buffer tcp_send");
+		connection->send_buffer = db_malloc(TCP_SEND_BUFFER_SIZE + 1, "connection->send_buffer tcp_send");
 		debug(" Created new send buffer %p.\n", connection->send_buffer);
 		connection->current_buffer_pos = connection->send_buffer;
 	}
@@ -499,6 +499,7 @@ bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, s
 				debug(" Adding %d bytes to buffer at %p.\n", buffer_free, connection->current_buffer_pos);
 				os_memcpy(connection->current_buffer_pos, data, buffer_free);
 				connection->current_buffer_pos += buffer_free;
+				*connection->current_buffer_pos = '\0';
 				data_left -= buffer_free;
 			}
 			else
@@ -506,6 +507,7 @@ bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, s
 				debug(" Adding %d bytes to buffer at %p.\n", data_left, connection->current_buffer_pos);
 				os_memcpy(connection->current_buffer_pos, data, data_left);
 				connection->current_buffer_pos += data_left;
+				*connection->current_buffer_pos = '\0';
 				data_left = 0;
 			}
 		}
