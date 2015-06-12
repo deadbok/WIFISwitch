@@ -35,10 +35,17 @@
  */
 #include "missing_dec.h"
 #include "osapi.h"
+#include "os_type.h"
+#include "user_interface.h"
 #include "ip_addr.h"
 #include "mem.h"
 #include "user_config.h"
 #include "tcp.h"
+
+/**
+ * @brief Timer for housekeeping.
+ */
+static os_timer_t timer;
 
 /**
  * @brief Array to look up a string from connection state.
@@ -529,7 +536,6 @@ char ICACHE_FLASH_ATTR tcp_disconnect(struct tcp_connection *connection)
     int ret;
     
     debug("Disconnecting (%p)...", connection);
-    //connection->conn->state = ESPCONN_CLOSE;
     //Disconnect
     ret = espconn_disconnect(connection->conn);
 #ifdef DEBUG
@@ -620,6 +626,44 @@ void ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
     }
 }
 
+
+/**
+ * @brief Housekeeping timer call back function.
+ * 
+ * This will close connection, that are not needed, and send the TCP
+ * buffer.
+ */
+void tcp_timer_cb(void *unused)
+{
+    struct tcp_connection *connection = tcp_connections;
+    
+	debug("Timer call back.\n");
+	
+    debug(" Freeing connections:\n");
+    while (connection != NULL)
+    {
+        if ((connection->conn->state >= ESPCONN_CLOSE) ||
+            (connection->conn->state == ESPCONN_NONE))
+        {
+            //Clear previous data.
+            os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
+            //Set new data
+            connection->callback_data.arg = connection->conn;
+            //Call call back.
+            if (listening_connection->callbacks.disconnect_callback != NULL)
+            {
+                listening_connection->callbacks.disconnect_callback(connection);
+            }
+            //Free the connection
+            tcp_free(connection);
+        }
+        else
+        {
+            debug(" Keeping %p status %s, next %p\n", connection, state_names[connection->conn->state], connection->next);
+        }
+        connection = connection->next;
+    }	
+}
 /**
  * @brief Initialise TCP networking.
  */
@@ -646,6 +690,14 @@ void ICACHE_FLASH_ATTR init_tcp(void)
 #ifdef DEBUG
     print_status(ret);
 #endif
+
+	//Set housekeeping timer.
+    //Disarm timer
+    os_timer_disarm(&timer);
+    //Setup timer.
+    os_timer_setfn(&timer, (os_timer_func_t *)tcp_timer_cb, NULL);
+    //Arm the timer, run every 1 second.
+    os_timer_arm(&timer, 1000, true);
 }
 
 void ICACHE_FLASH_ATTR tcp_stop(void)
@@ -660,4 +712,5 @@ void ICACHE_FLASH_ATTR tcp_stop(void)
     print_status(ret);
 #endif
 
+	os_timer_disarm(&timer);
 }

@@ -1,5 +1,7 @@
 2015-06-11 Martin Grønholdt
 
+* net/tcp.c (init_tcp): Added house keeping timer.
+		   : Added tcp__timer_cb.
 * fs/fs.c (fs_read): Did not advance position after reading.
 * net/tcp.c (send_buffer): More debug output.
 *					     : Zero terminate the buffer.
