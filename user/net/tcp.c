@@ -122,10 +122,6 @@ static unsigned char n_tcp_connections;
  * @brief Doubly-linked list of active connections.
  */
 static struct tcp_connection *tcp_connections = NULL;
-/**
- * @brief Tell if TCP data is being send.
- */
-static bool sending;
 
 /**
  * @brief The listening connection.
@@ -207,9 +203,9 @@ void ICACHE_FLASH_ATTR tcp_free(struct tcp_connection *connection)
     //Maybe try to send the data if any (send_buffer != current_buffer_pos)?
     if (connection->send_buffer)
     {
-		db_free(connection->send_buffer);
+		db_free(connection->send_buffers);
 	}
-		
+	connection->conn->reverse = NULL;
     if (connection != NULL)
     {
         db_free(connection);
@@ -245,6 +241,9 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
         //No buffer yet.
         connection->send_buffer = NULL;
 		connection->current_buffer_pos = NULL;
+		connection->sending = 0;
+		connection->closing = false;
+		connection->buffer_used = 0;
         
         //Save our connection data
         connection->conn->reverse = connection;
@@ -329,33 +328,30 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
      * but since I have no reason to think that the Espressif guys, are copying 
      * pointers to my data structures, into a convenient place on purpose, I can
      * not rely on this behavior, and have to do things the hard way, and look 
-     * up the closing connection.*/
+     * up the closing connection.
+     */
     struct tcp_connection *connection = tcp_connections;
+    struct espconn *conn = arg;
     
-    debug("TCP disconnected.\n");
-    
-    debug(" Freeing connections:\n");
+    debug("TCP disconnected (%p).\n", conn->reverse);
+     
     while (connection != NULL)
     {
-        if ((connection->conn->state >= ESPCONN_CLOSE) ||
-            (connection->conn->state == ESPCONN_NONE))
-        {
-            //Clear previous data.
-            os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
-            //Set new data
-            connection->callback_data.arg = arg;
-            //Call call back.
-            if (listening_connection->callbacks.disconnect_callback != NULL)
-            {
-                listening_connection->callbacks.disconnect_callback(connection);
-            }
-            //Free the connection
-            tcp_free(connection);
-        }
-        else
-        {
-            debug(" Keeping %p status %s, next %p\n", connection, state_names[connection->conn->state], connection->next);
-        }
+		//Update state of connections..
+		if (connection->conn->state >= ESPCONN_CLOSE)
+		{
+#ifdef DEBUG
+			if (connection->conn->state > ESPCONN_CLOSE)
+			{
+				debug("Closing connection %p (%p) that seems to be dangling.\n", connection, connection->conn);
+			}
+			else
+			{
+				debug("Closing connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
+			}
+#endif //DEBUG
+			connection->closing = true;
+		}
         connection = connection->next;
     }
 }
@@ -410,6 +406,29 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short 
 }
 
 /**
+ * @brief Switch between first and secondary send buffer.
+ * 
+ * @param connection Connection to work on.
+ */
+static void ICACHE_FLASH_ATTR switch_send_buffer(struct tcp_connection *connection)
+{
+	//Switch to between the first and the second buffer.
+	if (connection->send_buffer == connection->send_buffers)
+	{
+		//Second buffer.
+		connection->send_buffer = connection->send_buffers + TCP_SEND_BUFFER_SIZE + 1;
+		debug(" Switching to second buffer (%p).\n", connection->send_buffer);
+	}
+	else
+	{
+		//First buffer.
+		connection->send_buffer = connection->send_buffers;
+		debug(" Switching to first buffer (%p).\n", connection->send_buffer);
+	}
+	connection->current_buffer_pos = connection->send_buffer;
+}
+
+/**
  * @brief Send the send buffer.
  * 
  * @param connection Pointer to the connection to handle.
@@ -417,30 +436,41 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short 
 static void ICACHE_FLASH_ATTR send_buffer(struct tcp_connection *connection)
 {
 	size_t buffer_size = 0;
+#ifdef DEBUG
+	unsigned short i;
+#endif //DEBUG
 	
-	sending = true;
-	debug("Sending TCP data from buffer (%p).\n", connection);
-	
-	if (!connection->send_buffer)
+	if (!connection->sending)
 	{
-		debug(" No buffer.\n");
-		sending = false;
-		return;
+		debug("Sending TCP data from buffer (%p).\n", connection);
+		
+		if (!connection->send_buffer)
+		{
+			debug(" No buffer (%p).\n", connection->send_buffer);
+			connection->sending = false;
+			return;
+		}
+		else if (connection->send_buffer == connection->current_buffer_pos)
+		{
+			debug(" Buffer is empty (buffer: %p, pos %p).\n",connection->send_buffer, connection->current_buffer_pos);
+			connection->sending = false;
+			return;
+		}
+		
+		buffer_size = connection->current_buffer_pos - connection->send_buffer;
+
+		connection->sending = buffer_size;
+		debug(" Sending buffer at %p, %d bytes.\n", connection->send_buffer, buffer_size);
+#ifdef DEBUG
+		for (i = 0; i < buffer_size; i++)
+		{
+			os_putc(connection->send_buffer[i]);
+		}
+		os_putc('\n');
+#endif //DEBUG
+		espconn_sent(connection->conn, connection->send_buffer, buffer_size);
+		switch_send_buffer(connection);
 	}
-	else if (connection->send_buffer == connection->current_buffer_pos)
-	{
-		debug(" Buffer is empty.\n");
-		sending = false;
-		return;
-	}
-	
-	buffer_size = connection->current_buffer_pos - connection->send_buffer;
-	debug(" Sending buffer at %p, %d bytes.\n", connection->send_buffer, buffer_size);
-	debug(" Data: %s\n", connection->send_buffer);
-    espconn_sent(connection->conn, connection->send_buffer, buffer_size);
-    
-    //Back to start
-    connection->current_buffer_pos = connection->send_buffer;
 }
 
 /**
@@ -452,9 +482,16 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
 {
     struct espconn *conn = arg;
     struct tcp_connection *connection = conn->reverse;
+#ifdef DEBUG
+	char ret;
+#endif
     
     debug("TCP sent (%p).\n", connection);
-    
+
+	connection->buffer_used -= connection->sending;
+	debug(" Bytes of buffer in use: %d\n", connection->buffer_used);
+	connection->sending = 0;
+	
     //Clear previous data.
     os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
     //Set new data
@@ -464,13 +501,26 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
     {
         listening_connection->callbacks.sent_callback(connection);
     }
-    
-    connection->current_buffer_pos = connection->send_buffer;
-	sending = false;
+    //If there is more data in the buffer, send some more.
+    if (connection->buffer_used > 0)
+    {
+		send_buffer(connection);
+	}
+	//Disconnect if asked, and buffer is empty.
+	if ((connection->closing) && (connection->buffer_used == 0))
+	{
+		debug("Disconnecting (%p)...", connection);
+		ret = espconn_disconnect(connection->conn);
+#ifdef DEBUG
+		print_status(ret);
+#endif
+	}
 }	
 
 /** 
  * @brief Send TCP data.
+ * 
+ * @note Won't send more than #TCP_SEND_BUFFER_SIZE * 2 - buffer used bytes at a time.
  * 
  * @param connection Connection used for sending the data.
  * @param data Pointer to the data to send.
@@ -480,46 +530,53 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
  */
 bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, size_t size)
 {
-	size_t buffer_size = 0;
+	size_t buffer_used = 0;
 	size_t buffer_free = 0;
 	size_t data_left = size;
 	
-    debug("Queueing outgoing TCP data (%p using %p),\n", data, connection);
+    debug("Queueing %d bytes of outgoing TCP data (%p using %p),\n", size, data, connection);
 
+	if (size > (TCP_SEND_BUFFER_SIZE * 2 - connection->buffer_used))
+	{
+		warn("Cannot send %d (free send buffer: %d) bytes of TCP data at.\n", size, TCP_SEND_BUFFER_SIZE * 2 - connection->buffer_used);
+		return(false);
+	}
+		
 	//Create a buffer if there is none.
-    if (!connection->send_buffer)
+    if (!connection->send_buffers)
     {
-		connection->send_buffer = db_malloc(TCP_SEND_BUFFER_SIZE + 1, "connection->send_buffer tcp_send");
+		connection->send_buffers = db_malloc(TCP_SEND_BUFFER_SIZE * 2, "connection->send_buffers tcp_send");
 		debug(" Created new send buffer %p.\n", connection->send_buffer);
+		connection->send_buffer = connection->send_buffers;
 		connection->current_buffer_pos = connection->send_buffer;
 	}
 	
-	buffer_size = connection->current_buffer_pos - connection->send_buffer;
-	buffer_free = TCP_SEND_BUFFER_SIZE - buffer_size;
-	
-	while (data_left)
+	while (data_left > 0)
 	{
-		if (!sending)
+
+		buffer_used = connection->current_buffer_pos - connection->send_buffer;
+		buffer_free = TCP_SEND_BUFFER_SIZE - buffer_used;
+		
+		if (data_left > buffer_free)
 		{
-			if (data_left > buffer_free)
-			{
-				debug(" Adding %d bytes to buffer at %p.\n", buffer_free, connection->current_buffer_pos);
-				os_memcpy(connection->current_buffer_pos, data, buffer_free);
-				connection->current_buffer_pos += buffer_free;
-				*connection->current_buffer_pos = '\0';
-				data_left -= buffer_free;
-			}
-			else
-			{
-				debug(" Adding %d bytes to buffer at %p.\n", data_left, connection->current_buffer_pos);
-				os_memcpy(connection->current_buffer_pos, data, data_left);
-				connection->current_buffer_pos += data_left;
-				*connection->current_buffer_pos = '\0';
-				data_left = 0;
-			}
+			debug(" Adding %d bytes to buffer at %p.\n", buffer_free, connection->current_buffer_pos);
+			os_memcpy(connection->current_buffer_pos, data, buffer_free);
+			connection->current_buffer_pos += buffer_free;
+			data_left -= buffer_free;
+			connection->buffer_used += buffer_free;
+			send_buffer(connection);
+
 		}
-		send_buffer(connection);
-		debug(" %d bytes left to send.\n", data_left);
+		else
+		{
+			debug(" Adding %d bytes to buffer at %p.\n", data_left, connection->current_buffer_pos);
+			os_memcpy(connection->current_buffer_pos, data, data_left);
+			connection->current_buffer_pos += data_left;
+			connection->buffer_used += data_left;
+			data_left = 0;
+		}
+		debug(" %d bytes left to queue.\n", data_left);
+		debug(" %d bytes of buffer in use.\n", connection->buffer_used);		
 	}
 	return(true);
 }
@@ -528,20 +585,12 @@ bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, s
  * @brief Disconnect the TCP connection.
  * 
  * @param connection Connection to disconnect.
- * 
- * @returns espconn error status.
  */
-char ICACHE_FLASH_ATTR tcp_disconnect(struct tcp_connection *connection)
+void ICACHE_FLASH_ATTR tcp_disconnect(struct tcp_connection *connection)
 {
-    int ret;
-    
-    debug("Disconnecting (%p)...", connection);
-    //Disconnect
-    ret = espconn_disconnect(connection->conn);
-#ifdef DEBUG
-    print_status(ret);
-#endif
-    return(ret);
+    debug("Disconnect (%p).\n", connection);
+
+	connection->closing = true;
 }
 
 /**
@@ -626,26 +675,33 @@ void ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
     }
 }
 
-
 /**
- * @brief Housekeeping timer call back function.
+ * @brief House keeping timer call back function.
  * 
  * This will close connection, that are not needed, and send the TCP
- * buffer.
+ * buffer, and send any data in the send buffer.
  */
 void tcp_timer_cb(void *unused)
 {
     struct tcp_connection *connection = tcp_connections;
-    
-	debug("Timer call back.\n");
-	
-    debug(" Freeing connections:\n");
+     
     while (connection != NULL)
     {
-        if ((connection->conn->state >= ESPCONN_CLOSE) ||
-            (connection->conn->state == ESPCONN_NONE))
-        {
-            //Clear previous data.
+		//Disconnect if asked, and buffer is empty.
+		if (((connection->closing) && (connection->buffer_used == 0)) || (connection->conn->state >= ESPCONN_CLOSE))
+		{
+#ifdef DEBUG
+			if (connection->conn->state > ESPCONN_CLOSE)
+			{
+				debug("Closing connection %p (%p) that seems to be dangling.\n", connection, connection->conn);
+			}
+			else
+			{
+				debug("Closing connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
+			}
+#endif //DEBUG
+			connection->closing = true;
+			//Clear previous data.
             os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
             //Set new data
             connection->callback_data.arg = connection->conn;
@@ -654,16 +710,28 @@ void tcp_timer_cb(void *unused)
             {
                 listening_connection->callbacks.disconnect_callback(connection);
             }
+
             //Free the connection
             tcp_free(connection);
-        }
-        else
-        {
-            debug(" Keeping %p status %s, next %p\n", connection, state_names[connection->conn->state], connection->next);
-        }
+		}
+		else
+		{
+#ifdef DEBUG
+			if (connection->conn->state > ESPCONN_CLOSE)
+			{
+				debug("Connection %p (%p) seems to be dangling.\n", connection, connection->conn);
+			}
+			else
+			{
+				debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
+			}
+#endif //DEBUG
+			send_buffer(connection);
+		}
         connection = connection->next;
-    }	
+    }
 }
+
 /**
  * @brief Initialise TCP networking.
  */
@@ -697,7 +765,7 @@ void ICACHE_FLASH_ATTR init_tcp(void)
     //Setup timer.
     os_timer_setfn(&timer, (os_timer_func_t *)tcp_timer_cb, NULL);
     //Arm the timer, run every 1 second.
-    os_timer_arm(&timer, 1000, true);
+    os_timer_arm(&timer, 200, true);
 }
 
 void ICACHE_FLASH_ATTR tcp_stop(void)

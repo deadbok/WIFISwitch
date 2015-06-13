@@ -98,14 +98,33 @@ struct tcp_connection
      * @brief Pointer to the data meant for the current callback.
      */
     struct tcp_callback_data callback_data;
-     /**
-      * @brief Start of current send buffer.
-      */
-     unsigned char *send_buffer;
-     /**
-      * @brief Current position in the send buffer, where new data should go.
-      */
-     unsigned char *current_buffer_pos;
+    /**
+     * @brief Pointer to buffer memory.
+     * 
+     * This will always point to the start of the buffer, while the send buffer
+     * pointer, splits this in half.
+     */
+    unsigned char *send_buffers;
+    /**
+     * @brief Start of current send buffer.
+     */
+    unsigned char *send_buffer;
+    /**
+     * @brief Current position in the send buffer, where new data should go.
+     */
+    unsigned char *current_buffer_pos;
+    /**
+     * @brief Current bytes used of buffer.
+     */
+    size_t buffer_used;
+    /**
+     * @brief Bytes that are currently being send.
+     */
+    size_t sending;
+    /**
+     * @brief Are the connection closing.
+     */
+    bool closing;
     /**
      * @brief A pointer for the user, never touched.
      */
@@ -123,7 +142,7 @@ extern void tcp_listen(int port, tcp_callback connect_cb,
                                 tcp_callback recv_cb, 
                                 tcp_callback sent_cb);
 extern bool tcp_send(struct tcp_connection *connection, char *data, size_t size);
-extern char tcp_disconnect(struct tcp_connection *connection);
+extern void tcp_disconnect(struct tcp_connection *connection);
 extern void init_tcp(void);
 extern void tcp_stop(void);
 

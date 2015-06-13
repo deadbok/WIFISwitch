@@ -46,7 +46,7 @@
 /**
  * @brief Network connection time-out.
  */
-#define CONNECT_DELAY_SEC   30
+#define CONNECT_DELAY_SEC   10
 
 /**
  * @brief Print an error message.
@@ -61,7 +61,7 @@
 //#define DEBUG_MEM_LIST
 
 //Macro for debugging. Prints the message if warnings is enabled.
-#ifdef WARNIGS
+#ifdef WARNINGS
 #include "tools/missing_dec.h"
 #include "osapi.h"
 #define warn(...)     os_printf("WARN: " __VA_ARGS__)

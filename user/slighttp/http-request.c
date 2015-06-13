@@ -285,7 +285,7 @@ void ICACHE_FLASH_ATTR http_process_request(struct tcp_connection *connection)
 		status_code = 501;
     }
     http_send_response(connection, status_code);
-    http_free_request(request);
+    //http_free_request(request);
 }
 
 /**

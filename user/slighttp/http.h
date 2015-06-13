@@ -112,6 +112,7 @@ struct http_request
 /**
  * @brief Structure to keep the data of a HTTP response.
  */
+#if 0
 struct http_response
 {
     /**
@@ -139,6 +140,8 @@ struct http_response
      */
     char                *message;
 };
+#endif
+
 /**
  * @brief Callback function for static URIs.
  * 

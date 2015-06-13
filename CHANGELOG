@@ -1,10 +1,49 @@
+2015-06-13 Martin Grønholdt
+
+* user_config.h: Netwotk connection timeout set to 10 sec.
+* net/tcp.c (tcp_send): Don't zero terminate.
+*			(tcp_timer_cb): Free connection data if asked.
+*			(tcp_disconnect_cb): Set closing.
+*			(send_buffer): Print buffer with putc.
+
+2015-06-12 Martin Grønholdt
+
+* net/tcp.c (send_buffer): Double buffering.
+*						 : Switch buffer if first half is full.
+*		    (tcp_sent_cb): Update buffer_used.
+*						 : Only close connection if buffer is empty.
+*						 : Call send_buffer instead of duplicating code.
+*		    (tcp_send): Double buffering.
+*					  : Update buffer_used.
+*					  : User buffer_used to check for overflow.
+*		    (tcp_timer_cb): Double buffering.
+*			(tcp_free): Free send_buffers instead of send_buffer.
+*			(tcp_connect_cb): Initialise buffer_used.
+* net/tcp.h (tcp_connection): Added send_buffers.
+*							: Added buffer_used.
+*							: Changed sending from bool to size_t.
+* debug.c (db_dealloc): Nicer output.
+* slighttp/http-tcp.c (tcp_disconnect_cb): Don't do anything.
+
+
 2015-06-11 Martin Grønholdt
 
+* net/tcp.h (tcp_connection): Added sending and closing status.
+*			(tcp_disconnect): Return void.
 * net/tcp.c (init_tcp): Added house keeping timer.
-		   : Added tcp__timer_cb.
+*		    (tcp_connect_cb): Initialise sending and closing status.
+*		    (tcp_disconnect_cb): Do nothing, since it is taken care of by the timer.
+*		    (send_buffer): Only send the message if the buffer is full.
+*		    (tcp_sent_cb): Moved buffer stuff up front.
+*		    (tcp_send): Wait until no one is sending on the connection.
+*		    (tcp_timer_cb): Dispatch the send buffer.
+*		    (send_buffer): More debug output.
+*			(tcp_disconnect): Only set closing for the connection.
+*			(tcp_disconnect): Return void.
+*			(tcp_sent_cb): Close the connection if asked.
+*		   : Zero terminate the buffer.
+*		   : Added tcp__timer_cb.
 * fs/fs.c (fs_read): Did not advance position after reading.
-* net/tcp.c (send_buffer): More debug output.
-*					     : Zero terminate the buffer.
 * rest/rest.h: Changes for slighttp.
 * rest(network.c: Changes for slighttp.
 * rest/net-names.c: Changes for slighttp.

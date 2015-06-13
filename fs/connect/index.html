@@ -54,12 +54,15 @@ function getNetworks()
 
 function retryGet()
 {
-	var data = getNetworks();
-	
-	if (!done && !pending)
+	if (!pending)
+	{
+		getNetworks();		
+	}
+	if (!done)
 	{
 		setTimeout(retryGet, 2000);
 	}
+
 }
 
 var network = document.getElementById("network");

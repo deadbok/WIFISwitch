@@ -73,7 +73,7 @@ void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
 { 
     debug("HTTP disconnect (%p).\n", connection);
     
-    connection->free = NULL;
+    http_free_request(connection->free);
 }
 
 /**
