@@ -331,7 +331,9 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
      * up the closing connection.
      */
     struct tcp_connection *connection = tcp_connections;
+#ifdef DEBUG
     struct espconn *conn = arg;
+#endif //DEBUG
     
     debug("TCP disconnected (%p).\n", conn->reverse);
      
@@ -482,9 +484,7 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
 {
     struct espconn *conn = arg;
     struct tcp_connection *connection = conn->reverse;
-#ifdef DEBUG
 	char ret;
-#endif
     
     debug("TCP sent (%p).\n", connection);
 

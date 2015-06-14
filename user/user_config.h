@@ -24,6 +24,8 @@
 #ifndef USER_CONFIG_H
 #define USER_CONFIG_H
 
+#include "mem.h"
+
 /**
  * @brief Firmware version.
  */
@@ -53,11 +55,21 @@
  */
 #define error(...)     os_printf("ERROR: " __VA_ARGS__ )
 
-//Print warnings on the serial port.
+/**
+ * @brief Print warnings on the serial port.
+ */
 #define WARNINGS
-//Print extra debug info on the serial port
+/**
+ * @brief Print debug info on the serial port.
+ */
 #define DEBUG
+/**
+ * @brief Print memory allocation info.
+ */
 #define DEBUG_MEM
+/**
+ * @brief List memory allocations.
+ */
 //#define DEBUG_MEM_LIST
 
 //Macro for debugging. Prints the message if warnings is enabled.

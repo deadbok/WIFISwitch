@@ -1,6 +1,11 @@
 2015-06-13 Martin Grønholdt
 
-* user_config.h: Netwotk connection timeout set to 10 sec.
+* user_config.h: Include mem.h.
+
+
+2015-06-13 Martin Grønholdt
+
+* user_config.h: Network connection timeout set to 10 sec.
 * net/tcp.c (tcp_send): Don't zero terminate.
 *			(tcp_timer_cb): Free connection data if asked.
 *			(tcp_disconnect_cb): Set closing.
