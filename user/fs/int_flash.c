@@ -68,10 +68,10 @@ void ICACHE_FLASH_ATTR flash_dump(unsigned int src_addr, size_t size)
     {
         spi_flash_read(src_addr + (i << 2), &buf, 4);
         
-        os_printf("%x:", src_addr + ( i << 2));
-        os_printf(FLASHSTR, FLASH2STR((char *)&buf));
+        db_printf("%x:", src_addr + ( i << 2));
+        db_printf(FLASHSTR, FLASH2STR((char *)&buf));
         //os_printf("%c%c%c%c", FLASH2STR((char *)&buf));
-        os_printf("\n");
+        db_printf("\n");
     }
 }
 
@@ -91,10 +91,10 @@ void ICACHE_FLASH_ATTR flash_dump_mem(unsigned int src_addr, size_t size)
     
     for (i = 0; i < (size >> 2); i++)
     {
-        os_printf("%x:", (unsigned int)buf);
+        db_printf("%x:", (unsigned int)buf);
         data = *((unsigned int *)((unsigned int)buf & -0x03));
-        os_printf(FLASHSTR, FLASH2STR((char *)&data));
-        os_printf("\n");
+        db_printf(FLASHSTR, FLASH2STR((char *)&data));
+        db_printf("\n");
         buf++;
     }
 }

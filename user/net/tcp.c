@@ -148,25 +148,25 @@ static void ICACHE_FLASH_ATTR print_status(const int status)
             debug("OK.\n");
             break;
         case ESPCONN_MEM:
-            os_printf("Out of memory.\n");
+            error("Out of memory.\n");
             break;
         case ESPCONN_TIMEOUT:
-            os_printf("Timeout.\n");
+            warn("Timeout.\n");
             break;            
         case ESPCONN_RTE:
-            os_printf("Routing problem.\n");
+            error("Routing problem.\n");
             break;
         case ESPCONN_INPROGRESS:
-            os_printf("Operation in progress...\n");
+            db_printf("Operation in progress...\n");
             break;
         case ESPCONN_ABRT:
-            os_printf("Connection aborted.\n");
+            warn("Connection aborted.\n");
             break;
         case ESPCONN_RST:
-            os_printf("Connection reset.\n");
+            warn("Connection reset.\n");
             break;
         case ESPCONN_CLSD:
-            os_printf("Connection closed.\n");
+            warn("Connection closed.\n");
             break;
         case ESPCONN_CONN:
             os_printf("Not connected.\n");
@@ -175,10 +175,10 @@ static void ICACHE_FLASH_ATTR print_status(const int status)
             os_printf("Illegal argument.\n");
             break;
         case ESPCONN_ISCONN:
-            os_printf("Already connected.\n");
+            warn("Already connected.\n");
             break;
         default:
-            os_printf("Unknown status: %d\n", status);
+            warn("Unknown status: %d\n", status);
             break;    
     }
 }
@@ -273,7 +273,7 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
     }
     else
     {
-        os_printf("No more free TCP connections.\n");
+        error("No more free TCP connections.\n");
         espconn_disconnect(arg);
     }
     debug(" Connections: %d.\n", n_tcp_connections);
@@ -293,7 +293,6 @@ static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err)
     struct tcp_connection   *connection = conn->reverse;
         
     debug("TCP reconnected (%p).\n", connection);
-    os_printf("Error: ");
     print_status(err);
     //Clear previous data.
     os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));

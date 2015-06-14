@@ -30,8 +30,6 @@
 #include "espconn.h"
 #include "user_config.h"
 #include "net/tcp.h"
-#include "tools/strxtra.h"
-#include "fs/fs.h"
 #include "http.h"
 #include "http-common.h"
 
@@ -84,7 +82,7 @@ void ICACHE_FLASH_ATTR print_clf_status(struct tcp_connection *connection,
     
     if (connection)
     {
-        os_printf(IPSTR " %s %s %s %s HTTP/%s %s %d\n",
+        db_printf(IPSTR " %s %s %s %s HTTP/%s %s %d\n",
                   IP2STR(connection->conn->proto.tcp->remote_ip), unknown,
                   unknown, unknown, connection->callback_data.data,
                   request->version, status_code, length);

@@ -76,12 +76,12 @@ void ICACHE_FLASH_ATTR *db_alloc(size_t size, bool zero, char *info)
 	if (zero)
 	{
 		ptr = os_zalloc(size);
-		os_printf("Free heap (zalloc): %d.\n", system_get_free_heap_size());
+		db_printf("Free heap (zalloc): %d.\n", system_get_free_heap_size());
 	}
 	else
 	{
 		ptr = os_malloc(size);
-		os_printf("Free heap (malloc): %d.\n", system_get_free_heap_size());
+		db_printf("Free heap (malloc): %d.\n", system_get_free_heap_size());
 	}
 	
 
@@ -93,9 +93,9 @@ void ICACHE_FLASH_ATTR *db_alloc(size_t size, bool zero, char *info)
 	}
 	dbg_mem_n_alloc++;
 	
-	os_printf("Allocated %p size %d info: %s.\n", ptr, size, info);	
+	db_printf("Allocated %p size %d info: %s.\n", ptr, size, info);	
 
-    os_printf("Allocs: %d.\n", dbg_mem_n_alloc);
+    db_printf("Allocs: %d.\n", dbg_mem_n_alloc);
     return(ptr);
 }
 
@@ -108,15 +108,15 @@ void ICACHE_FLASH_ATTR db_dealloc(void *ptr)
 {
 	unsigned short i = 0;
 
-	os_printf("Freeing %p.\n", ptr);
+	db_printf("Freeing %p.\n", ptr);
 #ifdef DEBUG_MEM_LIST
-	os_printf("Listing memory allocations:\n");
+	db_printf("Listing memory allocations:\n");
 #endif
 	while(i < dbg_mem_n_alloc)
 	{
 		if (dbg_mem_alloc_infos[i].ptr == ptr)
 		{
-			os_printf(" [%p] size %d info: %s.\n",
+			db_printf(" [%p] size %d info: %s.\n",
 					  dbg_mem_alloc_infos[i].ptr,
 					  dbg_mem_alloc_infos[i].size,
 					  dbg_mem_alloc_infos[i].info);
@@ -127,7 +127,7 @@ void ICACHE_FLASH_ATTR db_dealloc(void *ptr)
 #ifdef DEBUG_MEM_LIST
 		else
 		{
-			os_printf("  %p size %d info: %s.\n",
+			db_printf("  %p size %d info: %s.\n",
 					  dbg_mem_alloc_infos[i].ptr,
 					  dbg_mem_alloc_infos[i].size,
 					  dbg_mem_alloc_infos[i].info);
@@ -137,8 +137,8 @@ void ICACHE_FLASH_ATTR db_dealloc(void *ptr)
 	}
 	os_free(ptr);
 	dbg_mem_n_alloc--;
-	os_printf("Free heap (free): %d.\n", system_get_free_heap_size());
-    os_printf("Allocs: %d.\n", dbg_mem_n_alloc);
+	db_printf("Free heap (free): %d.\n", system_get_free_heap_size());
+    db_printf("Allocs: %d.\n", dbg_mem_n_alloc);
 }
 
 #endif //DEBUG_MEM

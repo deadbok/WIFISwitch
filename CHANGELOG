@@ -1,9 +1,11 @@
 2015-06-13 Martin Grønholdt
 
+* user_main.c: Added init done call back.
 * user_config.h: Include mem.h.
+*			   : Added db_printf, which tries to silence the SDK.
 
 
-2015-06-13 Martin Grønholdt
+2015-06-13 Martin Grønholdt (committed)
 
 * user_config.h: Network connection timeout set to 10 sec.
 * net/tcp.c (tcp_send): Don't zero terminate.

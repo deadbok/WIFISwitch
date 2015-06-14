@@ -71,26 +71,39 @@ void ICACHE_FLASH_ATTR connected_cb(void)
 }
 
 /**
+ * @brief Called when initialisation is over.
+ */
+void run(void)
+{
+	db_printf("Running...\n");
+	wifi_connect(connected_cb);
+}
+
+/**
  * @brief Main entry point and init code.
  */
 void ICACHE_FLASH_ATTR user_init(void)
 {
+	//Register function to run when done.
+	system_init_done_cb(run);
     //Turn off auto connect.
     wifi_station_set_auto_connect(false);
     
     // Set baud rate of debug port
     uart_div_modify(0,UART_CLK_FREQ / 115200);
     
-    os_delay_us(1000);
+#ifndef SDK_DEBUG
+	system_set_os_print(false);
+#endif
+
+    //os_delay_us(1000);
     
     //Print banner
-    os_printf("\nWIFISwitch version %s.\n", STRING_VERSION);
+    db_printf("\nWIFISwitch version %s.\n", STRING_VERSION);
     system_print_meminfo();
-    os_printf("Free heap %u\n\n", system_get_free_heap_size());
+    db_printf("Free heap %u\n\n", system_get_free_heap_size());
   
     fs_init();
-    
-    wifi_connect(connected_cb);
     
     // Initialize the GPIO subsystem.
     gpio_init();
@@ -101,5 +114,5 @@ void ICACHE_FLASH_ATTR user_init(void)
     //Set GPIO2 low
     gpio_output_set(0, BIT5, BIT5, 0);
     
-    os_printf("\nLeaving user_init...\n");
+    db_printf("\nLeaving user_init...\n");
 }

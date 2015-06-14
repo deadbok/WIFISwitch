@@ -108,25 +108,25 @@ static void ICACHE_FLASH_ATTR print_status(unsigned char status)
     switch(status)
     {
         case STATION_IDLE:
-            os_printf("Idle...\n");
+            db_printf("Idle...\n");
             break;
         case STATION_CONNECTING:
-            os_printf("Connecting...\n");
+            db_printf("Connecting...\n");
             break;
         case STATION_WRONG_PASSWORD:
-            os_printf("Wrong password...\n");
+            db_printf("Wrong password...\n");
             break;            
         case STATION_NO_AP_FOUND:
-            os_printf("Could not find an AP...\n");
+            db_printf("Could not find an AP...\n");
             break;
         case STATION_CONNECT_FAIL:
-            os_printf("Connection failed...\n");
+            db_printf("Connection failed...\n");
             break;
         case STATION_GOT_IP:
-            os_printf("Connected.\n");
+            db_printf("Connected.\n");
             break;
         default:
-            os_printf("Unknown status: %d\n", status);
+            db_printf("Unknown status: %d\n", status);
             break;    
     }
 }  
@@ -152,7 +152,7 @@ static void connect(void *arg)
                 error("Failed get IP address (%d).\n", ret);
                 return;
             }
-            os_printf("Got IP address: %d.%d.%d.%d.\n", IP2STR(&ipinfo.ip) );
+            db_printf("Got IP address: %d.%d.%d.%d.\n", IP2STR(&ipinfo.ip) );
             //Call callback.
             wifi_connected_cb();
             break;
@@ -165,7 +165,7 @@ static void connect(void *arg)
             //Connect
             if (wifi_station_connect())
             {
-                os_printf("Trying to connect...\n");
+                db_printf("Trying to connect...\n");
             }
             else
             {
@@ -249,7 +249,7 @@ void timeout_cb(void)
     unsigned char           ret;
  
     debug("WIFI connection time out.\n");   
-    os_printf("No AP connection. Entering AP configuration mode.\n");
+    db_printf("No AP connection. Entering AP configuration mode.\n");
     
     //Get MAC address.
     ret = wifi_get_macaddr(SOFTAP_IF, mac);

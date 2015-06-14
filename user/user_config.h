@@ -25,6 +25,9 @@
 #define USER_CONFIG_H
 
 #include "mem.h"
+#include "tools/missing_dec.h"
+#include "osapi.h"
+#include "user_interface.h"
 
 /**
  * @brief Firmware version.
@@ -50,10 +53,29 @@
  */
 #define CONNECT_DELAY_SEC   10
 
+/***
+ * @brief Mostly shut off output from the SDK.
+ */
+#define SDK_DEBUG
+
+/**
+ * @brief Customised print function.
+ * 
+ * This is an ugly but simple way, to shut up most of the ESP8266 SDK output.
+ * Simple only turn the os_printf function on, when we are using it.
+ */
+#ifdef SDK_DEBUG
+#define db_printf(...) 	os_printf(__VA_ARGS__)
+#else
+#define db_printf(...) 	system_set_os_print(true);\
+						os_printf(__VA_ARGS__);\
+						system_set_os_print(false)
+#endif
+
 /**
  * @brief Print an error message.
  */
-#define error(...)     os_printf("ERROR: " __VA_ARGS__ )
+#define error(...)     db_printf("ERROR: " __VA_ARGS__ )
 
 /**
  * @brief Print warnings on the serial port.
@@ -66,7 +88,7 @@
 /**
  * @brief Print memory allocation info.
  */
-#define DEBUG_MEM
+//#define DEBUG_MEM
 /**
  * @brief List memory allocations.
  */
@@ -74,26 +96,20 @@
 
 //Macro for debugging. Prints the message if warnings is enabled.
 #ifdef WARNINGS
-#include "tools/missing_dec.h"
-#include "osapi.h"
-#define warn(...)     os_printf("WARN: " __VA_ARGS__)
+#define warn(...)     db_printf("WARN: " __VA_ARGS__)
 #else
 #define warn(...)
 #endif
 
 //Macro for debugging. Prints the messag if debugging is enabled.
 #ifdef DEBUG
-#include "tools/missing_dec.h"
-#include "osapi.h"
-#define debug(...)     os_printf(__VA_ARGS__)
+#define debug(...)     db_printf(__VA_ARGS__)
 #else
 #define debug(...)
 #endif
 
 //Debug memory de-/allocation if enabled.
 #ifdef DEBUG_MEM
-#include "mem.h"
-
 /**
  * @brief Maximum number of memory blocks to keep track of in debug mode.
  */
