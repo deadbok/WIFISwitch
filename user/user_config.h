@@ -49,6 +49,10 @@
 #define SOFTAP_PASSWORD "0123456789"
 
 /**
+ * @brief Time between event dispatches.
+ */
+#define DISPATCH_TIME 200
+/**
  * @brief Network connection time-out.
  */
 #define CONNECT_DELAY_SEC   10

@@ -1,6 +1,9 @@
 2015-06-13 Martin Grønholdt
 
+* net/wifi_connect.*: Changed code to work as a state machine.
 * user_main.c: Added init done call back.
+*			 : Added timer dispatch_timer to call an event dispatch function.
+*			 : Removed connected_cb, handled by the dispatcher.
 * user_config.h: Include mem.h.
 *			   : Added db_printf, which tries to silence the SDK.
 

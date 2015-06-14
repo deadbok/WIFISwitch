@@ -23,14 +23,7 @@
 #ifndef WIFI_CONNECT_H
 #define WIFI_CONNECT_H
  
-//The current station config.
-extern struct station_config station_conf;
-//The current AP configuration.
-extern struct softap_config  ap_config;
-//Connection status.
-extern unsigned char         connect_status;
-
 //Connect to WIFI.
-extern void wifi_connect(void (*connect_cb)());
+extern void wifi_connect(void *context);
 
 #endif

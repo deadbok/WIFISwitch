@@ -52,6 +52,10 @@
  * @brief Number of built in URIs in the #g_builtin_uris array.
  */
 #define N_BUILTIN_URIS  2
+/**
+ * @brief Number of states in the event dispatcher.
+ */
+#define N_STATES 2
 
 /**
  * @brief Array of built in handlers and their URIs.
@@ -63,20 +67,68 @@ struct http_builtin_uri g_builtin_uris[N_BUILTIN_URIS] =
 };
 
 /**
- * @brief This functions is called when a WIFI connection has been established.
+ * @brief Timer for handling events.
  */
-void ICACHE_FLASH_ATTR connected_cb(void)
+static os_timer_t dispatch_timer;
+
+/**
+ * @brief Represents all states of the running firmware.
+ */
+enum states
 {
-    init_http("/", g_builtin_uris, N_BUILTIN_URIS);
+	WIFI_CONNECTING,
+	WIFI_CONNECTED
+};
+
+/**
+ * @brief Type for the event handler functions.
+ */
+typedef void (*state_handler_t)(void *);
+
+/**
+ * @brief Array of pointer to functions that will handle event.
+ * 
+ * This array is used to look up the current handler for an event. Events should
+ * be ordered to handle the event of the same place in the £states enum.
+ */
+static state_handler_t handlers[N_STATES] = {wifi_connect, NULL};
+
+/**
+ * @brief Called by the timer to handle events.
+ */
+void handle_events(void)
+{
+	unsigned int state = WIFI_CONNECTING;
+	static bool go_away = false;
+	
+	if (go_away)
+	{
+		warn("Oops already here.\n");
+	}
+	
+	go_away = true;
+	if (handlers[state])
+	{
+		(*handlers[state])(NULL);
+	}
+	go_away = false;
 }
 
 /**
  * @brief Called when initialisation is over.
+ * 
+ * Starts the timer that will handle events.
  */
-void run(void)
+void start_handler(void)
 {
 	db_printf("Running...\n");
-	wifi_connect(connected_cb);
+    //Start handler task
+    //Disarm timer
+    os_timer_disarm(&dispatch_timer);
+    //Setup timer, pass callback as parameter.
+    os_timer_setfn(&dispatch_timer, (os_timer_func_t *)handle_events, NULL);
+    //Arm the timer, run every DISPATCH_TIME ms.
+    os_timer_arm(&dispatch_timer, DISPATCH_TIME, 1);
 }
 
 /**
@@ -85,7 +137,7 @@ void run(void)
 void ICACHE_FLASH_ATTR user_init(void)
 {
 	//Register function to run when done.
-	system_init_done_cb(run);
+	system_init_done_cb(start_handler);
     //Turn off auto connect.
     wifi_station_set_auto_connect(false);
     
