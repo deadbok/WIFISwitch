@@ -172,7 +172,10 @@ void ICACHE_FLASH_ATTR fs_close(FS_FILE_H handle)
     {
         return;
     }
-    db_free(fs_open_files[handle]);
+    if (fs_open_files[handle])
+    {
+		db_free(fs_open_files[handle]);
+	}
     fs_open_files[handle] = NULL;
 }
 

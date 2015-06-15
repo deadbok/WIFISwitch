@@ -104,7 +104,7 @@ struct http_response_handler ICACHE_FLASH_ATTR *http_get_handlers(char *uri)
 	//Check in static uris, go through and stop if URIs match.
 	for (i = 0; i < n_response_handlers; i++)
 	{
-		if (!response_handlers[i].test_uri(uri))
+		if (response_handlers[i].test_uri(uri))
 		{
 			debug("URI handlers for %s at %p.\n", uri, response_handlers + i);
 			return(response_handlers + i);
