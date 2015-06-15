@@ -36,6 +36,75 @@
 #include "http-request.h"
 
 /**
+ * @brief Get request type (method) and put it in the the request structure.
+ * 
+ * @param connection Pointer to the connection used.
+ * @return Size of the method string.
+ */
+static size_t ICACHE_FLASH_ATTR http_get_request_type(struct tcp_connection *connection)
+{
+    struct http_request *request = connection->free;
+    size_t offset = 0;
+        
+    request->response.status_code = 200;
+    offset = 4;
+	if (os_strncmp(connection->callback_data.data, "GET ", offset) == 0)
+    {
+        debug("GET request.\n");
+        request->type = HTTP_GET;
+	}
+	else if(os_strncmp(connection->callback_data.data, "PUT ", offset) == 0)
+    {
+        debug("PUT request.\n");
+        request->type = HTTP_PUT;
+    }
+    else
+    {
+		offset++;
+		if(os_strncmp(connection->callback_data.data, "POST ", offset) == 0)
+		{
+			debug("POST request.\n");
+			request->type = HTTP_POST;
+		}
+		else if(os_strncmp(connection->callback_data.data, "HEAD ", offset) == 0)
+		{
+			debug("HEAD request.\n");
+			request->type = HTTP_HEAD;
+		}
+		else if(os_strncmp(connection->callback_data.data, "CONECT ", offset) == 0)
+		{
+			debug("CONNECT request.\n");
+			request->type = HTTP_CONNECT;
+		}
+		else
+		{
+			offset++;
+			if(os_strncmp(connection->callback_data.data, "TRACE ", offset) == 0)
+			{
+				debug("TRACE request.\n");
+				request->type = HTTP_TRACE;
+			}
+			else
+			{
+				offset++;			
+				if(os_strncmp(connection->callback_data.data, "DELETE ", offset) == 0)
+				{
+					debug("DELETE request.\n");
+					request->type = HTTP_DELETE;
+				}
+				else
+				{
+					error("Unknown request: %s\n", connection->callback_data.data);
+					request->response.status_code = 501;
+					return(0);
+				}
+			}
+		}
+	}
+	return(offset);
+}
+
+/**
  * @brief Parse headers of a request.
  * 
  * @param connection Pointer to the connection used.
@@ -43,8 +112,8 @@
  *                    modified*.
  * @return Pointer to the first character after the header and the CRLFCRLF
  */
-char ICACHE_FLASH_ATTR *http_parse_headers(struct tcp_connection *connection,
-                                           char* raw_headers)
+static char ICACHE_FLASH_ATTR *http_parse_headers(struct tcp_connection *connection,
+												  char* raw_headers)
 {
     //Pointers to keep track of where we are.
     char *data = raw_headers;
@@ -178,12 +247,17 @@ char ICACHE_FLASH_ATTR *http_parse_headers(struct tcp_connection *connection,
  * @param start_offset Where to start parsing the data.
  * @return Pointer to the start of the raw message.
  */
-char ICACHE_FLASH_ATTR *http_parse_request(struct tcp_connection *connection, 
-                                         unsigned char start_offset)
+bool ICACHE_FLASH_ATTR http_parse_request(struct tcp_connection *connection)
 {
     struct http_request *request = connection->free;
     char *request_entry, *next_entry;
-
+	size_t start_offset = http_get_request_type(connection);
+	
+	if (!start_offset)
+	{
+		return(0);
+	}
+	
     //Start after method.
     request_entry = connection->callback_data.data + start_offset;
     //Parse the rest of request line.
@@ -196,7 +270,7 @@ char ICACHE_FLASH_ATTR *http_parse_request(struct tcp_connection *connection,
     if (next_entry == NULL)
     {
         error("Could not parse HTTP request URI (%s).\n", request_entry);
-        return(NULL);
+        return(false);
     }
     HTTP_EAT_SPACES(next_entry);
     //Save URI
@@ -211,81 +285,15 @@ char ICACHE_FLASH_ATTR *http_parse_request(struct tcp_connection *connection,
     if (next_entry == NULL)
     {
         error("Could not parse HTTP request version (%s).\n", request_entry);
-        return(NULL);
+        return(false);
     }
     HTTP_EAT_CRLF(next_entry, 1);
     //Save version.  
     request->version = request_entry;
     debug(" Version (%p): %s\n", request_entry, request->version);
     
-    return(http_parse_headers(connection, next_entry));
-}
-
-void ICACHE_FLASH_ATTR http_process_request(struct tcp_connection *connection)
-{
-    struct http_request *request = connection->free;
-    unsigned short status_code = 200;
-    
-    //Parse the request header
-	if (os_strncmp(connection->callback_data.data, "GET ", 4) == 0)
-    {
-        debug("GET request.\n");
-        request->type = HTTP_GET;
-        if (!http_parse_request(connection, 4))
-        {
-            status_code = 400;
-        }
-	}
-    else if(os_strncmp(connection->callback_data.data, "POST ", 5) == 0)
-    {
-        debug("POST request.\n");
-        request->type = HTTP_POST;
-        request->message = http_parse_request(connection, 5);
-        if (!request->message)
-        {
-            status_code = 400;
-        }
-	}
-    else if(os_strncmp(connection->callback_data.data, "HEAD ", 5) == 0)
-    {
-        debug("HEAD request.\n");
-        request->type = HTTP_HEAD;
-        if (!http_parse_request(connection, 5))
-        {
-            status_code = 400;
-        }
-	}
-    else if(os_strncmp(connection->callback_data.data, "PUT ", 4) == 0)
-    {
-        debug("PUT request.\n");
-        request->type = HTTP_PUT;
-        status_code = 501;
-    }
-    else if(os_strncmp(connection->callback_data.data, "DELETE ", 7) == 0)
-    {
-        debug("DELETE request.\n");
-        request->type = HTTP_DELETE;
-        status_code = 501;
-	}
-    else if(os_strncmp(connection->callback_data.data, "TRACE ", 6) == 0)
-    {
-        debug("TRACE request.\n");
-        request->type = HTTP_TRACE;
-		status_code = 501;
-   	}
-    else if(os_strncmp(connection->callback_data.data, "CONECT ", 5) == 0)
-    {
-        debug("CONNECT request.\n");
-        request->type = HTTP_CONNECT;
-        status_code = 501;
-	}
-    else
-    {
-        error("Unknown request: %s\n", connection->callback_data.data);
-		status_code = 501;
-    }
-    http_send_response(connection, status_code);
-    //http_free_request(request);
+    request->message = http_parse_headers(connection, next_entry);
+    return(true);
 }
 
 /**

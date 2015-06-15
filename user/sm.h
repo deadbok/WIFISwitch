@@ -29,13 +29,17 @@
 /**
  * @brief Number of states in the event dispatcher.
  */
-#define N_STATES 6
+#define N_STATES 9
 
 extern state_t wifi_connect(void *context);
 extern state_t wifi_connected(void *context);
 
+extern state_t http_init(void *arg);
+extern state_t http_mutter_med_kost_og_spand(void*arg);
+
 extern state_t root_config_mode(void *arg);
 extern state_t root_normal_mode(void *arg);
+extern state_t reboot(void *arg);
 
 /**
  * @brief Array of pointer to functions that will handle event.
@@ -50,7 +54,10 @@ static state_handler_t handlers[N_STATES] =
 	root_normal_mode,
 	root_config_mode,
 	NULL,
-	NULL
+	http_init,
+	NULL,
+	http_mutter_med_kost_og_spand,
+	reboot
 };
 
 

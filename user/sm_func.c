@@ -48,3 +48,13 @@ state_t root_normal_mode(void *arg)
 	debug("Setting HTTP root to: %s.\n", context->http_root);
 	return(HTTP_INIT);
 }
+
+/**
+ * @brief Restart the system.
+ */
+state_t reboot(void *arg)
+{
+	debug("Restarting device...\n");
+	system_restart();
+	return(SYSTEM_RESTART);
+}

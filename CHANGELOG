@@ -1,9 +1,32 @@
+2015-06-15 Martin Grønholdt
+
+* net/tcp.c (init_tcp): Return boolean.
+*			(tcp_listen: Return boolean.
+* net/tcp.h (init_tcp): Return boolean.
+*			(tcp_listen: Return boolean.
+* slighttp/http.c (init_http): Return boolean.
+* slighttp/http.h (init_http): Return boolean.
+* 				  (http_request): Added response.
+*                : Re purposed http_response.
+* slighttp/http-request (http_parse_request): Eliminated start_offset parameter.
+*						(http_get_request_type): New function.
+*						(http_process_request): Removed.
+*						: All local functions static.
+* slighttp/http-request.h: Only export http_parse_request and http_free_request.						
+* sm_func.h: Added resboot.
+* sm_types (states): Added HTTP_INIT, HTTP_SEND, and SYSTEM_RESTART.
+*				   : Added HTTP_CLEANUP.
+* sm.h (handlers): Added http_init, and restart.
+* sm.h (handlers): Added http_mutter_med_kost_og_spand.
+* sm_wifi.c: Created file and moved main state machine wifi functions here.
+
+
 2015-06-13 Martin Grønholdt
 
 * sm_wifi.c: Added file.
 * sm_func: Added file.
 * sm.h: Created file with most of the main state machine stuff.
-* sm_types.h: Added with typedefs for main state machine.
+* sm_types.h: Added with types for main state machine.
 * net/wifi_connect.*: Changed code to work as a state machine.
 * user_main.c: Added init done call back.
 *			 : Added timer dispatch_timer to call an event dispatch function.

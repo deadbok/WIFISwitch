@@ -46,7 +46,7 @@
 /**
  * @brief HTTP request types.
  */
-enum request_type
+enum request_types
 {
     HTTP_OPTIONS,
     HTTP_GET,
@@ -76,6 +76,17 @@ struct http_header
 };
 
 /**
+ * @brief Structure to keep the data of a HTTP response.
+ */
+struct http_response
+{
+    /**
+     * @brief Numerical status code.
+     */
+    unsigned short status_code;
+};
+
+/**
  * @brief Structure to keep the data of a HTTP request.
  */
 struct http_request
@@ -87,7 +98,7 @@ struct http_request
     /**
      * @brief Type of HTTP request.
      */
-    enum request_type   type;
+    enum request_types   type;
     /**
      * @brief The URI of the HTTP request.
      */
@@ -108,39 +119,11 @@ struct http_request
      * @brief The message body of the HTTP request.
      */
     char                *message;
+    /**
+     * @brief Response data for the request.
+     */
+    struct http_response response;
 };
-/**
- * @brief Structure to keep the data of a HTTP response.
- */
-#if 0
-struct http_response
-{
-    /**
-     * @brief Pointer to the connection data.
-     */
-    struct tcp_connection *connection;
-    /**
-     * @brief Numerical status code.
-     */
-     unsigned short status_code;
-    /**
-     * @brief Status-line.
-     */
-     char *status_line;
-    /**
-     * @brief The start line of the response.
-     */
-    struct http_header *headers;
-    /**
-     * @brief Number of headers
-     */
-     unsigned short     n_headers;
-    /**
-     * @brief The message body of the HTTP response.
-     */
-    char                *message;
-};
-#endif
 
 /**
  * @brief Callback function for static URIs.
@@ -192,6 +175,6 @@ struct  http_builtin_uri
 
 extern char *http_fs_doc_root;
 
-extern void init_http(char *path, struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris);
+extern bool init_http(char *path, struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris);
 
 #endif

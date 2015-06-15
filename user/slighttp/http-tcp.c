@@ -103,7 +103,7 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
         return;
     }
 
-    http_process_request(connection);
+    http_parse_request(connection);
 }
 
 void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )

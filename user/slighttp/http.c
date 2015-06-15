@@ -15,6 +15,7 @@
  * - HEAD requests.
  * - POST requests.
  * - CRLF, LF, and space tolerance (never tested except for space).
+ * - File system access.
  * 
  * The server can have different document roots for pages loaded from the file
  * system, but the error pages like `404.html` are always loaded from the root.
@@ -25,7 +26,6 @@
  * 
  * Missing functionality:
  * - Does not understand any header fields.
- * - File system access.
  * - 400 errors are not send in all situations where they should be.
  * - Persistent connections. The server closes every connection when the 
  *   response has been sent.
@@ -72,8 +72,9 @@ char *http_fs_doc_root;
  * @param path Path to search as root of the server in the file system.
  * @param builtin_uris An array of built in handlers for URIs.
  * @param n_builtin_uris Number of URI handlers.
+ * @return `true`on success.
  */
-void ICACHE_FLASH_ATTR init_http(char *path, struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris)
+bool ICACHE_FLASH_ATTR init_http(char *path, struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris)
 {
     n_static_uris = n_builtin_uris;
     static_uris = builtin_uris;
@@ -81,7 +82,14 @@ void ICACHE_FLASH_ATTR init_http(char *path, struct http_builtin_uri *builtin_ur
     http_fs_doc_root = path;
     
     //Initialise TCP and listen on port 80.
-    init_tcp();
-    tcp_listen(80, tcp_connect_cb, tcp_reconnect_cb, tcp_disconnect_cb, 
-             tcp_write_finish_cb, tcp_recv_cb, tcp_sent_cb);
+    if (!init_tcp())
+    {
+		return(false);
+	}
+	if (tcp_listen(80, tcp_connect_cb, tcp_reconnect_cb, tcp_disconnect_cb, 
+				   tcp_write_finish_cb, tcp_recv_cb, tcp_sent_cb))
+	{
+		return(false);
+	}
+	return(true);
 }

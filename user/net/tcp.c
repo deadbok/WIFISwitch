@@ -607,8 +607,9 @@ void ICACHE_FLASH_ATTR tcp_disconnect(struct tcp_connection *connection)
  * @param write_finish_cb Callback when a write has been done.
  * @param recv_cb Callback when something has been received.
  * @param sent_cb Callback when something has been sent.
+ * @return `true` on success.
  */
-void ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb, 
+bool ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb, 
                                 tcp_callback reconnect_cb, tcp_callback disconnect_cb,
                                 tcp_callback write_finish_cb, tcp_callback recv_cb,
                                 tcp_callback sent_cb)
@@ -626,6 +627,12 @@ void ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
         connection = (struct tcp_cb_connection *)db_zalloc(sizeof(struct tcp_cb_connection), "connection tcp_listen");
         connection->conn = (struct espconn *)db_zalloc(sizeof(struct espconn), "espconn tcp_listen");
         connection->conn->proto.tcp = (esp_tcp *)db_zalloc(sizeof(esp_tcp), "esp_tcp tcp_listen");
+        
+        if ((!connection) || (!connection->conn) || (!connection->conn->proto.tcp))
+        {
+			error("Could not allocate memory for TCP connection.\n");
+			return(false);
+		}
         
         debug(" Created connection %p.\n", connection);        
         conn = connection->conn;
@@ -660,6 +667,10 @@ void ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
 #ifdef DEBUG
         print_status(ret);
 #endif
+		if (ret != ESPCONN_OK)
+		{
+			return(false);
+		}
         listening_connection = connection;
         debug(" Setting connection timeout to 60 secs...");
         //Set timeout for all connections.
@@ -667,11 +678,18 @@ void ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
 #ifdef DEBUG
         print_status(ret);
 #endif
+		if (ret != ESPCONN_OK)
+		{
+			return(false);
+		}
+
     }
     else
     {
         error("Only one listening TCP connection supported.\n");
+        return(false);
     }
+    return(true);
 }
 
 /**
@@ -733,16 +751,18 @@ void tcp_timer_cb(void *unused)
 
 /**
  * @brief Initialise TCP networking.
+ * 
+ * @return `true` on success.
  */
-void ICACHE_FLASH_ATTR init_tcp(void)
+bool ICACHE_FLASH_ATTR init_tcp(void)
 {
     int ret;
     
     debug("TCP init.\n");
     if (tcp_connections != NULL)
     {
-        debug("TCP init already called once.\n");
-        return;
+        error("TCP init already called once.\n");
+        return(false);
     }
     //Listening connection
     listening_connection = NULL;
@@ -757,14 +777,19 @@ void ICACHE_FLASH_ATTR init_tcp(void)
 #ifdef DEBUG
     print_status(ret);
 #endif
+	if (ret)
+	{
+		return(false);
+	}
+	return(true);
 
 	//Set housekeeping timer.
     //Disarm timer
-    os_timer_disarm(&timer);
+    //os_timer_disarm(&timer);
     //Setup timer.
-    os_timer_setfn(&timer, (os_timer_func_t *)tcp_timer_cb, NULL);
+    //os_timer_setfn(&timer, (os_timer_func_t *)tcp_timer_cb, NULL);
     //Arm the timer, run every 1 second.
-    os_timer_arm(&timer, 200, true);
+    //os_timer_arm(&timer, 200, true);
 }
 
 void ICACHE_FLASH_ATTR tcp_stop(void)

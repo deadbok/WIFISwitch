@@ -1,11 +1,10 @@
-/** @file sm_types.h
+/**
+ * @file sm_wifi.c
  *
- * @brief Main state machine type definitions.
- * 
- * @copyright
+ * @brief WIFI code for the main state machine.
+ *
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
- * @license
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -20,45 +19,35 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
- */ 
-#ifndef SM_TYPES_H
-#define SM_TYPES_H
+ */
+#include "user_interface.h"
+#include "slighttp/http.h"
+#include "sm_types.h"
 
 /**
- * @brief Type of a state.
+ * @brief Connect to the configured Access Point, or create an AP, if unsuccessful.
+ * 
+ * This will keep calling itself through the main state machine until a
+ * connection is made, or it times out, and sets up an access point.
  */
-typedef unsigned int state_t;
-
-/**
- * @brief Type for the event handler functions.
- */
-typedef state_t (*state_handler_t)(void *);
-
-/**
- * @brief Represents all states of the running firmware.
- */
-enum states
+state_t ICACHE_FLASH_ATTR http_init(void *arg)
 {
-	WIFI_CONNECT,
-	WIFI_CHECK,
-	WIFI_CONNECTED,
-	WIFI_CONFIG,
-	WIFI_DISCONNECTED,
-	HTTP_INIT,
-	HTTP_SEND,
-	HTTP_CLEANUP,
-	SYSTEM_RESTART
-};
+	struct sm_context *context = arg;
+	
+	if (init_http(context->http_root, NULL, 0))
+	{
+		error("Could not start HTTP server.\n");
+		return(SYSTEM_RESTART);
+	}
+	return(HTTP_SEND);
+}
 
 /**
- * @brief Main state machine context.
+ * @brief Do house keeping.
+ * 
+ * Close and deallocate unused connections.
  */
-struct sm_context
+state_t http_mutter_med_kost_og_spand(void *arg)
 {
-	/**
-	 * @brief Root of the HTTP server.
-	 */
-	 char *http_root;
-};
-
-#endif //SM_TYPES_H
+	return(HTTP_SEND);
+}

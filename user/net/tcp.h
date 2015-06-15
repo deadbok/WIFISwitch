@@ -135,7 +135,7 @@ struct tcp_connection
     DL_LIST_CREATE(struct tcp_connection);
 };
 
-extern void tcp_listen(int port, tcp_callback connect_cb, 
+extern bool tcp_listen(int port, tcp_callback connect_cb, 
                                 tcp_callback reconnect_cb, 
                                 tcp_callback disconnect_cb, 
                                 tcp_callback write_finish_cb, 
@@ -143,7 +143,7 @@ extern void tcp_listen(int port, tcp_callback connect_cb,
                                 tcp_callback sent_cb);
 extern bool tcp_send(struct tcp_connection *connection, char *data, size_t size);
 extern void tcp_disconnect(struct tcp_connection *connection);
-extern void init_tcp(void);
+extern bool init_tcp(void);
 extern void tcp_stop(void);
 
 #endif

@@ -26,14 +26,7 @@
 
 #include "http.h"
 
-extern void http_handle_request(struct tcp_connection *connection,
-										   unsigned short error_code, 
-										   bool headers_only);
-extern char *http_parse_headers(struct tcp_connection *connection,
-								char* raw_headers);
-extern char *http_parse_request(struct tcp_connection *connection, 
-								unsigned char start_offset);
-extern void http_process_request(struct tcp_connection *connection);
+extern bool http_parse_request(struct tcp_connection *connection);
 extern void http_free_request(struct http_request *request);
 
 #endif //HTTP_REQUEST_H
