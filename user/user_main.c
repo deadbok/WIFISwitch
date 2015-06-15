@@ -41,21 +41,15 @@
 #include "os_type.h"
 #include "user_config.h"
 #include "user_interface.h"
-#include "tools/missing_dec.h"
-#include "net/wifi_connect.h"
-#include "net/tcp.h"
 #include "slighttp/http.h"
 #include "rest/rest.h"
 #include "fs/fs.h"
+#include "sm.h"
 
 /**
  * @brief Number of built in URIs in the #g_builtin_uris array.
  */
 #define N_BUILTIN_URIS  2
-/**
- * @brief Number of states in the event dispatcher.
- */
-#define N_STATES 2
 
 /**
  * @brief Array of built in handlers and their URIs.
@@ -72,45 +66,36 @@ struct http_builtin_uri g_builtin_uris[N_BUILTIN_URIS] =
 static os_timer_t dispatch_timer;
 
 /**
- * @brief Represents all states of the running firmware.
- */
-enum states
-{
-	WIFI_CONNECTING,
-	WIFI_CONNECTED
-};
-
-/**
- * @brief Type for the event handler functions.
- */
-typedef void (*state_handler_t)(void *);
-
-/**
- * @brief Array of pointer to functions that will handle event.
- * 
- * This array is used to look up the current handler for an event. Events should
- * be ordered to handle the event of the same place in the £states enum.
- */
-static state_handler_t handlers[N_STATES] = {wifi_connect, NULL};
-
-/**
  * @brief Called by the timer to handle events.
  */
 void handle_events(void)
 {
-	unsigned int state = WIFI_CONNECTING;
+	static state_t state = WIFI_CONNECT;
 	static bool go_away = false;
+	static struct sm_context context;
 	
 	if (go_away)
 	{
 		warn("Oops already here.\n");
 	}
 	
+	debug("Main state before: %d.\n", state);
 	go_away = true;
 	if (handlers[state])
 	{
-		(*handlers[state])(NULL);
+		state = (*handlers[state])(&context);
 	}
+	else
+	{
+		warn("Empty handler for state %d.\n", state);
+	}
+	
+	if (state >= N_STATES)
+	{
+		error("Main state machine state overflow.");
+		state = 0;
+	}
+	debug("Main state after: %d.\n", state);
 	go_away = false;
 }
 

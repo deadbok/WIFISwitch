@@ -1,10 +1,12 @@
-/* wifi_connect.h
- *
- * Routines for connecting th ESP8266 to a WIFI network.
- *
+/**
+ * @file sm_func.c
  * 
- * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
+ * @brief Main state machine functions.
  * 
+ * @copyright
+ * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
+ * 
+ * @license
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -19,15 +21,30 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
- */ 
-#ifndef WIFI_CONNECT_H
-#define WIFI_CONNECT_H
-
+ */
+#include "user_config.h"
 #include "sm_types.h"
- 
-extern bool check_connect(bool *connected);
-extern bool setup_ap(bool *connected);
-extern bool setup_station(bool *connected);
 
+/**
+ * @brief Set the root of the HTTP server for config mode.
+ */
+state_t root_config_mode(void *arg)
+{
+	struct sm_context *context = arg;
+	
+	context->http_root = "/connect/";
+	debug("Setting HTTP root to: %s.\n", context->http_root);
+	return(HTTP_INIT);
+}
 
-#endif
+/**
+ * @brief Set the root of the HTTP server for normal mode.
+ */
+state_t root_normal_mode(void *arg)
+{
+	struct sm_context *context = arg;
+	
+	context->http_root = "/";
+	debug("Setting HTTP root to: %s.\n", context->http_root);
+	return(HTTP_INIT);
+}

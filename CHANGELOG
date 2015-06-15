@@ -1,5 +1,9 @@
 2015-06-13 Martin Grønholdt
 
+* sm_wifi.c: Added file.
+* sm_func: Added file.
+* sm.h: Created file with most of the main state machine stuff.
+* sm_types.h: Added with typedefs for main state machine.
 * net/wifi_connect.*: Changed code to work as a state machine.
 * user_main.c: Added init done call back.
 *			 : Added timer dispatch_timer to call an event dispatch function.

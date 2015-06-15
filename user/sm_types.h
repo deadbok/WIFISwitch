@@ -1,10 +1,11 @@
-/* wifi_connect.h
+/** @file sm_types.h
  *
- * Routines for connecting th ESP8266 to a WIFI network.
- *
+ * @brief Main state machine type definitions.
  * 
- * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
+ * @copyright
+ * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
+ * @license
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -20,14 +21,41 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */ 
-#ifndef WIFI_CONNECT_H
-#define WIFI_CONNECT_H
+#ifndef SM_TYPES_H
+#define SM_TYPES_H
 
-#include "sm_types.h"
- 
-extern bool check_connect(bool *connected);
-extern bool setup_ap(bool *connected);
-extern bool setup_station(bool *connected);
+/**
+ * @brief Type of a state.
+ */
+typedef unsigned int state_t;
 
+/**
+ * @brief Type for the event handler functions.
+ */
+typedef state_t (*state_handler_t)(void *);
 
-#endif
+/**
+ * @brief Represents all states of the running firmware.
+ */
+enum states
+{
+	WIFI_CONNECT,
+	WIFI_CHECK,
+	WIFI_CONNECTED,
+	WIFI_CONFIG,
+	WIFI_DISCONNECTED,
+	HTTP_INIT
+};
+
+/**
+ * @brief Main state machine context.
+ */
+struct sm_context
+{
+	/**
+	 * @brief Root of the HTTP server.
+	 */
+	 char *http_root;
+};
+
+#endif //SM_TYPES_H

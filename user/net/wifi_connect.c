@@ -4,11 +4,7 @@
  * @brief Routines for connecting th ESP8266 to a WIFI network.
  *
  * - Load a WIFI configuration.
- * - If unsuccessful create an AP presenting a HTTP server to configure 
- *   the connection values.
- * 
- * What works:
- * - Try to connect to the AP.
+ * - If unsuccessful create an AP.
  * 
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
@@ -32,7 +28,6 @@
 #include "user_interface.h"
 #include "user_config.h"
 #include "tools/strxtra.h"
-#include "tools/missing_dec.h"
 #include "wifi_connect.h"
 
 /**
@@ -122,7 +117,7 @@ static void ICACHE_FLASH_ATTR print_status(unsigned char status)
  * @param connected Pointer to a boolean telling whether we're connected.
  * @return `true`on connection or time out. False otherwise.
  */
-static bool ICACHE_FLASH_ATTR check_connect(bool *connected)
+bool ICACHE_FLASH_ATTR check_connect(bool *connected)
 {
     struct ip_info  ipinfo;
     unsigned char   ret;
@@ -191,7 +186,7 @@ static bool ICACHE_FLASH_ATTR create_softap(char *ssid, char *passwd, unsigned c
           channel);
           
     //Set AP mode.
-    ret = wifi_set_opmode(STATIONAP_MODE);
+    ret = wifi_set_opmode_current(STATIONAP_MODE);
     if (!ret)
     {
         error("Cannot set soft AP mode (%d).", ret);
@@ -226,7 +221,7 @@ static bool ICACHE_FLASH_ATTR create_softap(char *ssid, char *passwd, unsigned c
  * @param connected Pointer to a boolean, that will be set to true on success.
  * @return `true` on success.
  */
-bool create_ap(bool *connected)
+bool ICACHE_FLASH_ATTR setup_ap(bool *connected)
 {
     unsigned char           mac[6];
     char                    ssid[16];
@@ -274,7 +269,7 @@ bool create_ap(bool *connected)
  * @param connected Pointer to a boolean telling whether we're connected.
  * @param `true` on success (which just means we're connecting).
  */
-static bool ICACHE_FLASH_ATTR connect_ap(bool *connected)
+bool ICACHE_FLASH_ATTR setup_station(bool *connected)
 {
     unsigned char ret = 0;
 
@@ -312,34 +307,4 @@ static bool ICACHE_FLASH_ATTR connect_ap(bool *connected)
         return(false);
     }
     return(true);
-}
-
-/**
- * @brief Connect to the configured Access Point, or create an AP, if unsuccessful.
- * 
- */
-void ICACHE_FLASH_ATTR wifi_connect(void *context)
-{
-	static bool connected = false;
-	static unsigned char state = 0;
-    bool ret = false;
-    
-    if (connected)
-    {
-		return;
-	}
-    
-	switch (state)
-	{
-		case 0: ret = connect_ap(&connected);
-				break;
-		case 1: ret = check_connect(&connected);
-				break;
-		case 2: ret = create_ap(&connected);
-	}
-	
-	if (ret)
-	{
-		state++;
-	}
 }
