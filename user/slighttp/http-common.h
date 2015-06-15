@@ -32,7 +32,7 @@
 #define HTTP_EAT_SPACES(string) while (*string == ' ')\
                                     *string++ = '\0'
 /**
- * @brief eat line ends from HTTP headers.
+ * @brief Eat line ends from HTTP headers.
  * 
  * This macro is used to be tolerant, accepting both CRLF and LF endings.
  */
@@ -53,6 +53,29 @@
  * function call ending with semicolon (;).
  * Idea from here: [https://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html
  */
+/**
+ * @brief Skip initial spaces.
+ * 
+ * Skip initial spaces in a string.
+ */
+#define HTTP_SKIP_SPACES(string) while (*string == ' ')\
+                                    string++
+/**
+ * @brief Skip line ends from HTTP headers.
+ * 
+ * This macro is used to be tolerant, accepting both CRLF and LF endings.
+ */
+#define HTTP_SKIP_CRLF(ptr, number)  do\
+                                    {\
+                                        if (*ptr == '\r')\
+                                        {\
+                                            ptr += (number * 2);\
+                                        }\
+                                        else\
+                                        {\
+                                            ptr += number;\
+                                        }\
+                                    } while(0)
 
 /**
  * @brief Built in pages.
@@ -60,11 +83,11 @@
  * Built in pages that are served when every other method of getting the resource
  * has failed.
  */
-struct http_builtin_uri *static_uris;
+struct http_response_handler *response_handlers;
 /**
  * @brief Number of built in pages.
  */
-unsigned short n_static_uris;
+unsigned short n_response_handlers;
 
 extern void print_clf_status(struct tcp_connection *connection, 
                              char *status_code, size_t length);

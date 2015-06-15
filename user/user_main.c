@@ -41,24 +41,8 @@
 #include "os_type.h"
 #include "user_config.h"
 #include "user_interface.h"
-#include "slighttp/http.h"
-#include "rest/rest.h"
 #include "fs/fs.h"
 #include "sm.h"
-
-/**
- * @brief Number of built in URIs in the #g_builtin_uris array.
- */
-#define N_BUILTIN_URIS  2
-
-/**
- * @brief Array of built in handlers and their URIs.
- */
-struct http_builtin_uri g_builtin_uris[N_BUILTIN_URIS] =
-{
-	{rest_network_test, rest_network, rest_network_destroy},
-    {rest_net_names_test, rest_net_names, rest_net_names_destroy}
-};
 
 /**
  * @brief Timer for handling events.
@@ -73,14 +57,19 @@ void handle_events(void)
 	static state_t state = WIFI_CONNECT;
 	static bool go_away = false;
 	static struct sm_context context;
+#ifdef DEBUG
+	static state_t last_state = WIFI_CONNECT;
+#endif
 	
 	if (go_away)
 	{
 		warn("Oops already here.\n");
 	}
 	
-	debug("Main state before: %d.\n", state);
 	go_away = true;
+#ifdef DEBUG
+	last_state = state;
+#endif
 	if (handlers[state])
 	{
 		state = (*handlers[state])(&context);
@@ -89,13 +78,20 @@ void handle_events(void)
 	{
 		warn("Empty handler for state %d.\n", state);
 	}
-	
+
+#ifdef DEBUG
+	if (last_state != state)
+	{
+		db_printf("New state: %d:\n", state);
+	}
+#endif
+
 	if (state >= N_STATES)
 	{
 		error("Main state machine state overflow.");
 		state = 0;
 	}
-	debug("Main state after: %d.\n", state);
+
 	go_away = false;
 }
 

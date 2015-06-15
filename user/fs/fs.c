@@ -48,7 +48,7 @@ struct fs_file
     /**
      * @brief Set on end of file.
      */
-     bool eof;
+    bool eof;
 };
 
 /**
@@ -130,7 +130,7 @@ FS_FILE_H ICACHE_FLASH_ATTR fs_open(char *filename)
     file_hdr = zip_find_file_header(filename);
     if (!file_hdr)
     {
-        warn("Could not open %s.\n", filename);
+        debug("Could not open %s.\n", filename);
         return(-1);
     }
    

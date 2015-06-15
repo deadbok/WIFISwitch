@@ -5,11 +5,6 @@
  * Simple HTTP server, that only supports the most basic functionality, and is
  * small.
  * 
- * To keep memory use small, the data passed to the server, from the network, is 
- * expected to stay until the server is done with them. Instead of making a copy
- * of the data from the network, the server inserts `\0` characters directly into
- * the data. The server then point to the values directly in the network data.
- * 
  * What works:
  * - GET requests.
  * - HEAD requests.
@@ -74,10 +69,10 @@ char *http_fs_doc_root;
  * @param n_builtin_uris Number of URI handlers.
  * @return `true`on success.
  */
-bool ICACHE_FLASH_ATTR init_http(char *path, struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris)
+bool ICACHE_FLASH_ATTR init_http(char *path, struct http_response_handler *handlers, unsigned short n_handlers)
 {
-    n_static_uris = n_builtin_uris;
-    static_uris = builtin_uris;
+    n_response_handlers = n_handlers;
+    response_handlers = handlers;
     
     http_fs_doc_root = path;
     

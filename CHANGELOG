@@ -1,24 +1,36 @@
 2015-06-15 Martin Grønholdt
 
+* fs/fs.c (fs_open): Don't warn on file not found, just tell in a debuggy way.
 * net/tcp.c (init_tcp): Return boolean.
 *			(tcp_listen: Return boolean.
+*		   : Added tcp_get_connections.
 * net/tcp.h (init_tcp): Return boolean.
 *			(tcp_listen: Return boolean.
+*		   : Added tcp_get_connections.
 * slighttp/http.c (init_http): Return boolean.
 * slighttp/http.h (init_http): Return boolean.
 * 				  (http_request): Added response.
-*                : Re purposed http_response.
+*                 (http_response): Re purposed http_response.
+*				  (http_response): Added state.
+*				  (http_response): Added handlers.
+*				  (http_builtin_uti): Renamed to http_response_handler.		 
+*				 : Added response_states.
+* 			  	 : Added http_get_handlers.
 * slighttp/http-request (http_parse_request): Eliminated start_offset parameter.
 *						(http_get_request_type): New function.
 *						(http_process_request): Removed.
-*						: All local functions static.
-* slighttp/http-request.h: Only export http_parse_request and http_free_request.						
+*					   : All local functions static.
+*					   : Creates a (parsed) copy of the request data.
+* slighttp/http-response.c: Added http_get_handlers.
+* slighttp/http-request.h: Only export http_parse_request and http_free_request.
+* slighttp/http-common.h: Added HTTP_SKIP_SPACES, and HTTP_SKIP_CRLF.
 * sm_func.h: Added resboot.
 * sm_types (states): Added HTTP_INIT, HTTP_SEND, and SYSTEM_RESTART.
 *				   : Added HTTP_CLEANUP.
 * sm.h (handlers): Added http_init, and restart.
 * sm.h (handlers): Added http_mutter_med_kost_og_spand.
 * sm_wifi.c: Created file and moved main state machine wifi functions here.
+* sm_http.c: Added file with main state machine HTTP functions.
 
 
 2015-06-13 Martin Grønholdt

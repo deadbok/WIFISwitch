@@ -806,3 +806,13 @@ void ICACHE_FLASH_ATTR tcp_stop(void)
 
 	os_timer_disarm(&timer);
 }
+
+/**
+ * @brief Pointer to first connection in a list of all connections.
+ * 
+ * @return Pointer to a struct #tcp_connection.
+ */
+struct tcp_connection ICACHE_FLASH_ATTR *tcp_get_connections(void)
+{
+	return(tcp_connections);
+}

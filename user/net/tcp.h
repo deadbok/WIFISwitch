@@ -145,5 +145,6 @@ extern bool tcp_send(struct tcp_connection *connection, char *data, size_t size)
 extern void tcp_disconnect(struct tcp_connection *connection);
 extern bool init_tcp(void);
 extern void tcp_stop(void);
+extern struct tcp_connection *tcp_get_connections(void);
 
 #endif

@@ -43,11 +43,16 @@
  * @brief Version of HTTP that is supported.
  */
 #define HTTP_SERVER_HTTP_VERSION    "1.1"
+
 /**
  * @brief HTTP request types.
  */
 enum request_types
 {
+	/**
+	 * @brief No type has been found yet.
+	 */
+	HTTP_NONE,
     HTTP_OPTIONS,
     HTTP_GET,
     HTTP_HEAD,
@@ -56,6 +61,39 @@ enum request_types
     HTTP_DELETE,
     HTTP_TRACE,
     HTTP_CONNECT
+};
+
+/**
+ * @brief HTTP response states.
+ * 
+ * Used to keep track of the progress when sending a response.
+ */
+enum response_states
+{
+	/**
+	 * @brief Not doing anything.
+	 */
+	HTTP_STATE_NONE,
+	/**
+	 * @brief Looking for URI.
+	 */
+	HTTP_STATE_FIND,
+	/**
+	 * @brief Sending status line.
+	 */
+    HTTP_STATE_STATUS,
+    /**
+     * @brief Sending headers.
+     */
+    HTTP_STATE_HEADERS,
+    /**
+     * @brief Sending message.
+     */
+    HTTP_STATE_MESSAGE,
+    /**
+     * @brief All done,
+     */
+    HTTP_STATE_DONE
 };
 /**
  * @brief A HTTP header entry.
@@ -84,6 +122,14 @@ struct http_response
      * @brief Numerical status code.
      */
     unsigned short status_code;
+    /**
+     * @brief How long we've gotten, in responding.
+     */
+     unsigned char state;
+     /**
+      * @brief Function pointers to handlers.
+      */
+     struct http_response_handler *handlers;
 };
 
 /**
@@ -125,20 +171,9 @@ struct http_request
     struct http_response response;
 };
 
+
 /**
- * @brief Callback function for static URIs.
- * 
- * This called to generate the response message. This functions is expected to
- * send any headers and the message for the response. The function should 
- * return the size of the response message in bytes.
- * 
- * @param uri The uri to generate the response message for.
- * @param request The request that led us here.
- * @return The size of the response message send.
- */
-typedef size_t (*uri_response_callback)(char *uri, struct http_request *request);
-/**
- * @brief Callback function to test static URIs.
+ * @brief Callback function to test URIs.
  * 
  * This is called to test if the handler associated with it, will handle the URI.
  * 
@@ -147,34 +182,55 @@ typedef size_t (*uri_response_callback)(char *uri, struct http_request *request)
  */
 typedef bool (*uri_comp_callback)(char *uri);
 /**
+ * @brief Callback function for URIs.
+ * 
+ * This called to generate the response message. This functions is expected to
+ * send anything needed for the response. *Care must be taken, not to overflow
+ * the send buffer.* Therefore this function gets called until it sets 
+ * `request->response.state`to #HTTP_STATE_DONE. `request->response.state`
+ * is used to keep track of the progress, and must be updated.
+ * If request->response.status_code is set to anything but 200, an error
+ * response send instead.
+ * Return the size of the response message in bytes. (Not status-line, and headers).
+ * 
+ * @param request The request that led us here.
+ * @return The size of the response message send.
+ */
+typedef size_t (*uri_response_callback)(struct http_request *request);
+/**
  * @brief Callback function to clean up after a response.
  */
 typedef void (*uri_destroy_callback)(void);
 
 /** 
- * @brief Structure to store information for a built in URI.
+ * @brief Structure to store response handlers.
  * 
  * Used to build an array of built in URI's that has generated responses. The
  * HTTP server will run through these URI's, when all other sources have failed.
  */
-struct  http_builtin_uri
+struct  http_response_handler
 {
     /**
      * @brief A function to test if this handler will handle the URI.
      */
 	uri_comp_callback test_uri;
 	/**
-     * @brief A function pointer to a function, that renders the answer.
+     * @brief A function pointer to a function, that sends the answer.
      */
     uri_response_callback handler;
     /**
-     * @brief A function pointer to a function, that cdoes cleanup if needed.
+     * @brief A function pointer to a function, that does cleanup if needed.
      */
     uri_destroy_callback destroy;
 };
 
 extern char *http_fs_doc_root;
 
-extern bool init_http(char *path, struct http_builtin_uri *builtin_uris, unsigned short n_builtin_uris);
+extern bool init_http(char *path, struct http_response_handler *handlers, unsigned short n_handlers);
+extern struct http_response_handler *http_get_handlers(char *uri);
+
+extern bool http_fs_test(char *uri);
+extern size_t http_fs_handler(struct http_request *request);
+extern void http_fs_destroy(void);
 
 #endif

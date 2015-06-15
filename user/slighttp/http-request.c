@@ -107,12 +107,12 @@ static size_t ICACHE_FLASH_ATTR http_get_request_type(struct tcp_connection *con
 /**
  * @brief Parse headers of a request.
  * 
- * @param connection Pointer to the connection used.
+ * @param request Pointer to the request where the headers belong.
  * @param raw_headers Pointer to the raw headers to parse. *This memory is
  *                    modified*.
  * @return Pointer to the first character after the header and the CRLFCRLF
  */
-static char ICACHE_FLASH_ATTR *http_parse_headers(struct tcp_connection *connection,
+static char ICACHE_FLASH_ATTR *http_parse_headers(struct http_request *request,
 												  char* raw_headers)
 {
     //Pointers to keep track of where we are.
@@ -125,6 +125,7 @@ static char ICACHE_FLASH_ATTR *http_parse_headers(struct tcp_connection *connect
     unsigned short n_headers;
     //True if something is done doing stuff.
     bool done;
+    size_t size;
     
     //Count the headers
     debug("Counting headers (%p)", raw_headers);
@@ -183,13 +184,13 @@ static char ICACHE_FLASH_ATTR *http_parse_headers(struct tcp_connection *connect
 					(os_strncmp(next_data, "\n\n ", 2) == 0))
 				{
 					debug(" Last header.\n");
-					HTTP_EAT_CRLF(next_data, 2);
+					HTTP_SKIP_CRLF(next_data, 2);
 					//Get out.
 					done = true;
 				}
 				else
 				{
-					HTTP_EAT_CRLF(next_data, 1);
+					HTTP_SKIP_CRLF(next_data, 1);
 				}
 				//Find end of name.
 				value = os_strstr(data, ":");
@@ -197,28 +198,34 @@ static char ICACHE_FLASH_ATTR *http_parse_headers(struct tcp_connection *connect
 				{
 					error("Could not parse request header: %s\n", data);
 					//Bail out
+					request->response.status_code = 400;
 					return(NULL);
 				}
 				//Spec. says to return 400 on space before the colon.
 				if (*(value - 1) == ' ')
 				{
+					request->response.status_code = 400;
 					return(NULL);
 				}
-				//End name string.
-				*value++ = '\0';
-				//Convert to lower case.
-				data = strlwr(data);
-				//Get some memory for the pointers.
-				headers[n_headers].name = data;
-				debug(" Name (%p): %s\n", headers[n_headers].name, 
-					  headers[n_headers].name);
-				
+				//Get some mem save and lower case name.
+				size = value - data;
+				headers[n_headers].name = db_malloc(size + 1, "headers[n_headers].name http_parse_headers");
+				os_strncpy(headers[n_headers].name, data, size);
+				headers[n_headers].name[size] = '\0';
+				headers[n_headers].name = strlwr(headers[n_headers].name);
+				debug(" Name: %s\n", headers[n_headers].name);
+					  
+				//Skip over ":"
+				value++;
 				//Eat spaces in front of value.
-				HTTP_EAT_SPACES(value);
-				//Save value.
-				headers[n_headers].value = value;
-				debug(" Value (%p): %s\n", headers[n_headers].value,
-					  headers[n_headers].value);
+				HTTP_SKIP_SPACES(value);
+				//Get some mem save and lower case name.
+				size = next_data - value;
+				headers[n_headers].value = db_malloc(size + 1, "headers[n_headers].value http_parse_headers");
+				os_strncpy(headers[n_headers].value, data, size);
+				headers[n_headers].value[size] = '\0';
+				debug(" Value: %s\n", headers[n_headers].value);
+
 				//Go to the next entry
 				data = next_data;
 			}
@@ -232,8 +239,8 @@ static char ICACHE_FLASH_ATTR *http_parse_headers(struct tcp_connection *connect
 	{
 		debug(": 0\n");
 	}
-    ((struct http_request *)connection->free)->headers = headers;
-    ((struct http_request *)connection->free)->n_headers = n_headers;
+    request->headers = headers;
+    request->n_headers = n_headers;
     return(next_data);
 }
 
@@ -244,27 +251,26 @@ static char ICACHE_FLASH_ATTR *http_parse_headers(struct tcp_connection *connect
  * in a #http_request and add it to the #tcp_connection data.
  * 
  * @param connection Pointer to the connection data.
- * @param start_offset Where to start parsing the data.
- * @return Pointer to the start of the raw message.
+ * @return `true`on success.
  */
 bool ICACHE_FLASH_ATTR http_parse_request(struct tcp_connection *connection)
 {
     struct http_request *request = connection->free;
     char *request_entry, *next_entry;
-	size_t start_offset = http_get_request_type(connection);
+	size_t size = http_get_request_type(connection);
 	
-	if (!start_offset)
+	if (!size)
 	{
-		return(0);
+		return(false);
 	}
 	
     //Start after method.
-    request_entry = connection->callback_data.data + start_offset;
+    request_entry = connection->callback_data.data + size;
     //Parse the rest of request line.
     debug("Parsing request line (%p):\n", request_entry);
 
     //Eat spaces to be tolerant, like spec says.
-    HTTP_EAT_SPACES(request_entry);
+    HTTP_SKIP_SPACES(request_entry);
     //Find the space after the URI, and end the URI string.
     next_entry = os_strstr(request_entry, " ");
     if (next_entry == NULL)
@@ -272,11 +278,15 @@ bool ICACHE_FLASH_ATTR http_parse_request(struct tcp_connection *connection)
         error("Could not parse HTTP request URI (%s).\n", request_entry);
         return(false);
     }
-    HTTP_EAT_SPACES(next_entry);
-    //Save URI
-    request->uri = request_entry;
-    debug(" URI (%p): %s\n", request_entry, request->uri);  
     
+    //Get mem and save uri.
+    size = next_entry - request_entry;
+    request->uri = db_malloc(size + 1, "request->uri http_parse_request");
+    os_strncpy(request->uri, request_entry, size);
+    request->uri[size] = '\0';
+    debug(" URI (%p): %s\n", request_entry, request->uri); 
+     
+    HTTP_SKIP_SPACES(next_entry);
     request_entry = next_entry;
     //Skip 'HTTP/' and save version.
     request_entry += 5;
@@ -287,12 +297,17 @@ bool ICACHE_FLASH_ATTR http_parse_request(struct tcp_connection *connection)
         error("Could not parse HTTP request version (%s).\n", request_entry);
         return(false);
     }
-    HTTP_EAT_CRLF(next_entry, 1);
-    //Save version.  
-    request->version = request_entry;
+    
+    //Get mem and save version.
+    size = next_entry - request_entry;
+    request->version = db_malloc(size + 1, "request->version http_parse_request");
+    os_strncpy(request->version, request_entry, size);
+    request->version[size] = '\0';
     debug(" Version (%p): %s\n", request_entry, request->version);
     
-    request->message = http_parse_headers(connection, next_entry);
+    HTTP_SKIP_CRLF(next_entry, 1);
+
+    request->message = http_parse_headers(request, next_entry);
     return(true);
 }
 
@@ -306,6 +321,20 @@ void ICACHE_FLASH_ATTR http_free_request(struct http_request *request)
 	/*Most pointers can't be freed here, since they point to espconn
 	 *owned data.*/
 	debug("Freeing request data at %p.\n", request);
-    db_free(request->headers);
-    db_free(request);
+	if (request)
+	{
+		if (request->uri)
+		{
+			db_free(request->uri);
+		}
+		if (request->version)
+		{
+			db_free(request->version);
+		}
+		if (request->headers)
+		{
+			db_free(request->headers);
+		}
+		db_free(request);
+	}
 }

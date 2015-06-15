@@ -56,13 +56,14 @@ bool ICACHE_FLASH_ATTR rest_network_test(char *uri)
  * @param request Data for the request that got us here.
  * @return The HTML.
  */
-size_t ICACHE_FLASH_ATTR rest_network(char *uri, struct http_request *request)
+size_t ICACHE_FLASH_ATTR rest_network(struct http_request *request)
 {
 	struct station_config wifi_config;
 	char response[51];
 	char *response_pos = response;
 	char buffer[16];
 	size_t msg_size = 0;
+	char *uri = request->uri;
 	    
     debug("In network name REST handler (%s).\n", uri);
 	

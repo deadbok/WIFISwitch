@@ -26,12 +26,12 @@
 
 //Get configured network.
 extern bool rest_network_test(char *uri);
-extern size_t rest_network(char *uri, struct http_request *request);
+extern size_t rest_network(struct http_request *request);
 extern void rest_network_destroy(void);
 
 //Scan for access points.
 extern bool rest_net_names_test(char *uri);
-extern size_t rest_net_names(char *uri, struct http_request *request);
+extern size_t rest_net_names(struct http_request *request);
 extern void rest_net_names_destroy(void);
 
 #endif

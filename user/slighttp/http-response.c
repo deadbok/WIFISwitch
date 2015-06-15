@@ -25,7 +25,6 @@
 #include "c_types.h"
 #include "osapi.h"
 #include "user_config.h"
-//#include "tools/strxtra.h"
 #include "net/tcp.h"
 #include "fs/fs.h"
 #include "http-common.h"
@@ -94,6 +93,28 @@ static void ICACHE_FLASH_ATTR send_status_line(struct tcp_connection *connection
 }
 
 /**
+ * @brief Tell if the server knows an URI.
+ * 
+ * @return Pointer to a handler struct, or NULL if not found.
+ */
+struct http_response_handler ICACHE_FLASH_ATTR *http_get_handlers(char *uri)
+{
+	unsigned short i;
+	
+	//Check in static uris, go through and stop if URIs match.
+	for (i = 0; i < n_response_handlers; i++)
+	{
+		if (!response_handlers[i].test_uri(uri))
+		{
+			debug("URI handlers for %s at %p.\n", uri, response_handlers + i);
+			return(response_handlers + i);
+		}
+	}
+	debug("No response handler found for URI %s.\n", uri);
+	return(NULL);
+} 
+
+/**
  * @brief Send a HTTP response.
  * 
  * @param connection Pointer to the connection used.
@@ -105,7 +126,7 @@ void ICACHE_FLASH_ATTR http_send_response(
 {
     struct http_request *request = connection->free;
     unsigned short i;
-    unsigned short static_index;
+    unsigned short handler_index;
     FS_FILE_H file;
     size_t msg_size = 0;
     char *error_msg;
@@ -183,14 +204,14 @@ void ICACHE_FLASH_ATTR http_send_response(
 	{
 		//Check in static uris, go through and stop if URIs match.
 		for (i = 0; 
-			 ((i < n_static_uris) && (!static_uris[i].test_uri(uri))); 
+			 ((i < n_response_handlers) && (!response_handlers[i].test_uri(uri))); 
 			 i++);
 		
 		//Send response if URI is found
-		if (i < n_static_uris)
+		if (i < n_response_handlers)
 		{
 			found = true;
-			static_index = i;
+			handler_index = i;
 		}
 	}
 
@@ -256,11 +277,11 @@ void ICACHE_FLASH_ATTR http_send_response(
 		{
 			//No file.
 			//Call the handler.
-			msg_size = static_uris[static_index].handler(uri, request);
+			msg_size = response_handlers[handler_index].handler(request);
 			//Clean up call back.
-			if (static_uris[static_index].destroy)
+			if (response_handlers[handler_index].destroy)
 			{
-				static_uris[static_index].destroy();
+				response_handlers[handler_index].destroy();
 			}
 		}
 	}
