@@ -36,15 +36,44 @@ typedef state_t (*state_handler_t)(void *);
 
 /**
  * @brief Represents all states of the running firmware.
+ * 
+ * Positions has to correspond with positions in #handlers (in sm.h).
  */
 enum states
 {
+	/**
+	 * @brief Connect to the network or create an access point.
+	 * 
+	 * Jumps to itself (WIFI_CONNECT), until a connection has been made
+	 * (WIFI_CONNECTED), or an access point has been created (WIFI_CONFIG)
+	 */
 	WIFI_CONNECT,
+	/**
+	 * @brief Check network connection..
+	 * 
+	 * Jumps to HTTP_INIT on connection, and WIFI_DISCONNECTED on no connection.
+	 */
 	WIFI_CHECK,
+	/**
+	 * @brief Set root of the server for normal operation and continue to
+	 * HTTP_INIT.
+	 */
 	WIFI_CONNECTED,
+	/**
+	 * @brief Set root of the server for configuration operation and continue
+	 * to HTTP_INIT.
+	 */
 	WIFI_CONFIG,
 	WIFI_DISCONNECTED,
+	/**
+	 * @brief Initialise the HTTP server, and move on to HTTP_SEND or 
+	 * SYSTEM_RESTART if the server couldn't start.
+	 */
 	HTTP_INIT,
+	/**
+	 * @brief Send some data, if a request is waiting, and move on to
+	 * HTTP_CLEANUP.
+	 */
 	HTTP_SEND,
 	HTTP_CLEANUP,
 	SYSTEM_RESTART

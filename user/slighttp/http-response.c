@@ -72,7 +72,7 @@ void ICACHE_FLASH_ATTR http_send_header(struct tcp_connection *connection, char 
  * @param connection Pointer to the connection to use. 
  * @param code Status code to use in the status line.
  */
-static void ICACHE_FLASH_ATTR send_status_line(struct tcp_connection *connection, unsigned short status_code)
+void ICACHE_FLASH_ATTR send_status_line(struct tcp_connection *connection, unsigned short status_code)
 {
 	debug("Sending status line with status code %d.\n", status_code);
 	
@@ -97,20 +97,21 @@ static void ICACHE_FLASH_ATTR send_status_line(struct tcp_connection *connection
  * 
  * @return Pointer to a handler struct, or NULL if not found.
  */
-struct http_response_handler ICACHE_FLASH_ATTR *http_get_handlers(char *uri)
+struct http_response_handler ICACHE_FLASH_ATTR *http_get_handlers(struct http_request *request)
 {
 	unsigned short i;
 	
-	//Check in static uris, go through and stop if URIs match.
+	//Check URI, go through and stop if URIs match.
 	for (i = 0; i < n_response_handlers; i++)
 	{
-		if (response_handlers[i].test_uri(uri))
+		debug("Trying handler %d.\n", i);
+		if (response_handlers[i].will_handle(request))
 		{
-			debug("URI handlers for %s at %p.\n", uri, response_handlers + i);
+			debug("URI handlers for %s at %p.\n", request->uri, response_handlers + i);
 			return(response_handlers + i);
 		}
 	}
-	debug("No response handler found for URI %s.\n", uri);
+	debug("No response handler found for URI %s.\n", request->uri);
 	return(NULL);
 } 
 
@@ -204,7 +205,7 @@ void ICACHE_FLASH_ATTR http_send_response(
 	{
 		//Check in static uris, go through and stop if URIs match.
 		for (i = 0; 
-			 ((i < n_response_handlers) && (!response_handlers[i].test_uri(uri))); 
+			 ((i < n_response_handlers) && (!response_handlers[i].will_handle(request))); 
 			 i++);
 		
 		//Send response if URI is found
@@ -277,11 +278,11 @@ void ICACHE_FLASH_ATTR http_send_response(
 		{
 			//No file.
 			//Call the handler.
-			msg_size = response_handlers[handler_index].handler(request);
+			msg_size = response_handlers[handler_index].handlers[request->type - 1](request);
 			//Clean up call back.
 			if (response_handlers[handler_index].destroy)
 			{
-				response_handlers[handler_index].destroy();
+				response_handlers[handler_index].destroy(request);
 			}
 		}
 	}

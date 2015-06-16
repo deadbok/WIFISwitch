@@ -434,7 +434,7 @@ static void ICACHE_FLASH_ATTR switch_send_buffer(struct tcp_connection *connecti
  * 
  * @param connection Pointer to the connection to handle.
  */
-static void ICACHE_FLASH_ATTR send_buffer(struct tcp_connection *connection)
+void ICACHE_FLASH_ATTR send_buffer(struct tcp_connection *connection)
 {
 	size_t buffer_size = 0;
 #ifdef DEBUG

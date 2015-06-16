@@ -92,12 +92,14 @@ static char ICACHE_FLASH_ATTR *json_create_string_array(char **values, size_t en
  * @param uri The URI to test.
  * @return True if we can handle the URI.
  */
-bool ICACHE_FLASH_ATTR rest_net_names_test(char *uri)
+bool ICACHE_FLASH_ATTR rest_net_names_test(struct http_request *request)
 {
-    if (os_strncmp(uri, "/rest/net/networks", 18) == 0)
+    if (os_strncmp(request->uri, "/rest/net/networks", 18) == 0)
     {
+		debug("Rest handler net-names found: %s.\n", request->uri);
         return(true);
     }
+    debug("Rest handler net-names will not request,\n"); 
     return(false);  
 }
 
@@ -229,6 +231,6 @@ size_t ICACHE_FLASH_ATTR rest_net_names(struct http_request *request)
  * 
  * @param response A pointer to the mem to deallocate.
  */
-void ICACHE_FLASH_ATTR rest_net_names_destroy(void)
+void ICACHE_FLASH_ATTR rest_net_names_destroy(struct http_request *request)
 {
 }

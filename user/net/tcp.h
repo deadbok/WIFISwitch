@@ -135,6 +135,9 @@ struct tcp_connection
     DL_LIST_CREATE(struct tcp_connection);
 };
 
+extern const char *state_names[];
+
+extern void tcp_free(struct tcp_connection *connection);
 extern bool tcp_listen(int port, tcp_callback connect_cb, 
                                 tcp_callback reconnect_cb, 
                                 tcp_callback disconnect_cb, 
@@ -146,5 +149,6 @@ extern void tcp_disconnect(struct tcp_connection *connection);
 extern bool init_tcp(void);
 extern void tcp_stop(void);
 extern struct tcp_connection *tcp_get_connections(void);
+extern void ICACHE_FLASH_ATTR send_buffer(struct tcp_connection *connection);
 
 #endif

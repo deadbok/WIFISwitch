@@ -130,6 +130,10 @@ struct http_response
       * @brief Function pointers to handlers.
       */
      struct http_response_handler *handlers;
+     /**
+      * @brief Pointer to the context used by the sender.
+      */
+      void *context;
 };
 
 /**
@@ -180,7 +184,7 @@ struct http_request
  * @param uri The URI to generate the response message for.
  * @return True if we can handle the URI, false if not.
  */
-typedef bool (*uri_comp_callback)(char *uri);
+typedef bool (*uri_comp_callback)(struct http_request *request);
 /**
  * @brief Callback function for URIs.
  * 
@@ -200,7 +204,7 @@ typedef size_t (*uri_response_callback)(struct http_request *request);
 /**
  * @brief Callback function to clean up after a response.
  */
-typedef void (*uri_destroy_callback)(void);
+typedef void (*uri_destroy_callback)(struct http_request *request);
 
 /** 
  * @brief Structure to store response handlers.
@@ -213,11 +217,15 @@ struct  http_response_handler
     /**
      * @brief A function to test if this handler will handle the URI.
      */
-	uri_comp_callback test_uri;
+	uri_comp_callback will_handle;
 	/**
-     * @brief A function pointer to a function, that sends the answer.
+     * @brief An array of function pointers, that sends a response.
+     * 
+     * One entry for each request method, in the same order as the
+     * #request_type enum, except for the first (HTTP_NONE). The order is,
+     * OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, CONNECT. 
      */
-    uri_response_callback handler;
+    uri_response_callback handlers[8];
     /**
      * @brief A function pointer to a function, that does cleanup if needed.
      */
@@ -227,10 +235,11 @@ struct  http_response_handler
 extern char *http_fs_doc_root;
 
 extern bool init_http(char *path, struct http_response_handler *handlers, unsigned short n_handlers);
-extern struct http_response_handler *http_get_handlers(char *uri);
+extern struct http_response_handler *http_get_handlers(struct http_request *request);
 
-extern bool http_fs_test(char *uri);
-extern size_t http_fs_handler(struct http_request *request);
-extern void http_fs_destroy(void);
+extern bool http_fs_test(struct http_request *request);
+extern size_t http_fs_head_handler(struct http_request *request);
+extern size_t http_fs_get_handler(struct http_request *request);
+extern void http_fs_destroy(struct http_request *request);
 
 #endif

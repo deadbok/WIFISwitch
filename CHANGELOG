@@ -1,5 +1,21 @@
 2015-06-15 Martin Grønholdt
 
+* net-/tcp.h: Added tcp_free.
+* sm_http.c: Implemented http_fs_destroy.
+*          : Finished http_fs_test.
+*           (http_response_handler): Renamed test_uri, will_handle.
+*		    (http_response_handler): Split handler into handlers for each request method.
+*									 And but them in array, that is ordered so that request_types
+*									 works for indexing them, by subtracting one.
+* slighttp/http.h: Changed parameter of handler call backs to a http_response pointer.
+*                 (http_response): Added context pointer.
+*				  (http_get_handlers): Changed parameter to a struct http_request pointer.
+* slighttp/http-response.c (http_get_handlers): Changed parameter to a struct http_request pointer.
+* sm_wifi.c (wifi_connected): Call http_send on connection.
+
+
+2015-06-15 Martin Grønholdt
+
 * fs/fs.c (fs_open): Don't warn on file not found, just tell in a debuggy way.
 *         (fs_close): Test handle before freeing the memory.
 * net/tcp.c (init_tcp): Return boolean.

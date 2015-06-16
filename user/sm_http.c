@@ -36,9 +36,48 @@
  */
 static struct http_response_handler response_handlers[N_RESPONSE_HANDLERS] =
 {
-	{http_fs_test, http_fs_handler, http_fs_destroy},
-	{rest_network_test, rest_network, rest_network_destroy},
-    {rest_net_names_test, rest_net_names, rest_net_names_destroy}
+	{
+		http_fs_test,
+		{
+			NULL,
+			http_fs_get_handler,
+			http_fs_head_handler,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL
+		}, 
+		http_fs_destroy
+	},
+	{
+		rest_network_test,
+		{
+			NULL,
+			rest_network,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL
+		}, 
+		rest_network_destroy
+	},
+    {
+		rest_net_names_test,
+		{
+			NULL,			 
+			rest_net_names,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL,
+			NULL
+		}, 
+		rest_net_names_destroy
+	}
 };
 
 /**
@@ -96,14 +135,20 @@ state_t ICACHE_FLASH_ATTR http_send(void *arg)
 		}
 		switch (request->response.state)
 		{
-			case HTTP_STATE_FIND: request->response.handlers = http_get_handlers(request->uri);
+			case HTTP_STATE_FIND: request->response.handlers = http_get_handlers(request);
+								  //No handler found.
+								  if (!request->response.handlers->handlers[request->type - 1])
+								  {
+									  request->response.status_code = 404;
+								  } 
 								  //Next state.
 								  request->response.state = HTTP_STATE_STATUS;
 								  break;
 			case HTTP_STATE_STATUS: //Send response
 			case HTTP_STATE_HEADERS:
-			case HTTP_STATE_MESSAGE: debug("Calling response handler %p.\n", request->response.handlers->handler);
-									 request->response.handlers->handler(request); 
+			case HTTP_STATE_MESSAGE: debug("Calling response handler %p.\n",
+										   request->response.handlers->handlers[request->type - 1]);
+									 request->response.handlers->handlers[request->type - 1](request); 
 									 break;
     		case HTTP_STATE_DONE: break;
 		}
@@ -122,8 +167,80 @@ state_t ICACHE_FLASH_ATTR http_send(void *arg)
  * @brief Do house keeping.
  * 
  * Close and deallocate unused connections.
+ * @note This is mostly done here instead of the disconnect callback,
+ * because the ESP8266 SDK returns the wrong connection, for what
+ * needs to be done.
  */
 state_t ICACHE_FLASH_ATTR http_mutter_med_kost_og_spand(void *arg)
 {
-	return(HTTP_SEND);
+	static struct tcp_connection *connection = NULL;
+    static struct http_request *request;
+    
+    if (!connection)
+    {
+		connection = tcp_get_connections();
+		if (!connection)
+		{
+			debug("No connections.\n");
+			return(WIFI_CHECK);
+		}
+		debug("No connection, starting from first (%p).\n", connection);
+		request = connection->free;
+	}
+	
+	// Since request was zalloced, request->type will be zero until parsed.
+	if ((request) && (request->type != HTTP_NONE))
+	{
+		//Disconnect if asked, and buffer is empty.
+		if (((connection->closing) && (connection->buffer_used == 0)) || (connection->conn->state >= ESPCONN_CLOSE))
+		{
+#ifdef DEBUG
+			if (connection->conn->state > ESPCONN_CLOSE)
+			{
+				debug("Closing connection %p (%p) that seems to be dangling.\n", connection, connection->conn);
+			}
+			else
+			{
+				debug("Closing connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
+			}
+#endif //DEBUG
+			connection->closing = true;
+			
+			//Old call back, fiure out if it is needed.
+			//Clear previous data.
+            //os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
+            //Set new data
+            //connection->callback_data.arg = connection->conn;
+            //Call call back.
+            //if (listening_connection->callbacks.disconnect_callback != NULL)
+            //{
+            //    listening_connection->callbacks.disconnect_callback(connection);
+            //}
+
+            //Free the connection
+            tcp_free(connection);
+		}
+		else
+		{
+#ifdef DEBUG
+			if (connection->conn->state > ESPCONN_CLOSE)
+			{
+				debug("Connection %p (%p) seems to be dangling.\n", connection, connection->conn);
+			}
+			else
+			{
+				debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
+			}
+#endif //DEBUG
+			send_buffer(connection);
+		}		
+	}
+	else
+	{
+		debug("No request parsed yet.\n");
+	}
+     
+    connection = connection->next;
+    
+	return(WIFI_CHECK);
 }

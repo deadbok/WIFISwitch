@@ -70,6 +70,7 @@
 #define HTTP_501_HTML               "<!DOCTYPE html><head><title>Resource not found.</title></head><body><h1>501 Not Implemented</h1><br />Don't know what to say.</body></html>"
 #define HTTP_501_HTML_LENGTH		139
 
+extern void send_status_line(struct tcp_connection *connection, unsigned short status_code);
 extern void http_send_header(struct tcp_connection *connection, char *name,
 					    char *value);
 extern void http_send_response(struct tcp_connection *connection,

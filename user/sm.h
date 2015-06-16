@@ -46,7 +46,7 @@ extern state_t reboot(void *arg);
  * @brief Array of pointer to functions that will handle event.
  * 
  * This array is used to look up the current handler for an event. Events should
- * be ordered to handle the event of the same place in the states enum.
+ * be ordered to handle the event of the same place in the #states enum.
  */
 static state_handler_t handlers[N_STATES] = 
 {

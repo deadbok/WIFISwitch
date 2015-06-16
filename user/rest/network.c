@@ -40,13 +40,15 @@
  * @param uri The URI to test.
  * @return True if we can handle the URI.
  */
-bool ICACHE_FLASH_ATTR rest_network_test(char *uri)
+bool ICACHE_FLASH_ATTR rest_network_test(struct http_request *request)
 {
-    if (os_strncmp(uri, "/rest/net/network\0", 18) == 0)
+    if (os_strncmp(request->uri, "/rest/net/network\0", 18) == 0)
     {
+		debug("Rest handler network found: %s.\n", request->uri);
         return(true);
     }
-    return(false);  
+    debug("Rest handler network will not request,\n"); 
+    return(false);       
 }
 
 /**
@@ -105,6 +107,6 @@ size_t ICACHE_FLASH_ATTR rest_network(struct http_request *request)
  * 
  * @param html A pointer to the mem to deallocate.
  */
-void ICACHE_FLASH_ATTR rest_network_destroy(void)
+void ICACHE_FLASH_ATTR rest_network_destroy(struct http_request *request)
 {
 }

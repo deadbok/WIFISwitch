@@ -73,7 +73,7 @@ void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
 { 
     debug("HTTP disconnect (%p).\n", connection);
     
-    http_free_request(connection->free);
+    //http_free_request(connection->free);
 }
 
 /**
@@ -95,13 +95,13 @@ void ICACHE_FLASH_ATTR tcp_write_finish_cb(struct tcp_connection *connection)
 void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 {
     debug("HTTP received (%p).\n", connection);
-    if ((connection->callback_data.data == NULL) || 
+    /*if ((connection->callback_data.data == NULL) || 
         (os_strlen(connection->callback_data.data) == 0))
     {
         error("Emtpy request recieved.\n");
         http_send_response(connection, 400);
         return;
-    }
+    }*/
 
     http_parse_request(connection);
 }

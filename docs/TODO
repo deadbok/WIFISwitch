@@ -1,11 +1,12 @@
 TODO
 =====
 
- File              | scope                    | Item
- :----------------:|:------------------------:|----------------------------------------------------------------
- Makefile          | *na*                     | Properly test if the file system image overflow.
- Makefile          | *na*                     | Decide on where the file system is loaded.
- wifi_connect.c    | global                   | WIFI AP configuration through web server.
- http-responce.c   | http_generate_response   | Return 404 page, when the function itself has not found a page.
- http-responce.c   | http_generate_response   | Fix bug that shortens message length, and free the pointer.
- tcp.c             | tcp_reconnect_cb         | Maybe close the connection.
+ File              | scope                         | Item
+ :----------------:|:-----------------------------:|----------------------------------------------------------------
+ Makefile          | *na*                          | Properly test if the file system image overflow.
+ Makefile          | *na*                          | Decide on where the file system is loaded.
+ wifi_connect.c    | global                        | WIFI AP configuration through web server.
+ http-responce.c   | http_generate_response        | Return 404 page, when the function itself has not found a page.
+ http-responce.c   | http_generate_response        | Fix bug that shortens message length, and free the pointer.
+ tcp.c             | tcp_reconnect_cb              | Maybe close the connection.
+ sm_http.c         | http_mutter_med_kost_og_spand | Figure out if a disconnect callback is still needed.
