@@ -76,7 +76,11 @@ enum states
 	 */
 	HTTP_SEND,
 	HTTP_CLEANUP,
-	SYSTEM_RESTART
+	SYSTEM_RESTART,
+	/**
+	 * @brief Number of states in the event dispatcher.
+	 */
+	N_MAIN_STATES
 };
 
 /**

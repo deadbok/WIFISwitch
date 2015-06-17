@@ -37,7 +37,7 @@
 /**
  * @brief Bytes in a send buffer.
  */
-#define TCP_SEND_BUFFER_SIZE 2048
+#define TCP_SEND_BUFFER_SIZE 1024
 
 /**
  * @brief Data used by the callback functions.
@@ -149,6 +149,6 @@ extern void tcp_disconnect(struct tcp_connection *connection);
 extern bool init_tcp(void);
 extern void tcp_stop(void);
 extern struct tcp_connection *tcp_get_connections(void);
-extern void ICACHE_FLASH_ATTR send_buffer(struct tcp_connection *connection);
+extern void tcp_send_buffer(struct tcp_connection *connection);
 
 #endif

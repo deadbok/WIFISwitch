@@ -26,11 +26,6 @@
 
 #include "sm_types.h"
 
-/**
- * @brief Number of states in the event dispatcher.
- */
-#define N_STATES 9
-
 extern state_t wifi_connect(void *context);
 extern state_t wifi_connected(void *context);
 
@@ -48,7 +43,7 @@ extern state_t reboot(void *arg);
  * This array is used to look up the current handler for an event. Events should
  * be ordered to handle the event of the same place in the #states enum.
  */
-static state_handler_t handlers[N_STATES] = 
+static state_handler_t handlers[N_MAIN_STATES] = 
 {
 	wifi_connect, 
 	wifi_connected,

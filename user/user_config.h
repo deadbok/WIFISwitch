@@ -51,7 +51,7 @@
 /**
  * @brief Time between event dispatches.
  */
-#define DISPATCH_TIME 200
+#define DISPATCH_TIME 50
 /**
  * @brief Network connection time-out.
  */
@@ -92,7 +92,7 @@
 /**
  * @brief Print memory allocation info.
  */
-#define DEBUG_MEM
+//#define DEBUG_MEM
 /**
  * @brief List memory allocations.
  */

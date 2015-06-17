@@ -49,6 +49,14 @@ struct sm_http_fs_context
 	 * @brief The number of bytes that has been sent.
 	 */
 	size_t transferred;
+	/**
+	 * @brief The total number of bytes to send.
+	 */
+	size_t total_size;
+	/**
+	 * @brief The file-
+	 */
+	FS_FILE_H file;
 };
 
 /**
@@ -65,7 +73,6 @@ bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
 	size_t fs_uri_size;
 	size_t root_size = 0;
 	size_t index_size = 10;
-	FS_FILE_H file;
 	struct sm_http_fs_context *context;
 	
 	//Check if we've already done this.
@@ -118,12 +125,11 @@ bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
 	}
 	
 	//Try to open the URI as a file.
-    file = fs_open(context->filename);
-   	if (file > FS_EOF)
+    context->file = fs_open(context->filename);
+   	if (context->file > FS_EOF)
 	{
 		debug("File system handler found: %s.\n", context->filename);
-		fs_close(file);
-		
+		context->transferred = 0;		
 		return(true);
 	}
 	debug("No file system handler found.\n");
@@ -139,17 +145,20 @@ bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
 size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 {
 	struct sm_http_fs_context *context = request->response.context;
+	char str_size[16];
+	unsigned char i;
+	size_t ext_size;
 	
 	debug("File system HEAD handler handling %s.\n", context->filename);
 	
 	switch(request->response.state)
 	{
-		case HTTP_STATE_STATUS: send_status_line(request->connection, 
-												 request->response.status_code);
+		case HTTP_STATE_STATUS:  send_status_line(request->connection, 
+								  				  request->response.status_code);
 								
-								//Onwards
-								request->response.state = HTTP_STATE_HEADERS;
-								break;
+								 //Onwards
+								 request->response.state = HTTP_STATE_HEADERS;
+								 break;
 		case HTTP_STATE_HEADERS: //Always send connections close and server info.
 								 http_send_header(request->connection, 
 												  "Connection",
@@ -157,8 +166,37 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 								 http_send_header(request->connection,
 												  "Server",
 												  HTTP_SERVER_NAME);
-								 //On to the message.
-								 request->response.state = HTTP_STATE_MESSAGE;
+								 //Get data size.
+								 context->total_size = fs_size(context->file);
+								 os_sprintf(str_size, "%d", context->total_size);
+								 //Send message length.
+								 http_send_header(request->connection, 
+												  "Content-Length",
+											      str_size);
+								 //Find the MIME-type
+								 for (i = 0; i < HTTP_N_MIME_TYPES; i++)
+								 {
+									 ext_size = os_strlen(http_mime_types[i].ext);
+									 if (os_strncmp(http_mime_types[i].ext, 
+									                context->filename + os_strlen(context->filename) - ext_size,
+									                ext_size)
+									     == 0)
+									 {
+										 break;
+									 }
+								 }
+								 http_send_header(request->connection, "Content-Type", http_mime_types[i].type);	
+								 //Send end of headers.
+								 tcp_send(request->connection, "\r\n", 2);
+								 //On to the message if GET else stop.
+								 if (request->type == HTTP_HEAD)
+								 {
+									 request->response.state = HTTP_STATE_DONE;
+								 }
+								 else
+								 {
+									 request->response.state = HTTP_STATE_MESSAGE;
+								 }
 								 break;
 	}
 	
@@ -174,17 +212,41 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 size_t ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
 {
 	struct sm_http_fs_context *context = request->response.context;
+	char buffer[HTTP_FILE_CHUNK_SIZE];
+	size_t data_left;
 	
 	debug("File system GET handler handling %s.\n", context->filename);
 	
 	//Don't duplicate, just call the head handler.
-	if ((request->response.state != HTTP_STATE_MESSAGE) ||
-	    (request->response.state != HTTP_STATE_MESSAGE))
+	if (request->response.state < HTTP_STATE_MESSAGE)
 	{
 		http_fs_head_handler(request);
 	}
 	
-    return(0);
+	if (request->response.state == HTTP_STATE_MESSAGE)
+	{
+		data_left = context->total_size - context->transferred;
+		//Read a chunk of data and send it.
+		if (data_left > HTTP_FILE_CHUNK_SIZE)
+		{
+			//There is still more than HTTP_FILE_CHUNK_SIZE to read.
+			fs_read(buffer, HTTP_FILE_CHUNK_SIZE, sizeof(char), context->file);
+			tcp_send(request->connection, buffer, HTTP_FILE_CHUNK_SIZE);
+			context->transferred += HTTP_FILE_CHUNK_SIZE;
+		}
+		else
+		{
+			//Last block.
+			fs_read(buffer, data_left, sizeof(char), context->file);
+			tcp_send(request->connection, buffer, data_left);
+			context->transferred += data_left;
+			//We're done sending the message.
+			fs_close(context->file);
+			request->response.state = HTTP_STATE_DONE;
+		}
+	}
+
+    return(context->total_size);
 }
 
 /**

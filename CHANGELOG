@@ -1,6 +1,22 @@
-2015-06-15 Martin Grønholdt
+2015-06-18 Martin Grønholdt
+
+* slighttp/http-fs.c: Almost done.
+
+2015-06-17 Martin Grønholdt (committed)
+
+* user_main.c (user_init): No auto reconnect.
+* net/tcp.c (send_buffer): Renamed to tcp_send_buffer.
+*			(tcp_send): Little bug in debug output, address of send_buffer instead of send_buffers.
+*		   : Removed last traces of the timer and call back used for clean up earlier.
+*			(tcp_disconnect_cb): Restored the original handler, that passes on questionable values. 
+* net/tcp.h (send_buffer): Renamed to tcp_send_buffer.
+* 			: Changed buffer to 1024 bytes.
+
+
+2015-06-16 Martin Grønholdt
 
 * net-/tcp.h: Added tcp_free.
+*		    : Added state_names.
 * sm_http.c: Implemented http_fs_destroy.
 *          : Finished http_fs_test.
 *           (http_response_handler): Renamed test_uri, will_handle.

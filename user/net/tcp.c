@@ -329,31 +329,21 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
      * not rely on this behavior, and have to do things the hard way, and look 
      * up the closing connection.
      */
-    struct tcp_connection *connection = tcp_connections;
-#ifdef DEBUG
+    //This will be the listening connection.
     struct espconn *conn = arg;
-#endif //DEBUG
+    //This will be the tcp_connection of the closing connection anyway.
+    struct tcp_connection *connection = conn->reverse;
     
     debug("TCP disconnected (%p).\n", conn->reverse);
-     
-    while (connection != NULL)
+
+    //Clear previous data.
+    os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
+    //Set new data
+    connection->callback_data.arg = arg;
+    //Call call back.
+    if (listening_connection->callbacks.disconnect_callback != NULL)
     {
-		//Update state of connections..
-		if (connection->conn->state >= ESPCONN_CLOSE)
-		{
-#ifdef DEBUG
-			if (connection->conn->state > ESPCONN_CLOSE)
-			{
-				debug("Closing connection %p (%p) that seems to be dangling.\n", connection, connection->conn);
-			}
-			else
-			{
-				debug("Closing connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
-			}
-#endif //DEBUG
-			connection->closing = true;
-		}
-        connection = connection->next;
+        listening_connection->callbacks.disconnect_callback(connection);
     }
 }
 
@@ -434,7 +424,7 @@ static void ICACHE_FLASH_ATTR switch_send_buffer(struct tcp_connection *connecti
  * 
  * @param connection Pointer to the connection to handle.
  */
-void ICACHE_FLASH_ATTR send_buffer(struct tcp_connection *connection)
+void ICACHE_FLASH_ATTR tcp_send_buffer(struct tcp_connection *connection)
 {
 	size_t buffer_size = 0;
 #ifdef DEBUG
@@ -503,7 +493,7 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
     //If there is more data in the buffer, send some more.
     if (connection->buffer_used > 0)
     {
-		send_buffer(connection);
+		tcp_send_buffer(connection);
 	}
 	//Disconnect if asked, and buffer is empty.
 	if ((connection->closing) && (connection->buffer_used == 0))
@@ -545,7 +535,7 @@ bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, s
     if (!connection->send_buffers)
     {
 		connection->send_buffers = db_malloc(TCP_SEND_BUFFER_SIZE * 2, "connection->send_buffers tcp_send");
-		debug(" Created new send buffer %p.\n", connection->send_buffer);
+		debug(" Created new send buffer %p.\n", connection->send_buffers);
 		connection->send_buffer = connection->send_buffers;
 		connection->current_buffer_pos = connection->send_buffer;
 	}
@@ -563,7 +553,7 @@ bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, s
 			connection->current_buffer_pos += buffer_free;
 			data_left -= buffer_free;
 			connection->buffer_used += buffer_free;
-			send_buffer(connection);
+			tcp_send_buffer(connection);
 
 		}
 		else
@@ -693,63 +683,6 @@ bool ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
 }
 
 /**
- * @brief House keeping timer call back function.
- * 
- * This will close connection, that are not needed, and send the TCP
- * buffer, and send any data in the send buffer.
- */
-void tcp_timer_cb(void *unused)
-{
-    struct tcp_connection *connection = tcp_connections;
-     
-    while (connection != NULL)
-    {
-		//Disconnect if asked, and buffer is empty.
-		if (((connection->closing) && (connection->buffer_used == 0)) || (connection->conn->state >= ESPCONN_CLOSE))
-		{
-#ifdef DEBUG
-			if (connection->conn->state > ESPCONN_CLOSE)
-			{
-				debug("Closing connection %p (%p) that seems to be dangling.\n", connection, connection->conn);
-			}
-			else
-			{
-				debug("Closing connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
-			}
-#endif //DEBUG
-			connection->closing = true;
-			//Clear previous data.
-            os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
-            //Set new data
-            connection->callback_data.arg = connection->conn;
-            //Call call back.
-            if (listening_connection->callbacks.disconnect_callback != NULL)
-            {
-                listening_connection->callbacks.disconnect_callback(connection);
-            }
-
-            //Free the connection
-            tcp_free(connection);
-		}
-		else
-		{
-#ifdef DEBUG
-			if (connection->conn->state > ESPCONN_CLOSE)
-			{
-				debug("Connection %p (%p) seems to be dangling.\n", connection, connection->conn);
-			}
-			else
-			{
-				debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
-			}
-#endif //DEBUG
-			send_buffer(connection);
-		}
-        connection = connection->next;
-    }
-}
-
-/**
  * @brief Initialise TCP networking.
  * 
  * @return `true` on success.
@@ -782,14 +715,6 @@ bool ICACHE_FLASH_ATTR init_tcp(void)
 		return(false);
 	}
 	return(true);
-
-	//Set housekeeping timer.
-    //Disarm timer
-    //os_timer_disarm(&timer);
-    //Setup timer.
-    //os_timer_setfn(&timer, (os_timer_func_t *)tcp_timer_cb, NULL);
-    //Arm the timer, run every 1 second.
-    //os_timer_arm(&timer, 200, true);
 }
 
 void ICACHE_FLASH_ATTR tcp_stop(void)

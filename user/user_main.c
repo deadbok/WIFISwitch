@@ -32,8 +32,39 @@
  * Source level documentation for a network controlled mains switch, using the
  * ESP8266 WIFI interface and micro controller.
  * 
- * @tableofcontents
+ *  
+ * Architecture.
+ * =============
  * 
+ * The ESP8266 SDK is a strange beast, it seems a mix of procedural and event
+ * driven. The WIFI functions do not use call backs, while the TCP functions
+ * do. A little consistency would be nice here, a call back when the connection
+ * is lost? But no. Oh and there are bugs, at least that's how I see them, like
+ * the TCP disconnect call back, getting passed a mostly unusable parameter.
+ * 
+ * After trying to force a procedural scheme on it all, and chasing the same
+ * shortcoming into a corner, I finally realised that, I was working against
+ * the SDK.
+ * The SDK seems to run in the same single task, as the user code. This has
+ * the implication, that if you eat up all cycles, nothing gets done in the
+ * SDK. If you do this for to long, the watch dog timer will kick in, and
+ * reset the chip. You have to leave your functions, for the SDK to take over
+ * processing. In my case, I would parse a HTTP request, and assemble the
+ * response in one large go, then leave the control to the CPU. This sorta
+ * worked. But what happens if the response is larger than the SDK TCP buffer,
+ * or a new request is received before the sending is done, and it all ends
+ * up with one more response to send. Stuff will get lost, and things will not
+ * behave as expected.
+ *   
+ * I ended up dreaming about my Delphi days (something that I almost never do),
+ * and that call, that you could make to get the system to do some processing,
+ * while you where in a long chunk of code; But in the SDK there is none.
+ * Instead no user code may run for more than 10ms, the docs says. To
+ * accomplish this, a state machine seems a good solution. The state machine
+ * is triggered at regular intervals using the one timer available. The TCP
+ * request is still handled in the receive call back, but the sending code
+ * is running in the state machine, which allows me to split the response
+ * into chunks, and give back control to the SDK between sending each one.
  */
 #include "ets_sys.h"
 #include "osapi.h"
@@ -86,7 +117,7 @@ void handle_events(void)
 	}
 #endif
 
-	if (state >= N_STATES)
+	if (state >= N_MAIN_STATES)
 	{
 		error("Main state machine state overflow.");
 		state = 0;
@@ -121,6 +152,8 @@ void ICACHE_FLASH_ATTR user_init(void)
 	system_init_done_cb(start_handler);
     //Turn off auto connect.
     wifi_station_set_auto_connect(false);
+    //Turn off auto reconnect.
+    wifi_station_set_reconnect_policy(false);
     
     // Set baud rate of debug port
     uart_div_modify(0,UART_CLK_FREQ / 115200);

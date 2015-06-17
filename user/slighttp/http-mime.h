@@ -24,8 +24,6 @@
 #ifndef HTTP_MIME_H
 #define HTTP_MIME_H
 
-#define HTTP_N_MIME_TYPES 9
-
 /**
  * @brief Structure to represent a MIME-type.
  */
@@ -45,7 +43,8 @@ enum http_mime_enum
 	MIME_TXT,
 	MIME_JPG,
 	MIME_JPEG,
-	MIME_PNG
+	MIME_PNG,
+	HTTP_N_MIME_TYPES
 };
 
 extern struct http_mime_type http_mime_types[HTTP_N_MIME_TYPES];

@@ -152,6 +152,7 @@ state_t ICACHE_FLASH_ATTR http_send(void *arg)
 									 break;
     		case HTTP_STATE_DONE: break;
 		}
+		tcp_send_buffer(connection);
 	}
 	else
 	{
@@ -232,7 +233,6 @@ state_t ICACHE_FLASH_ATTR http_mutter_med_kost_og_spand(void *arg)
 				debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
 			}
 #endif //DEBUG
-			send_buffer(connection);
 		}		
 	}
 	else
