@@ -150,7 +150,8 @@ state_t ICACHE_FLASH_ATTR http_send(void *arg)
 										   request->response.handlers->handlers[request->type - 1]);
 									 request->response.handlers->handlers[request->type - 1](request); 
 									 break;
-    		case HTTP_STATE_DONE: break;
+    		case HTTP_STATE_DONE: tcp_disconnect(connection);
+								  break;
 		}
 		tcp_send_buffer(connection);
 	}

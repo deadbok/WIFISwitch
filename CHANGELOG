@@ -1,6 +1,11 @@
 2015-06-18 Martin Grønholdt
 
+* net/tcp.c (tcp_disconnect_cb): Only call call back if there is still a connection.
+* sm_http.c (http_send): Added tcp_disconnect when state is HTTP_STATE_DONE.
+* tools/missing_dec.h: Added ets_printf by modifying os_sprintf.
+* user_config.h: After reading Peter Scargill blog post here http://tech.scargill.net/esp8266-debug/, I made some improvements.
 * slighttp/http-fs.c: Almost done.
+
 
 2015-06-17 Martin Grønholdt (committed)
 

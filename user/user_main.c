@@ -96,34 +96,34 @@ void handle_events(void)
 	{
 		warn("Oops already here.\n");
 	}
-	
-	go_away = true;
-#ifdef DEBUG
-	last_state = state;
-#endif
-	if (handlers[state])
-	{
-		state = (*handlers[state])(&context);
-	}
 	else
 	{
-		warn("Empty handler for state %d.\n", state);
-	}
-
+		go_away = true;
 #ifdef DEBUG
-	if (last_state != state)
-	{
-		db_printf("New state: %d:\n", state);
-	}
+		last_state = state;
+#endif
+		if (handlers[state])
+		{
+			state = (*handlers[state])(&context);
+		}
+		else
+		{
+			warn("Empty handler for state %d.\n", state);
+		}
+#ifdef DEBUG
+		if (last_state != state)
+		{
+			db_printf("New state: %d:\n", state);
+		}
 #endif
 
-	if (state >= N_MAIN_STATES)
-	{
-		error("Main state machine state overflow.");
-		state = 0;
+		if (state >= N_MAIN_STATES)
+		{
+			error("Main state machine state overflow.");
+			state = 0;
+		}
+		go_away = false;
 	}
-
-	go_away = false;
 }
 
 /**

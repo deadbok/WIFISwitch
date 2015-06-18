@@ -60,7 +60,7 @@ bool ICACHE_FLASH_ATTR rest_network_test(struct http_request *request)
  */
 size_t ICACHE_FLASH_ATTR rest_network(struct http_request *request)
 {
-	struct station_config wifi_config;
+/*	struct station_config wifi_config;
 	char response[51];
 	char *response_pos = response;
 	char buffer[16];
@@ -99,7 +99,9 @@ size_t ICACHE_FLASH_ATTR rest_network(struct http_request *request)
 	}
 	
 	debug(" Response size: %d.\n", msg_size);
-    return(msg_size);
+    return(msg_size);*/
+    
+    return(0);
 }
 
 /**

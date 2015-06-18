@@ -179,7 +179,7 @@ static void scan_done_cb(void *arg, STATUS status)
  */
 size_t ICACHE_FLASH_ATTR rest_net_names(struct http_request *request)
 {
-    char *response = NULL;
+/*    char *response = NULL;
 	char buffer[16];
 	size_t msg_size = 0;
 	char *uri = request->uri;
@@ -223,7 +223,8 @@ size_t ICACHE_FLASH_ATTR rest_net_names(struct http_request *request)
 	}
 	
 	debug(" Response size: %d.\n", msg_size);
-    return(msg_size);
+    return(msg_size);*/
+    return(0);
 }
 
 /**

@@ -334,17 +334,21 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
     //This will be the tcp_connection of the closing connection anyway.
     struct tcp_connection *connection = conn->reverse;
     
-    debug("TCP disconnected (%p).\n", conn->reverse);
-
-    //Clear previous data.
-    os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
-    //Set new data
-    connection->callback_data.arg = arg;
-    //Call call back.
-    if (listening_connection->callbacks.disconnect_callback != NULL)
+    debug("TCP disconnected (%p, %p).\n", arg, conn->reverse);
+    
+    if (connection)
     {
-        listening_connection->callbacks.disconnect_callback(connection);
-    }
+
+		//Clear previous data.
+		os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
+		//Set new data
+		connection->callback_data.arg = arg;
+		//Call call back.
+		if (listening_connection->callbacks.disconnect_callback != NULL)
+		{
+			listening_connection->callbacks.disconnect_callback(connection);
+		}
+	}
 }
 
 /**

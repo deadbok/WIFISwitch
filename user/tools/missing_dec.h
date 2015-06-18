@@ -26,6 +26,7 @@ extern int ets_memcmp(const void *s1, const void *s2, size_t n);
 extern void *ets_memcpy(void *dest, const void *src, size_t n);
 extern void *ets_memset(void *s, int c, size_t n);
 
+extern int ets_printf(const char *format, ...)  __attribute__ ((format (printf, 1, 2)));
 extern int ets_sprintf(char *str, const char *format, ...)  __attribute__ ((format (printf, 2, 3)));
 extern int ets_vsprintf(char *str, const char *format, va_list argptr);
 extern int ets_vsnprintf(char *buffer, size_t sizeOfBuffer, const char *format, va_list argptr);

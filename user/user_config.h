@@ -60,7 +60,7 @@
 /***
  * @brief Mostly shut off output from the SDK.
  */
-#define SDK_DEBUG
+//#define SDK_DEBUG
 
 /**
  * @brief Customised print function.
@@ -71,9 +71,7 @@
 #ifdef SDK_DEBUG
 #define db_printf(...) 	os_printf(__VA_ARGS__)
 #else
-#define db_printf(...) 	system_set_os_print(true);\
-						os_printf(__VA_ARGS__);\
-						system_set_os_print(false)
+#define db_printf(...) 	ets_printf(__VA_ARGS__)
 #endif
 
 /**
