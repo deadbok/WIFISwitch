@@ -205,7 +205,7 @@ size_t ICACHE_FLASH_ATTR fs_read(void *buffer, size_t size, size_t count, FS_FIL
         total_size = fs_open_files[handle]->size - fs_open_files[handle]->pos;
     }
 
-    if (!flash_read(buffer, abs_pos, total_size))
+    if (!aflash_read(buffer, abs_pos, total_size))
     {
         error("Failed reading %d bytes from %d.\n", total_size, handle);
         return(0);
@@ -233,7 +233,7 @@ int ICACHE_FLASH_ATTR fs_getc(FS_FILE_H handle)
     }
     
     //Read the char.
-    if (!flash_read(&ch, abs_pos, sizeof(char)))
+    if (!aflash_read(&ch, abs_pos, sizeof(char)))
     {
         error("Failed reading %d bytes from %d.\n", sizeof(char), handle);
         return(FS_EOF);
@@ -271,7 +271,7 @@ char ICACHE_FLASH_ATTR *fs_gets(char *str, size_t count, FS_FILE_H handle)
     do
     {
         //Read the char.
-        if (!flash_read(&ch, abs_pos + i, sizeof(char)))
+        if (!aflash_read(&ch, abs_pos + i, sizeof(char)))
         {
             error("Failed reading %d bytes from %d.\n", sizeof(char), handle);
             return(NULL);

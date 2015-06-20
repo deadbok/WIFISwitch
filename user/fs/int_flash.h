@@ -24,6 +24,11 @@
 #ifndef INT_FLASH_H
 #define INT_FLASH_H
 
+/**
+ * @brief Address of the zip file.
+ */
+#define FS_ADDR 0x14000
+
 //Interesting places.
 extern void *_text_start;
 extern void *_text_end;
@@ -32,10 +37,17 @@ extern void *_lit4_end;
 extern void *_irom0_text_start;
 extern void *_irom0_text_end;
 
+union flash_data_u
+{
+	unsigned int u32;
+	unsigned short u16[2];
+	unsigned char u8[4];
+};
+
 //Flash access functions.
 extern void flash_dump(unsigned int src_addr, size_t size);
 extern void flash_dump_mem(unsigned int src_addr, size_t size);
-extern bool flash_read(const void *data, unsigned int read_addr, size_t size);
+extern bool aflash_read(const void *data, unsigned int read_addr, size_t size);
 
 
 #endif

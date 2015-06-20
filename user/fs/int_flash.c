@@ -47,11 +47,6 @@
 #define FLASHSTR "%02x:%02x:%02x:%02x"
 
 /**
- * @brief Address of the zip file.
- */
-#define FS_ADDR 0x14000
-
-/**
  * @brief Dump flash contents from an address until size bytes has been dumped.
  * 
  * Uses the Espressif API.
@@ -100,26 +95,53 @@ void ICACHE_FLASH_ATTR flash_dump_mem(unsigned int src_addr, size_t size)
 }
 
 /**
- * @brief Read data from the flash.
+ * @brief Do an 4 bit aligned copy.
+ * 
+ * @param d Destination memory.
+ * @param s Source memory.
+ * @param len Bytes to copy.
+ * @return Bytes actually copied.
+ */
+static size_t ICACHE_FLASH_ATTR amemcpy(unsigned char *d, unsigned char *s, size_t len)
+{
+	unsigned int i;
+	unsigned int temp;
+	unsigned int unaligned;
+	
+	debug("Copying %d bytes from %p to %p.\n", len, s, d);
+
+	for (i = 0; i < len; i++)
+	{
+		unaligned = (unsigned int)(s) & 0x03;
+		
+		//Aligned read.
+		temp = *((unsigned int *)((unsigned int)(s) - unaligned));
+		//debug(" %p (align %d), %p: 0x%x  - ", d, unaligned, s, temp);
+
+		*d = (temp >> (8 * unaligned));
+		
+		//debug(" 0x%x.\n", *d);
+		
+		d++;
+		s++;
+	}
+	return(i);
+}
+
+/**
+ * @brief Read data from an arbitrary position in the flash.
  * 
  * @param data Pointer to a buffer to place the data in.
  * @param read_addr Address to read from.
  * @param size Bytes to read.
  * @return True if everything wen well, false otherwise.
  */
-bool ICACHE_FLASH_ATTR flash_read(const void *data, unsigned int read_addr, size_t size)
+bool ICACHE_FLASH_ATTR aflash_read(const void *data, unsigned int read_addr, size_t size)
 {
-    unsigned int addr = FS_ADDR + read_addr;
-    
-    debug("Reading %d bytes of flash at 0x%x (absolute 0x%x)...", size, read_addr, addr);
-    
-    if (spi_flash_read(addr, (uint32 *)data, size) == SPI_FLASH_RESULT_OK)
-    {
-        debug("OK.\n");
-        read_addr += size;
-        return(true);
-    }
-    debug("Failed!\n");
-    return(false);
+    unsigned int addr = 0x40200000 + FS_ADDR + read_addr;
+	
+	amemcpy((unsigned char *)data, (unsigned char *)addr, size);
+		
+    return(true);
 }
 

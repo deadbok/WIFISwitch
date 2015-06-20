@@ -1,3 +1,21 @@
+2015-06-19 Martin Grønholdt
+
+* fs/int_flash.c: Added amemcpy, to do aligned reads.
+* 				 (aflash__read): Just use amemcpy, the SDK have long had a warning bout 4 byte alignement.
+
+
+2015-06-19 Martin Grønholdt
+
+* fs/int_flash.c: The new SDK stole flash_read from me, it's now aflash_read.
+* fs/int_flash.h: flash_read renamed aflash_read.
+
+2015-06-19 Martin Grønholdt
+
+* driver: After update of SDK I needed the uart driver to since os_putc was gone.
+* user_main.c (user_init): Init uart driver.
+* slimhttp/http-fs.c (http_fs_get_handler): Wait till next run (after headers) to send message.
+
+
 2015-06-18 Martin Grønholdt
 
 * net/tcp.c (tcp_disconnect_cb): Only call call back if there is still a connection.
