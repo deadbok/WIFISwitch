@@ -222,27 +222,29 @@ size_t ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
 	{
 		http_fs_head_handler(request);
 	}
-	
-	if (request->response.state == HTTP_STATE_MESSAGE)
+	else
 	{
-		data_left = context->total_size - context->transferred;
-		//Read a chunk of data and send it.
-		if (data_left > HTTP_FILE_CHUNK_SIZE)
+		if (request->response.state == HTTP_STATE_MESSAGE)
 		{
-			//There is still more than HTTP_FILE_CHUNK_SIZE to read.
-			fs_read(buffer, HTTP_FILE_CHUNK_SIZE, sizeof(char), context->file);
-			tcp_send(request->connection, buffer, HTTP_FILE_CHUNK_SIZE);
-			context->transferred += HTTP_FILE_CHUNK_SIZE;
-		}
-		else
-		{
-			//Last block.
-			fs_read(buffer, data_left, sizeof(char), context->file);
-			tcp_send(request->connection, buffer, data_left);
-			context->transferred += data_left;
-			//We're done sending the message.
-			fs_close(context->file);
-			request->response.state = HTTP_STATE_DONE;
+			data_left = context->total_size - context->transferred;
+			//Read a chunk of data and send it.
+			if (data_left > HTTP_FILE_CHUNK_SIZE)
+			{
+				//There is still more than HTTP_FILE_CHUNK_SIZE to read.
+				fs_read(buffer, HTTP_FILE_CHUNK_SIZE, sizeof(char), context->file);
+				tcp_send(request->connection, buffer, HTTP_FILE_CHUNK_SIZE);
+				context->transferred += HTTP_FILE_CHUNK_SIZE;
+			}
+			else
+			{
+				//Last block.
+				fs_read(buffer, data_left, sizeof(char), context->file);
+				tcp_send(request->connection, buffer, data_left);
+				context->transferred += data_left;
+				//We're done sending the message.
+				fs_close(context->file);
+				request->response.state = HTTP_STATE_DONE;
+			}
 		}
 	}
 

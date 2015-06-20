@@ -99,26 +99,7 @@ struct tcp_connection
      */
     struct tcp_callback_data callback_data;
     /**
-     * @brief Pointer to buffer memory.
-     * 
-     * This will always point to the start of the buffer, while the send buffer
-     * pointer, splits this in half.
-     */
-    unsigned char *send_buffers;
-    /**
-     * @brief Start of current send buffer.
-     */
-    unsigned char *send_buffer;
-    /**
-     * @brief Current position in the send buffer, where new data should go.
-     */
-    unsigned char *current_buffer_pos;
-    /**
-     * @brief Current bytes used of buffer.
-     */
-    size_t buffer_used;
-    /**
-     * @brief Bytes that are currently being send.
+     * @brief Number of blocks that are being send.
      */
     size_t sending;
     /**
@@ -149,6 +130,5 @@ extern void tcp_disconnect(struct tcp_connection *connection);
 extern bool init_tcp(void);
 extern void tcp_stop(void);
 extern struct tcp_connection *tcp_get_connections(void);
-extern void tcp_send_buffer(struct tcp_connection *connection);
 
 #endif

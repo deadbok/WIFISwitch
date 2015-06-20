@@ -139,9 +139,14 @@ static size_t ICACHE_FLASH_ATTR amemcpy(unsigned char *d, unsigned char *s, size
 bool ICACHE_FLASH_ATTR aflash_read(const void *data, unsigned int read_addr, size_t size)
 {
     unsigned int addr = 0x40200000 + FS_ADDR + read_addr;
+    size_t ret;
 	
-	amemcpy((unsigned char *)data, (unsigned char *)addr, size);
+	ret = amemcpy((unsigned char *)data, (unsigned char *)addr, size);
+	if (size == ret)
+	{
+		return(true);
+	}
 		
-    return(true);
+    return(false);
 }
 

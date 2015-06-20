@@ -72,6 +72,7 @@
 #include "os_type.h"
 #include "user_config.h"
 #include "user_interface.h"
+#include "driver/uart.h"
 #include "fs/fs.h"
 #include "sm.h"
 
@@ -115,6 +116,10 @@ void handle_events(void)
 		{
 			db_printf("New state: %d:\n", state);
 		}
+		else
+		{
+			db_printf("Tick!\n");
+		}
 #endif
 
 		if (state >= N_MAIN_STATES)
@@ -157,6 +162,7 @@ void ICACHE_FLASH_ATTR user_init(void)
     
     // Set baud rate of debug port
     uart_div_modify(0,UART_CLK_FREQ / 115200);
+    //uart_init(115200, 115200);
     
 #ifndef SDK_DEBUG
 	system_set_os_print(false);

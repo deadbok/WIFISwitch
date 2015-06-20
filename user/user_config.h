@@ -51,7 +51,7 @@
 /**
  * @brief Time between event dispatches.
  */
-#define DISPATCH_TIME 50
+#define DISPATCH_TIME 100
 /**
  * @brief Network connection time-out.
  */
@@ -60,7 +60,7 @@
 /***
  * @brief Mostly shut off output from the SDK.
  */
-//#define SDK_DEBUG
+#define SDK_DEBUG
 
 /**
  * @brief Customised print function.

@@ -1,7 +1,11 @@
 2015-06-19 Martin Grønholdt
 
+* user_main.c (handle_events): Added tick output in debug mode.
+* sm_http.c: Dealt with disconnecting.
+* net/tcp.h Removed buffer stuff.
+* net/tcp.c: Removed send_buffer and other buffer stuff.
 * fs/int_flash.c: Added amemcpy, to do aligned reads.
-* 				 (aflash__read): Just use amemcpy, the SDK have long had a warning bout 4 byte alignement.
+* 				 (aflash__read): Just use amemcpy, the SDK have long had a warning about 4 byte alignment.
 
 
 2015-06-19 Martin Grønholdt

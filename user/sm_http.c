@@ -108,7 +108,7 @@ state_t ICACHE_FLASH_ATTR http_init(void *arg)
  */
 state_t ICACHE_FLASH_ATTR http_send(void *arg)
 {
-	static struct tcp_connection *connection = NULL;
+	static struct tcp_connection *connection;
     static struct http_request *request;
     
     if (!connection)
@@ -122,44 +122,53 @@ state_t ICACHE_FLASH_ATTR http_send(void *arg)
 		debug("No connection, starting from first (%p).\n", connection);
 		request = connection->free;
 	}
+	else
+	{
+		debug("Connection %p.\n", connection);
+	}
 	
 	// Since request was zalloced, request->type will be zero until parsed.
-	if ((request) && (request->type != HTTP_NONE))
+	if (request)
 	{
-		//Get started
-		if (request->response.state == HTTP_STATE_NONE)
+		if (request->type != HTTP_NONE)
 		{
-			debug("New response.\n");
-			//Find someone to respond.
-			request->response.state = HTTP_STATE_FIND;
+			//tcp_send_buffer(connection);
+			//Get started
+			if (request->response.state == HTTP_STATE_NONE)
+			{
+				debug(" New response.\n");
+				//Find someone to respond.
+				request->response.state = HTTP_STATE_FIND;
+			}
+			switch (request->response.state)
+			{
+				case HTTP_STATE_FIND: request->response.handlers = http_get_handlers(request);
+									  //No handler found.
+									  if (!request->response.handlers->handlers[request->type - 1])
+									  {
+										  request->response.status_code = 404;
+									  } 
+									  //Next state.
+									  request->response.state = HTTP_STATE_STATUS;
+									  break;
+				case HTTP_STATE_STATUS: //Send response
+				case HTTP_STATE_HEADERS:
+				case HTTP_STATE_MESSAGE: debug(" Calling response handler %p.\n",
+											   request->response.handlers->handlers[request->type - 1]);
+										 request->response.handlers->handlers[request->type - 1](request); 
+										 break;
+				case HTTP_STATE_DONE: if (!((connection->sending) || (!connection->closing)))
+									  {
+										  tcp_disconnect(connection);
+									  }
+									  break;
+			}
 		}
-		switch (request->response.state)
-		{
-			case HTTP_STATE_FIND: request->response.handlers = http_get_handlers(request);
-								  //No handler found.
-								  if (!request->response.handlers->handlers[request->type - 1])
-								  {
-									  request->response.status_code = 404;
-								  } 
-								  //Next state.
-								  request->response.state = HTTP_STATE_STATUS;
-								  break;
-			case HTTP_STATE_STATUS: //Send response
-			case HTTP_STATE_HEADERS:
-			case HTTP_STATE_MESSAGE: debug("Calling response handler %p.\n",
-										   request->response.handlers->handlers[request->type - 1]);
-									 request->response.handlers->handlers[request->type - 1](request); 
-									 break;
-    		case HTTP_STATE_DONE: tcp_disconnect(connection);
-								  break;
-		}
-		tcp_send_buffer(connection);
 	}
 	else
 	{
 		debug("No request parsed yet.\n");
 	}
-     
     connection = connection->next;
 
 	return(HTTP_CLEANUP);
@@ -191,50 +200,40 @@ state_t ICACHE_FLASH_ATTR http_mutter_med_kost_og_spand(void *arg)
 	}
 	
 	// Since request was zalloced, request->type will be zero until parsed.
-	if ((request) && (request->type != HTTP_NONE))
+	if (request)
 	{
-		//Disconnect if asked, and buffer is empty.
-		if (((connection->closing) && (connection->buffer_used == 0)) || (connection->conn->state >= ESPCONN_CLOSE))
+		if (request->response.state == HTTP_STATE_DONE)
 		{
-#ifdef DEBUG
-			if (connection->conn->state > ESPCONN_CLOSE)
+			//Disconnect if asked, and buffer is empty.
+			if (connection->conn->state >= ESPCONN_CLOSE)
 			{
-				debug("Closing connection %p (%p) that seems to be dangling.\n", connection, connection->conn);
-			}
-			else
-			{
-				debug("Closing connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
-			}
-#endif //DEBUG
-			connection->closing = true;
-			
-			//Old call back, fiure out if it is needed.
-			//Clear previous data.
-            //os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
-            //Set new data
-            //connection->callback_data.arg = connection->conn;
-            //Call call back.
-            //if (listening_connection->callbacks.disconnect_callback != NULL)
-            //{
-            //    listening_connection->callbacks.disconnect_callback(connection);
-            //}
+	#ifdef DEBUG
+				if (connection->conn->state > ESPCONN_CLOSE)
+				{
+					debug("Closing connection %p (%p) that seems to be dangling.\n", connection, connection->conn);
+				}
+				else
+				{
+					debug("Closing connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
+				}
+	#endif //DEBUG
+				//connection->closing = true;
+				
+				//Old call back, fiure out if it is needed.
+				//Clear previous data.
+				//os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
+				//Set new data
+				//connection->callback_data.arg = connection->conn;
+				//Call call back.
+				//if (listening_connection->callbacks.disconnect_callback != NULL)
+				//{
+				//    listening_connection->callbacks.disconnect_callback(connection);
+				//}
 
-            //Free the connection
-            tcp_free(connection);
+				//Free the connection
+				tcp_free(connection);
+			}	
 		}
-		else
-		{
-#ifdef DEBUG
-			if (connection->conn->state > ESPCONN_CLOSE)
-			{
-				debug("Connection %p (%p) seems to be dangling.\n", connection, connection->conn);
-			}
-			else
-			{
-				debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
-			}
-#endif //DEBUG
-		}		
 	}
 	else
 	{
