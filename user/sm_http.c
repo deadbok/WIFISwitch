@@ -23,6 +23,7 @@
 #include "user_interface.h"
 #include "net/tcp.h"
 #include "slighttp/http.h"
+#include "slighttp/http-request.h"
 #include "rest/rest.h"
 #include "sm_types.h"
 
@@ -111,6 +112,7 @@ state_t ICACHE_FLASH_ATTR http_send(void *arg)
 	static struct tcp_connection *connection;
     static struct http_request *request;
     
+    debug("Send.\n");
     if (!connection)
     {
 		connection = tcp_get_connections();
@@ -187,6 +189,7 @@ state_t ICACHE_FLASH_ATTR http_mutter_med_kost_og_spand(void *arg)
 	static struct tcp_connection *connection = NULL;
     static struct http_request *request;
     
+    debug("Cleanup.\n");
     if (!connection)
     {
 		connection = tcp_get_connections();
@@ -217,21 +220,10 @@ state_t ICACHE_FLASH_ATTR http_mutter_med_kost_og_spand(void *arg)
 					debug("Closing connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
 				}
 	#endif //DEBUG
-				//connection->closing = true;
-				
-				//Old call back, fiure out if it is needed.
-				//Clear previous data.
-				//os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
-				//Set new data
-				//connection->callback_data.arg = connection->conn;
-				//Call call back.
-				//if (listening_connection->callbacks.disconnect_callback != NULL)
-				//{
-				//    listening_connection->callbacks.disconnect_callback(connection);
-				//}
-
-				//Free the connection
+				request->response.handlers->destroy(request);
+				http_free_request(request);
 				tcp_free(connection);
+				db_mem_list();
 			}	
 		}
 	}

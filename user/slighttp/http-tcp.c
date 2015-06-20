@@ -59,6 +59,17 @@ void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
  */
 void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
 {
+    struct http_request *request;
+    
+    debug("HTTP reconnect (%p).\n", connection);
+    
+/*    if (connection->free)
+    {
+		request = connection->free;
+		//Retry sending.
+		request->response.state = HTTP_STATE_NONE;
+	}*/
+	tcp_disconnect(connection);
 }
 
 /**

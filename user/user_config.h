@@ -51,7 +51,7 @@
 /**
  * @brief Time between event dispatches.
  */
-#define DISPATCH_TIME 100
+#define DISPATCH_TIME 75
 /**
  * @brief Network connection time-out.
  */
@@ -90,7 +90,7 @@
 /**
  * @brief Print memory allocation info.
  */
-//#define DEBUG_MEM
+#define DEBUG_MEM
 /**
  * @brief List memory allocations.
  */
@@ -128,5 +128,7 @@ extern void db_dealloc(void *ptr);
 #define db_free(ARG)        os_free(ARG)
 #define db_zalloc(ARG, INFO)      os_zalloc(ARG)
 #endif
+
+extern void db_mem_list(void);
 
 #endif //USER_CONFIG_H

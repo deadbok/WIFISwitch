@@ -1,5 +1,15 @@
-2015-06-19 Martin Grønholdt
+2015-06-21 Martin Grønholdt
 
+* slighttp/http-request.c (http_parse_headers): Forget to increase number of headers in the second run.
+* 											  : Was copying header value from th e wrong place.
+
+
+2015-06-20 Martin Grønholdt
+
+* slighttp/http-response.c: Removed http_send_response, uneeded.
+*						   (send_status_line): Renamed http_send_status_line.
+* slighttp/http-response.h: Removed http_send_response, uneeded.
+*						   (send_status_line): Renamed http_send_status_line.
 * user_main.c (handle_events): Added tick output in debug mode.
 * sm_http.c: Dealt with disconnecting.
 * net/tcp.h Removed buffer stuff.

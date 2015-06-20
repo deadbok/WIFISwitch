@@ -153,9 +153,7 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 	
 	switch(request->response.state)
 	{
-		case HTTP_STATE_STATUS:  send_status_line(request->connection, 
-								  				  request->response.status_code);
-								
+		case HTTP_STATE_STATUS:  http_send_status_line(request->connection, request->response.status_code);
 								 //Onwards
 								 request->response.state = HTTP_STATE_HEADERS;
 								 break;

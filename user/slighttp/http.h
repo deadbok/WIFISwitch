@@ -29,7 +29,7 @@
 /**
  * @brief The largest block to read from a file, at a time.
  */
-#define HTTP_FILE_CHUNK_SIZE  256
+#define HTTP_FILE_CHUNK_SIZE  512
 
 /**
  * @brief Server name.

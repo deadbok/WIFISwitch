@@ -222,12 +222,13 @@ static char ICACHE_FLASH_ATTR *http_parse_headers(struct http_request *request,
 				//Get some mem save and lower case name.
 				size = next_data - value;
 				headers[n_headers].value = db_malloc(size + 1, "headers[n_headers].value http_parse_headers");
-				os_strncpy(headers[n_headers].value, data, size);
+				os_strncpy(headers[n_headers].value, value, size);
 				headers[n_headers].value[size] = '\0';
 				debug(" Value: %s\n", headers[n_headers].value);
 
 				//Go to the next entry
 				data = next_data;
+				n_headers++;
 			}
 			else
 			{
@@ -308,6 +309,7 @@ bool ICACHE_FLASH_ATTR http_parse_request(struct tcp_connection *connection)
     HTTP_SKIP_CRLF(next_entry, 1);
 
     request->message = http_parse_headers(request, next_entry);
+    debug(" Done parsing request.\n");
     return(true);
 }
 
@@ -318,8 +320,8 @@ bool ICACHE_FLASH_ATTR http_parse_request(struct tcp_connection *connection)
  */
 void ICACHE_FLASH_ATTR http_free_request(struct http_request *request)
 {
-	/*Most pointers can't be freed here, since they point to espconn
-	 *owned data.*/
+	unsigned short i;
+	
 	debug("Freeing request data at %p.\n", request);
 	if (request)
 	{
@@ -333,6 +335,12 @@ void ICACHE_FLASH_ATTR http_free_request(struct http_request *request)
 		}
 		if (request->headers)
 		{
+			debug(" Freeing %d headers.\n", request->n_headers);
+			for (i = 0; i < request->n_headers; i++)
+			{
+				db_free(request->headers[i].name);
+				db_free(request->headers[i].value);
+			}
 			db_free(request->headers);
 		}
 		db_free(request);
