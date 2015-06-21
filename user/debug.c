@@ -141,6 +141,9 @@ void ICACHE_FLASH_ATTR db_dealloc(void *ptr)
     db_printf("Allocs: %d.\n", dbg_mem_n_alloc);
 }
 
+/**
+ * @brief List data for a max. of the first 500 memory allocations.
+ */
 void ICACHE_FLASH_ATTR db_mem_list(void)
 {
 	unsigned short i = 0;

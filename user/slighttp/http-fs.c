@@ -256,6 +256,7 @@ size_t ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
  */
 void ICACHE_FLASH_ATTR http_fs_destroy(struct http_request *request)
 {
+	debug("Freeing data for file response.\n");
 	if (request->response.context)
 	{
 		if (((struct sm_http_fs_context *)request->response.context)->filename)
@@ -263,5 +264,6 @@ void ICACHE_FLASH_ATTR http_fs_destroy(struct http_request *request)
 			db_free(((struct sm_http_fs_context *)request->response.context)->filename);
 		}
 		db_free(request->response.context);
+		request->response.context = NULL;
 	}
 }

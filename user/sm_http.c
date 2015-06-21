@@ -127,6 +127,11 @@ state_t ICACHE_FLASH_ATTR http_send(void *arg)
 	else
 	{
 		debug("Connection %p.\n", connection);
+		if (connection->sending)
+		{
+			debug("Still sending.\n");
+			return(HTTP_CLEANUP);
+		}
 	}
 	
 	// Since request was zalloced, request->type will be zero until parsed.
@@ -221,10 +226,14 @@ state_t ICACHE_FLASH_ATTR http_mutter_med_kost_og_spand(void *arg)
 				}
 	#endif //DEBUG
 				request->response.handlers->destroy(request);
-				http_free_request(request);
+				http_free_request(connection);
 				tcp_free(connection);
 				db_mem_list();
-			}	
+			}
+			else
+			{
+				debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
+			}
 		}
 	}
 	else

@@ -2,7 +2,7 @@
 
 * slighttp/http-request.c (http_parse_headers): Forget to increase number of headers in the second run.
 * 											  : Was copying header value from th e wrong place.
-
+*						  (http_free_request): More checks, and pass connection instead of request.
 
 2015-06-20 Martin Grønholdt
 

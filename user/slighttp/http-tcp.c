@@ -59,7 +59,7 @@ void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
  */
 void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
 {
-    struct http_request *request;
+    //struct http_request *request;
     
     debug("HTTP reconnect (%p).\n", connection);
     
@@ -69,7 +69,7 @@ void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
 		//Retry sending.
 		request->response.state = HTTP_STATE_NONE;
 	}*/
-	tcp_disconnect(connection);
+	//tcp_disconnect(connection);
 }
 
 /**
@@ -83,8 +83,6 @@ void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
 void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
 { 
     debug("HTTP disconnect (%p).\n", connection);
-    
-    //http_free_request(connection->free);
 }
 
 /**
@@ -94,6 +92,7 @@ void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
  */
 void ICACHE_FLASH_ATTR tcp_write_finish_cb(struct tcp_connection *connection)
 {
+	debug("Done writing (%p).\n", connection);
 }
 
 /**
@@ -115,8 +114,17 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
     }*/
 
     http_parse_request(connection);
+    //Call event handler when we know there's a request.
+    state = HTTP_SEND;
+    handle_events();
 }
 
 void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
 {
+	debug("HTTP send (%p).\n", connection);
+	
+    //Call event handler, we are probably sending.
+    state = HTTP_SEND;
+    handle_events();
+
 }

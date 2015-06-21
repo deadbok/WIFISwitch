@@ -28,6 +28,7 @@
 #include "tools/missing_dec.h"
 #include "osapi.h"
 #include "user_interface.h"
+#include "sm_types.h"
 
 /**
  * @brief Firmware version.
@@ -51,7 +52,7 @@
 /**
  * @brief Time between event dispatches.
  */
-#define DISPATCH_TIME 75
+#define DISPATCH_TIME 100
 /**
  * @brief Network connection time-out.
  */
@@ -129,6 +130,9 @@ extern void db_dealloc(void *ptr);
 #define db_zalloc(ARG, INFO)      os_zalloc(ARG)
 #endif
 
+extern state_t state;
+
 extern void db_mem_list(void);
+extern void handle_events(void);
 
 #endif //USER_CONFIG_H

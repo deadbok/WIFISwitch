@@ -1,4 +1,4 @@
-/** @file http-request.c
+            /** @file http-request.c
  *
  * @brief Dealing with requests for the HTTP server.
  * 
@@ -220,7 +220,7 @@ static char ICACHE_FLASH_ATTR *http_parse_headers(struct http_request *request,
 				//Eat spaces in front of value.
 				HTTP_SKIP_SPACES(value);
 				//Get some mem save and lower case name.
-				size = next_data - value;
+				size = next_data - value - 1;
 				headers[n_headers].value = db_malloc(size + 1, "headers[n_headers].value http_parse_headers");
 				os_strncpy(headers[n_headers].value, value, size);
 				headers[n_headers].value[size] = '\0';
@@ -318,11 +318,16 @@ bool ICACHE_FLASH_ATTR http_parse_request(struct tcp_connection *connection)
  * 
  * @param request Pointer to the request to free.
  */
-void ICACHE_FLASH_ATTR http_free_request(struct http_request *request)
+void ICACHE_FLASH_ATTR http_free_request(struct tcp_connection *connection)
 {
+	struct http_request *request = NULL;
 	unsigned short i;
 	
 	debug("Freeing request data at %p.\n", request);
+	if (connection->free)
+	{
+		request = connection->free;
+	}
 	if (request)
 	{
 		if (request->uri)
@@ -344,5 +349,6 @@ void ICACHE_FLASH_ATTR http_free_request(struct http_request *request)
 			db_free(request->headers);
 		}
 		db_free(request);
+		connection->free = NULL;
 	}
 }

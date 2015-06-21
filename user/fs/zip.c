@@ -274,6 +274,7 @@ bool zip_is_dir(char *path)
  */
 void ICACHE_FLASH_ATTR zip_free_header(struct zip_file_hdr *file_hdr)
 {
+	debug("Freeing zip header (%p).\n", file_hdr);
 	if (file_hdr->filename)
 	{
 		db_free(file_hdr->filename);

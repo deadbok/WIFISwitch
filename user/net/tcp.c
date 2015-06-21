@@ -266,7 +266,7 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
     else
     {
         error("No more free TCP connections.\n");
-        espconn_disconnect(arg);
+        //tcp_disconnect(arg);
     }
     debug(" Connections: %d.\n", n_tcp_connections);
 }

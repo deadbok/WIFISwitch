@@ -82,11 +82,15 @@
 static os_timer_t dispatch_timer;
 
 /**
+ * @brief State of the main state machine. See #states.
+ */
+state_t state = WIFI_CONNECT;
+
+/**
  * @brief Called by the timer to handle events.
  */
 void handle_events(void)
 {
-	static state_t state = WIFI_CONNECT;
 	static bool go_away = false;
 	static struct sm_context context;
 #ifdef DEBUG
@@ -114,11 +118,11 @@ void handle_events(void)
 #ifdef DEBUG
 		if (last_state != state)
 		{
-			db_printf("New state: %d:\n", state);
+			db_printf("New state: %d. Tick %u!\n", state, system_get_time());
 		}
 		else
 		{
-			db_printf("Tick!\n");
+			db_printf("Tick %u!\n", system_get_time());
 		}
 #endif
 

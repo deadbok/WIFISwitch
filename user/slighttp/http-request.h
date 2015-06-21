@@ -28,6 +28,6 @@
 #include "http.h"
 
 extern bool http_parse_request(struct tcp_connection *connection);
-extern void http_free_request(struct http_request *request);
+extern void http_free_request(struct tcp_connection *connection);
 
 #endif //HTTP_REQUEST_H

@@ -27,11 +27,6 @@
 #include "net/tcp.h"
 
 /**
- * @brief The largest block to read from a file, at a time.
- */
-#define HTTP_FILE_CHUNK_SIZE  512
-
-/**
  * @brief Server name.
  */
 #define HTTP_SERVER_NAME            "slighttpd"
@@ -43,6 +38,10 @@
  * @brief Version of HTTP that is supported.
  */
 #define HTTP_SERVER_HTTP_VERSION    "1.1"
+/**
+ * @brief The largest block to read from a file, at a time.
+ */
+#define HTTP_FILE_CHUNK_SIZE  1024
 
 /**
  * @brief HTTP request types.
