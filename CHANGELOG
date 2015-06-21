@@ -1,8 +1,17 @@
 2015-06-21 Martin Grønholdt
 
+* debug.c; Added db_mem_list.
+* sm_http.c: Don't do anything if still sending.
+* user_main.c: state is now global.
 * slighttp/http-request.c (http_parse_headers): Forget to increase number of headers in the second run.
 * 											  : Was copying header value from th e wrong place.
-*						  (http_free_request): More checks, and pass connection instead of request.
+*						  (http_free_request): More checks, and pass connection instead of request
+* slighttp/http-tcp.c (tcp_reconnect_cb): Don't disconnect.
+*					  (tcp_recv_cb): Call main event handler and send HTTP.
+*					  (tcp_sent_cb): Call main event handler and send HTTP.
+* slighttp/http-fs.c (httpfs_destroy): More debug.
+* net/tcp.c (tcp_connect_cb): Don't disconnect.
+
 
 2015-06-20 Martin Grønholdt
 
