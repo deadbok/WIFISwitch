@@ -30,7 +30,7 @@ extern state_t wifi_connect(void *context);
 extern state_t wifi_connected(void *context);
 
 extern state_t http_init(void *arg);
-extern state_t http_send(void *arg);
+extern state_t sm_http_send(void *arg);
 extern state_t http_mutter_med_kost_og_spand(void*arg);
 
 extern state_t root_config_mode(void *arg);
@@ -51,7 +51,7 @@ static state_handler_t handlers[N_MAIN_STATES] =
 	root_config_mode,
 	NULL,
 	http_init,
-	http_send,
+	sm_http_send,
 	http_mutter_med_kost_og_spand,
 	reboot
 };

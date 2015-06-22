@@ -234,7 +234,7 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
         connection->conn->recv_callback = tcp_recv_cb;
         connection->conn->sent_callback = tcp_sent_cb;
         
-		connection->sending = 0;
+		connection->sending = false;
 		connection->closing = false;
         
         //Save our connection data
@@ -401,12 +401,9 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
 {
     struct espconn *conn = arg;
     struct tcp_connection *connection = conn->reverse;
-	char ret;
     
     debug("TCP sent (%p).\n", connection);
-    connection->sending--;
-	debug(" Blocks still waiting: %d.\n", connection->sending);
-
+    connection->sending = false;
 	
     //Clear previous data.
     os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
@@ -417,16 +414,6 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
     {
         listening_connection->callbacks.sent_callback(connection);
     }
-
-	//Disconnect if asked, and buffer is empty.
-	/*if ((connection->closing)) // && (connection->buffer_used == 0))
-	{
-		debug("Disconnecting (%p)...", connection);
-		ret = espconn_disconnect(connection->conn);
-#ifdef DEBUG
-		print_status(ret);
-#endif
-	}*/
 }	
 
 /** 

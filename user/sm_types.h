@@ -51,7 +51,7 @@ enum states
 	/**
 	 * @brief Check network connection..
 	 * 
-	 * Jumps to HTTP_INIT on connection, and WIFI_DISCONNECTED on no connection.
+	 * Jumps to HTTP_SEND on connection, and WIFI_DISCONNECTED on no connection.
 	 */
 	WIFI_CHECK,
 	/**

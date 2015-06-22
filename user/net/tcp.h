@@ -99,9 +99,9 @@ struct tcp_connection
      */
     struct tcp_callback_data callback_data;
     /**
-     * @brief Number of blocks that are being send.
+     * @brief Are the connection sending data.
      */
-    size_t sending;
+    bool sending;
     /**
      * @brief Are the connection closing.
      */

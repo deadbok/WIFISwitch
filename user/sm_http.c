@@ -24,6 +24,7 @@
 #include "net/tcp.h"
 #include "slighttp/http.h"
 #include "slighttp/http-request.h"
+#include "slighttp/http-response.h"
 #include "rest/rest.h"
 #include "sm_types.h"
 
@@ -96,7 +97,7 @@ state_t ICACHE_FLASH_ATTR http_init(void *arg)
 		error("Could not start HTTP server.\n");
 		return(SYSTEM_RESTART);
 	}
-	return(HTTP_SEND);
+	return(WIFI_CHECK);
 }
 
 /**
@@ -107,10 +108,9 @@ state_t ICACHE_FLASH_ATTR http_init(void *arg)
  * expect to cut up the response, and keep track of how much has been send,
  * using the TCP sent callback.
  */
-state_t ICACHE_FLASH_ATTR http_send(void *arg)
+state_t ICACHE_FLASH_ATTR sm_http_send(void *arg)
 {
 	static struct tcp_connection *connection;
-    static struct http_request *request;
     
     debug("Send.\n");
     if (!connection)
@@ -119,66 +119,20 @@ state_t ICACHE_FLASH_ATTR http_send(void *arg)
 		if (!connection)
 		{
 			debug("No connections.\n");
-			return(HTTP_CLEANUP);
+			return(WIFI_CHECK);
 		}
 		debug("No connection, starting from first (%p).\n", connection);
-		request = connection->free;
 	}
 	else
 	{
 		debug("Connection %p.\n", connection);
-		if (connection->sending)
-		{
-			debug("Still sending.\n");
-			return(HTTP_CLEANUP);
-		}
 	}
 	
-	// Since request was zalloced, request->type will be zero until parsed.
-	if (request)
-	{
-		if (request->type != HTTP_NONE)
-		{
-			//tcp_send_buffer(connection);
-			//Get started
-			if (request->response.state == HTTP_STATE_NONE)
-			{
-				debug(" New response.\n");
-				//Find someone to respond.
-				request->response.state = HTTP_STATE_FIND;
-			}
-			switch (request->response.state)
-			{
-				case HTTP_STATE_FIND: request->response.handlers = http_get_handlers(request);
-									  //No handler found.
-									  if (!request->response.handlers->handlers[request->type - 1])
-									  {
-										  request->response.status_code = 404;
-									  } 
-									  //Next state.
-									  request->response.state = HTTP_STATE_STATUS;
-									  break;
-				case HTTP_STATE_STATUS: //Send response
-				case HTTP_STATE_HEADERS:
-				case HTTP_STATE_MESSAGE: debug(" Calling response handler %p.\n",
-											   request->response.handlers->handlers[request->type - 1]);
-										 request->response.handlers->handlers[request->type - 1](request); 
-										 break;
-				case HTTP_STATE_DONE: if (!((connection->sending) || (!connection->closing)))
-									  {
-										  tcp_disconnect(connection);
-									  }
-									  break;
-			}
-		}
-	}
-	else
-	{
-		debug("No request parsed yet.\n");
-	}
+	//Get the ball rolling.
+	http_process_response(connection);
     connection = connection->next;
 
-	return(HTTP_CLEANUP);
+	return(WIFI_CHECK);
 }
 
 /**

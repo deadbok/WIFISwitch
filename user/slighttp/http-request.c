@@ -45,8 +45,7 @@ static size_t ICACHE_FLASH_ATTR http_get_request_type(struct tcp_connection *con
 {
     struct http_request *request = connection->free;
     size_t offset = 0;
-        
-    request->response.status_code = 200;
+
     offset = 4;
 	if (os_strncmp(connection->callback_data.data, "GET ", offset) == 0)
     {

@@ -50,6 +50,7 @@ void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
     debug(" Allocated memory for request data: %p.\n", request);
     connection->free = request;
     request->connection = connection;
+    request->response.status_code = 200;
 }
 
 /**
@@ -104,27 +105,42 @@ void ICACHE_FLASH_ATTR tcp_write_finish_cb(struct tcp_connection *connection)
  */
 void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 {
+	struct http_request *request = connection->free;
+	
     debug("HTTP received (%p).\n", connection);
-    /*if ((connection->callback_data.data == NULL) || 
-        (os_strlen(connection->callback_data.data) == 0))
+    if (connection->callback_data.data == NULL)
     {
-        error("Emtpy request recieved.\n");
-        http_send_response(connection, 400);
-        return;
-    }*/
+		request->response.status_code = 400;
+	}
+	if (os_strlen(connection->callback_data.data) == 0)
+    {
+		request->response.status_code = 400;
+    }
+    if (request->response.status_code == 400)
+    {
+		warn("Empty request received.<n");
+	}
 
     http_parse_request(connection);
-    //Call event handler when we know there's a request.
-    state = HTTP_SEND;
-    handle_events();
+    //Start sending the response
+    http_process_response(connection);
 }
 
 void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
 {
+	struct http_request *request = connection->free;
+		
 	debug("HTTP send (%p).\n", connection);
 	
-    //Call event handler, we are probably sending.
-    state = HTTP_SEND;
-    handle_events();
-
+	request->response.send_buffer_pos = request->response.send_buffer;
+	//This was the end of a message. Signal that it is send.
+	if (request->response.state == HTTP_STATE_ASSEMBLED)
+	{
+		request->response.state = HTTP_STATE_DONE;
+	}
+	else
+	{
+		//Send some more, we're not done yet.
+		http_process_response(connection);
+	}
 }

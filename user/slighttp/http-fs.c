@@ -39,7 +39,7 @@
 /**
  * @brief Structure to keep track of our progress.
  */
-struct sm_http_fs_context
+struct http_fs_context
 {
 	/**
 	 * @brief The name of the file to get the response from.
@@ -73,7 +73,7 @@ bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
 	size_t fs_uri_size;
 	size_t root_size = 0;
 	size_t index_size = 10;
-	struct sm_http_fs_context *context;
+	struct http_fs_context *context;
 	
 	//Check if we've already done this.
 	if (!request->response.context)
@@ -114,7 +114,7 @@ bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
 		fs_uri[fs_uri_size] = '\0';	
 		
 		//Save file name in context.
-		context = db_malloc(sizeof(struct sm_http_fs_context), "context http_fs_test");
+		context = db_malloc(sizeof(struct http_fs_context), "context http_fs_test");
 		context->filename = fs_uri;
 		request->response.context = context;
 	}
@@ -144,11 +144,12 @@ bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
  */
 size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 {
-	struct sm_http_fs_context *context = request->response.context;
+	struct http_fs_context *context = request->response.context;
 	char str_size[16];
 	unsigned char i;
 	size_t ext_size;
 	
+	//If the send buffer is over 200 bytes, this should never fill it.
 	debug("File system HEAD handler handling %s.\n", context->filename);
 	
 	switch(request->response.state)
@@ -185,8 +186,8 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 								 }
 								 http_send_header(request->connection, "Content-Type", http_mime_types[i].type);	
 								 //Send end of headers.
-								 tcp_send(request->connection, "\r\n", 2);
-								 //On to the message if GET else stop.
+								 http_send(request->connection, "\r\n", 2);
+								 //Stop if only HEAD was requested.
 								 if (request->type == HTTP_HEAD)
 								 {
 									 request->response.state = HTTP_STATE_DONE;
@@ -209,7 +210,7 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
  */
 size_t ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
 {
-	struct sm_http_fs_context *context = request->response.context;
+	struct http_fs_context *context = request->response.context;
 	char buffer[HTTP_FILE_CHUNK_SIZE];
 	size_t data_left;
 	
@@ -230,14 +231,14 @@ size_t ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
 			{
 				//There is still more than HTTP_FILE_CHUNK_SIZE to read.
 				fs_read(buffer, HTTP_FILE_CHUNK_SIZE, sizeof(char), context->file);
-				tcp_send(request->connection, buffer, HTTP_FILE_CHUNK_SIZE);
+				http_send(request->connection, buffer, HTTP_FILE_CHUNK_SIZE);
 				context->transferred += HTTP_FILE_CHUNK_SIZE;
 			}
 			else
 			{
 				//Last block.
 				fs_read(buffer, data_left, sizeof(char), context->file);
-				tcp_send(request->connection, buffer, data_left);
+				http_send(request->connection, buffer, data_left);
 				context->transferred += data_left;
 				//We're done sending the message.
 				fs_close(context->file);
@@ -259,9 +260,9 @@ void ICACHE_FLASH_ATTR http_fs_destroy(struct http_request *request)
 	debug("Freeing data for file response.\n");
 	if (request->response.context)
 	{
-		if (((struct sm_http_fs_context *)request->response.context)->filename)
+		if (((struct http_fs_context *)request->response.context)->filename)
 		{
-			db_free(((struct sm_http_fs_context *)request->response.context)->filename);
+			db_free(((struct http_fs_context *)request->response.context)->filename);
 		}
 		db_free(request->response.context);
 		request->response.context = NULL;

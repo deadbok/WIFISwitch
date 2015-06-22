@@ -41,7 +41,11 @@
 /**
  * @brief The largest block to read from a file, at a time.
  */
-#define HTTP_FILE_CHUNK_SIZE  1024
+#define HTTP_FILE_CHUNK_SIZE  256
+/**
+ * @brief Size of send buffer.
+ */
+#define HTTP_SEND_BUFFER_SIZE 1024
 
 /**
  * @brief HTTP request types.
@@ -90,6 +94,10 @@ enum response_states
      */
     HTTP_STATE_MESSAGE,
     /**
+     * @brief The response has been assembled, and is being send.
+     */
+    HTTP_STATE_ASSEMBLED,
+    /**
      * @brief All done,
      */
     HTTP_STATE_DONE
@@ -132,7 +140,19 @@ struct http_response
      /**
       * @brief Pointer to the context used by the sender.
       */
-      void *context;
+     void *context;
+     /**
+      * @brief Buffer with TCP data waiting to be send.
+      */
+     char *send_buffer;
+     /**
+      * @brief Pointer to the current position in the send buffer.
+      */
+     char *send_buffer_pos;
+         /**
+     * @brief Number of blocks is waiting to be send.
+     */
+    size_t send;
 };
 
 /**
@@ -235,6 +255,7 @@ extern char *http_fs_doc_root;
 
 extern bool init_http(char *path, struct http_response_handler *handlers, unsigned short n_handlers);
 extern struct http_response_handler *http_get_handlers(struct http_request *request);
+extern unsigned char http_send(struct tcp_connection *connection, char *data, size_t size);
 
 extern bool http_fs_test(struct http_request *request);
 extern size_t http_fs_head_handler(struct http_request *request);

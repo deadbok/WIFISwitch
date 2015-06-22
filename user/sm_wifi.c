@@ -82,13 +82,13 @@ state_t ICACHE_FLASH_ATTR wifi_connected(void *context)
 		connection_status = wifi_station_get_connect_status();
 		if (connection_status == STATION_GOT_IP)
 		{
-			return(HTTP_SEND);
+			return(WIFI_CHECK);
 		}
 	}
 	else if (ret)
 	{
 		//We are in AP mode, and by definition connected.
-		return(HTTP_SEND);
+		return(WIFI_CHECK);
 	}
 	return(WIFI_DISCONNECTED);
 }
