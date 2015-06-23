@@ -50,13 +50,13 @@
 #define SOFTAP_PASSWORD "0123456789"
 
 /**
- * @brief Time between event dispatches.
+ * @brief How often to check the status in miliseconds.
  */
-#define DISPATCH_TIME 100
+#define CHECK_TIME 100
 /**
  * @brief Network connection time-out.
  */
-#define CONNECT_DELAY_SEC   10
+#define CONNECT_DELAY_SEC 10
 
 /***
  * @brief Mostly shut off output from the SDK.
@@ -130,9 +130,6 @@ extern void db_dealloc(void *ptr);
 #define db_zalloc(ARG, INFO)      os_zalloc(ARG)
 #endif
 
-extern state_t state;
-
 extern void db_mem_list(void);
-extern void handle_events(void);
 
 #endif //USER_CONFIG_H

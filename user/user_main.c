@@ -1,23 +1,23 @@
 /**
- * 
+ *
  * @file user_main.c
- * 
+ *
  * @brief Main program file.
- * 
+ *
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
- * 
+ *
  * @license
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
  * (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
@@ -25,23 +25,23 @@
  */
 /**
  * @mainpage WIFISwitch source docs.
- * 
+ *
  * Introduction.
  * =============
- * 
+ *
  * Source level documentation for a network controlled mains switch, using the
  * ESP8266 WIFI interface and micro controller.
- * 
- *  
+ *
+ *
  * Architecture.
  * =============
- * 
+ *
  * The ESP8266 SDK is a strange beast, it seems a mix of procedural and event
  * driven. The WIFI functions do not use call backs, while the TCP functions
  * do. A little consistency would be nice here, a call back when the connection
  * is lost? But no. Oh and there are bugs, at least that's how I see them, like
  * the TCP disconnect call back, getting passed a mostly unusable parameter.
- * 
+ *
  * After trying to force a procedural scheme on it all, and chasing the same
  * shortcoming into a corner, I finally realised that, I was working against
  * the SDK.
@@ -55,7 +55,7 @@
  * or a new request is received before the sending is done, and it all ends
  * up with one more response to send. Stuff will get lost, and things will not
  * behave as expected.
- *   
+ *
  * I ended up dreaming about my Delphi days (something that I almost never do),
  * and that call, that you could make to get the system to do some processing,
  * while you where in a long chunk of code; But in the SDK there is none.
@@ -74,82 +74,57 @@
 #include "user_interface.h"
 #include "driver/uart.h"
 #include "fs/fs.h"
-#include "sm.h"
+#include "net/wifi_connect.h"
+#include "slighttp/http.h"
+#include "response_handlers.h"
 
 /**
  * @brief Timer for handling events.
  */
-static os_timer_t dispatch_timer;
+os_timer_t status_timer;
 
 /**
- * @brief State of the main state machine. See #states.
+ * @brief Called by the timer to check the status.
  */
-state_t state = WIFI_CONNECT;
-
-/**
- * @brief Called by the timer to handle events.
- */
-void handle_events(void)
+static void ICACHE_FLASH_ATTR status_check(void)
 {
-	static bool go_away = false;
-	static struct sm_context context;
-#ifdef DEBUG
-	static state_t last_state = WIFI_CONNECT;
-#endif
-	
-	if (go_away)
+}
+
+/**
+ * @brief Called when the WIFI is connected or in AP mode.
+ */
+static void ICACHE_FLASH_ATTR connected(unsigned char mode)
+{
+   db_printf("WIFI connected...\n");
+
+   //Start status task.
+   //Disarm timer.
+   os_timer_disarm(&status_timer);
+   //Setup timer, pass call back as parameter.
+   os_timer_setfn(&status_timer, (os_timer_func_t *)status_check, NULL);
+   //Arm the timer, run every #CHECK_TIME  ms.
+   os_timer_arm(&status_timer, CHECK_TIME, 1);
+	if (mode < 2)
 	{
-		warn("Oops already here.\n");
+		//Start web server with default pages.
+		init_http("/", response_handlers, N_RESPONSE_HANDLERS);
 	}
 	else
 	{
-		go_away = true;
-#ifdef DEBUG
-		last_state = state;
-#endif
-		if (handlers[state])
-		{
-			state = (*handlers[state])(&context);
-		}
-		else
-		{
-			warn("Empty handler for state %d.\n", state);
-		}
-#ifdef DEBUG
-		if (last_state != state)
-		{
-			db_printf("New state: %d. Tick %u!\n", state, system_get_time());
-		}
-		else
-		{
-			db_printf("Tick %u!\n", system_get_time());
-		}
-#endif
-
-		if (state >= N_MAIN_STATES)
-		{
-			error("Main state machine state overflow.");
-			state = 0;
-		}
-		go_away = false;
+		//Start in network configuration mode.
+		init_http("/connect/", response_handlers, N_RESPONSE_HANDLERS);
 	}
 }
 
 /**
  * @brief Called when initialisation is over.
- * 
- * Starts the timer that will handle events.
+ *
+ * Starts the connection task.
  */
-void start_handler(void)
+static void ICACHE_FLASH_ATTR start_connection(void)
 {
-	db_printf("Running...\n");
-    //Start handler task
-    //Disarm timer
-    os_timer_disarm(&dispatch_timer);
-    //Setup timer, pass callback as parameter.
-    os_timer_setfn(&dispatch_timer, (os_timer_func_t *)handle_events, NULL);
-    //Arm the timer, run every DISPATCH_TIME ms.
-    os_timer_arm(&dispatch_timer, DISPATCH_TIME, 1);
+    db_printf("Running...\n");
+    wifi_connect(connected);
 }
 
 /**
@@ -157,30 +132,30 @@ void start_handler(void)
  */
 void ICACHE_FLASH_ATTR user_init(void)
 {
-	//Register function to run when done.
-	system_init_done_cb(start_handler);
+    //Register function to run when done.
+    system_init_done_cb(start_connection);
     //Turn off auto connect.
     wifi_station_set_auto_connect(false);
     //Turn off auto reconnect.
     wifi_station_set_reconnect_policy(false);
-    
+
     // Set baud rate of debug port
     uart_div_modify(0,UART_CLK_FREQ / 115200);
     //uart_init(115200, 115200);
-    
+
 #ifndef SDK_DEBUG
 	system_set_os_print(false);
 #endif
 
     //os_delay_us(1000);
-    
+
     //Print banner
     db_printf("\nWIFISwitch version %s.\n", STRING_VERSION);
     system_print_meminfo();
     db_printf("Free heap %u\n\n", system_get_free_heap_size());
-  
+
     fs_init();
-    
+
     // Initialize the GPIO subsystem.
     gpio_init();
 
@@ -189,6 +164,6 @@ void ICACHE_FLASH_ATTR user_init(void)
 
     //Set GPIO2 low
     gpio_output_set(0, BIT5, BIT5, 0);
-    
+
     db_printf("\nLeaving user_init...\n");
 }

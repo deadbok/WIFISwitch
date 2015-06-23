@@ -23,6 +23,7 @@
 #ifndef WIFI_CONNECT_H
 #define WIFI_CONNECT_H
 
-extern void wifi_connect(void (*connect_cb)());
+extern void wifi_connect(void (*connect_cb)(unsigned char wifi_mode));
+extern bool check_connection(void);
 
 #endif

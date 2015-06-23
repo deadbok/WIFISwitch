@@ -27,14 +27,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-#include "osapi.h"
 #include "os_type.h"
 #include "user_interface.h"
+#include "osapi.h"
 #include "user_config.h"
-#include "tools/strxtra.h"
 #include "tools/missing_dec.h"
-#include "slighttp/http.h"
-#include "rest/rest.h"
+#include "tools/strxtra.h"
 #include "wifi_connect.h"
 
 /**
@@ -42,20 +40,20 @@
  * 
  * Configuration used, when connecting to an AP.
  */
-static struct station_config station_conf = {{0}};
+struct station_config station_conf = {{0}};
 /**
  * @brief The current AP configuration.
  * 
  * Configuration used when in connection config mode.
  */
-static struct softap_config  ap_config = {{0}};
-/**
- * @brief Connection status.
- */
-static unsigned char connect_status = 0;
+struct softap_config  ap_config = {{0}};
 
-//Connection callback function.
-void (*wifi_connected_cb)(void);
+/**
+ * @brief Connection callback function.
+ *
+ * @param wifi_mode 1 = client mode. 2 = AP mode. 3 = client + AP mode.
+ */
+void (*wifi_connected_cb)(unsigned char wifi_mode);
 //Internal connection timeout callback function.
 void (*int_timeout_cb)(void);
 //Timer for waiting for connection.
@@ -65,30 +63,32 @@ unsigned char   retries = CONNECT_DELAY_SEC;
 
 /**
  * @brief Disconnect WIFI.
+ * 
+ * @return `true`on success.
  */
-static unsigned char ICACHE_FLASH_ATTR wifi_disconnect(void)
+static bool ICACHE_FLASH_ATTR wifi_disconnect(void)
 {
-    unsigned char   ret;
+    unsigned char ret;
 
     //Disconnect if connected.
-    connect_status = wifi_station_get_connect_status();
-    if (connect_status == STATION_GOT_IP)
+    ret = wifi_station_get_connect_status();
+    if (ret == STATION_GOT_IP)
     {
         debug("Disconnecting.\n");
         ret = wifi_station_disconnect();
         if (!ret)
         {
             error("Cannot disconnect (%d).", ret);
-            return(ret);
+            return(false);
         }
         ret = wifi_station_dhcpc_stop();
         if (!ret)
         {
             error("Cannot stop DHCP client (%d).", ret);
-            return(255);
+            return(false);
         }
     }
-    return(1);
+    return(true);
 }
 
 /**
@@ -129,8 +129,9 @@ static void ICACHE_FLASH_ATTR print_status(unsigned char status)
  */
 static void connect(void)
 {
-    struct ip_info  ipinfo;
-    unsigned char   ret;
+    struct ip_info ipinfo;
+    unsigned char ret;
+    unsigned char connect_status;
 
     //Get connection status
     connect_status = wifi_station_get_connect_status();
@@ -149,7 +150,7 @@ static void connect(void)
             }
             db_printf("Got IP address: %d.%d.%d.%d.\n", IP2STR(&ipinfo.ip) );
             //Call callback.
-            wifi_connected_cb();
+            wifi_connected_cb(1);
             break;
         //Not connected
         case STATION_IDLE:
@@ -197,13 +198,12 @@ static void connect(void)
  */
 static void ICACHE_FLASH_ATTR create_softap(char *ssid, char *passwd, unsigned char channel)
 {
-    struct softap_config    ap_config;
     unsigned char           ret;
 
     debug("Creating AP SSID: %s, password: %s, channel %u\n", ssid, passwd, 
           channel);
 
-    //Set AP mode.
+    //Set station + AP mode. Station mode is needed for scanning available networks.
     ret = wifi_set_opmode(STATIONAP_MODE);
     if (!ret)
     {
@@ -246,7 +246,7 @@ void timeout_cb(void)
     char                    temp_str[3];
     unsigned char           ret;
 
-    debug("WIFI connection time out.\n")
+    debug("WIFI connection time out.\n");
     db_printf("No AP connection. Entering AP configuration mode.\n");
 
     //Get MAC address.
@@ -276,6 +276,9 @@ void timeout_cb(void)
 
     //Create the AP.
     create_softap(ssid, passwd, 6);
+    
+    //Call connected call back.
+    wifi_connected_cb(3);
 }
 
 /*
@@ -283,7 +286,7 @@ void timeout_cb(void)
  *
  * @param connect_cb Called when a connection has been made, or an AP has been created.
  */
-void ICACHE_FLASH_ATTR wifi_connect(void (*connect_cb)())
+void ICACHE_FLASH_ATTR wifi_connect(void (*connect_cb)(unsigned char wifi_mode))
 {
     unsigned char   ret = 0;
 
@@ -331,4 +334,34 @@ void ICACHE_FLASH_ATTR wifi_connect(void (*connect_cb)())
     os_timer_setfn(&connected_timer, (os_timer_func_t *)connect, NULL);
     //Arm the timer, run every 1 second.
     os_timer_arm(&connected_timer, 1000, 1);
+}
+
+
+/**
+ * @brief Check if we're connected to a WIFI.
+ *
+ * Both station mode with an IP address and AP mode count as connected.
+ * 
+ * @return `true`on connection.
+ */
+bool ICACHE_FLASH_ATTR check_connection(void)
+{
+	unsigned char ret = 0;
+	
+	ret = wifi_get_opmode();
+	if ((ret == STATION_MODE))
+	{
+		//We are in client mode, check for connection to an AP.
+		ret = wifi_station_get_connect_status();
+		if (ret == STATION_GOT_IP)
+		{
+			return(true);
+		}
+	}
+	else if (ret)
+	{
+		//We are in AP mode, and by definition connected.
+		return(true);
+	}
+	return(false);
 }

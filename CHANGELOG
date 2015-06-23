@@ -1,7 +1,15 @@
 2015-06-23 Martin Grønholdt
 
-* net/tcp.c: Reverted to last version before state machine changes.
-*          : Changes getting up to date.
+* net/wifi_connect.c: Reverted to last version before state machine changes.
+*                   : Changes getting up to date.
+*		    		: Added check_connection.
+*					: Added wifi mode to connected call back.
+* net/wifi_connect.h: Added check_connection.
+* user_main.c: Removed main state machine code.
+*	     : Added connected call back.
+*	     : Moved dispatch timer after, wifi connect.
+* sm_wifi.c: Removed.
+* response_handlers.h: Added file, with HTTP response handlers.
 
 
 2015-06-22 Martin Grønholdt
