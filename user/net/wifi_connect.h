@@ -23,11 +23,6 @@
 #ifndef WIFI_CONNECT_H
 #define WIFI_CONNECT_H
 
-#include "sm_types.h"
- 
-extern bool check_connect(bool *connected);
-extern bool setup_ap(bool *connected);
-extern bool setup_station(bool *connected);
-
+extern void wifi_connect(void (*connect_cb)());
 
 #endif
