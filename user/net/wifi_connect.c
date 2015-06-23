@@ -4,7 +4,11 @@
  * @brief Routines for connecting th ESP8266 to a WIFI network.
  *
  * - Load a WIFI configuration.
- * - If unsuccessful create an AP.
+ * - If unsuccessful create an AP presenting a HTTP server to configure 
+ *   the connection values.
+ * 
+ * What works:
+ * - Try to connect to the AP.
  * 
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
@@ -28,6 +32,9 @@
 #include "user_interface.h"
 #include "user_config.h"
 #include "tools/strxtra.h"
+#include "tools/missing_dec.h"
+#include "slighttp/http.h"
+#include "rest/rest.h"
 #include "wifi_connect.h"
 
 /**
@@ -35,53 +42,59 @@
  * 
  * Configuration used, when connecting to an AP.
  */
-struct station_config station_conf = {{0}};
+static struct station_config station_conf = {{0}};
 /**
  * @brief The current AP configuration.
  * 
  * Configuration used when in connection config mode.
  */
-struct softap_config  ap_config = {{0}};
+static struct softap_config  ap_config = {{0}};
+/**
+ * @brief Connection status.
+ */
+static unsigned char connect_status = 0;
+
+//Connection callback function.
+void (*wifi_connected_cb)(void);
+//Internal connection timeout callback function.
+void (*int_timeout_cb)(void);
+//Timer for waiting for connection.
+static os_timer_t connected_timer;
+//Retry counter.
+unsigned char   retries = CONNECT_DELAY_SEC;
 
 /**
- * @brief Retry counter.
+ * @brief Disconnect WIFI.
  */
-unsigned char   retries = CONNECT_DELAY_SEC * (1000 / DISPATCH_TIME);
-
-/**
- * @brief Disconnect from an access point.
- *
- * @return `true` on success.
- */
-static bool ICACHE_FLASH_ATTR wifi_disconnect(void)
+static unsigned char ICACHE_FLASH_ATTR wifi_disconnect(void)
 {
     unsigned char   ret;
-    
+
     //Disconnect if connected.
-    ret = wifi_station_get_connect_status();
-    if (ret == STATION_GOT_IP)
+    connect_status = wifi_station_get_connect_status();
+    if (connect_status == STATION_GOT_IP)
     {
         debug("Disconnecting.\n");
         ret = wifi_station_disconnect();
         if (!ret)
         {
             error("Cannot disconnect (%d).", ret);
-            return(false);
+            return(ret);
         }
         ret = wifi_station_dhcpc_stop();
         if (!ret)
         {
             error("Cannot stop DHCP client (%d).", ret);
-            return(false);
-        }    
+            return(255);
+        }
     }
-    return(true);
+    return(1);
 }
 
 /**
- * @brief Print the status, from the SDK numeric code.
- * 
- * @param status The status code to print.
+ * @brief Print the status, from the numeric one
+ *
+ * @param status Status of the WIFI connaction as returned from the ESP8266 SDK.
  */
 static void ICACHE_FLASH_ATTR print_status(unsigned char status)
 {
@@ -95,7 +108,7 @@ static void ICACHE_FLASH_ATTR print_status(unsigned char status)
             break;
         case STATION_WRONG_PASSWORD:
             db_printf("Wrong password...\n");
-            break;            
+            break;
         case STATION_NO_AP_FOUND:
             db_printf("Could not find an AP...\n");
             break;
@@ -107,46 +120,39 @@ static void ICACHE_FLASH_ATTR print_status(unsigned char status)
             break;
         default:
             db_printf("Unknown status: %d\n", status);
-            break;    
+            break;
     }
 }  
 
 /**
- * @brief Check if we're connected.
- * 
- * @param connected Pointer to a boolean telling whether we're connected.
- * @return `true`on connection or time out. False otherwise.
+ * @brief Connect to WIFI network.
  */
-bool ICACHE_FLASH_ATTR check_connect(bool *connected)
+static void connect(void)
 {
     struct ip_info  ipinfo;
     unsigned char   ret;
-    unsigned char connect_status;
- 
-    retries--;
-    if (retries == 0)
-    {
-		return(true);
-    }   
+
     //Get connection status
     connect_status = wifi_station_get_connect_status();
     switch(connect_status)
     {
         case STATION_GOT_IP:
             print_status(connect_status);
+            //Stop calling me
+            os_timer_disarm(&connected_timer);
             //Print IP address
             ret = wifi_get_ip_info(STATION_IF, &ipinfo);
             if (!ret)
             {
                 error("Failed get IP address (%d).\n", ret);
-                return(false);
+                return;
             }
             db_printf("Got IP address: %d.%d.%d.%d.\n", IP2STR(&ipinfo.ip) );
-            *connected = true;
-            return(true);
+            //Call callback.
+            wifi_connected_cb();
             break;
         //Not connected
-        case STATION_IDLE: 
+        case STATION_IDLE:
         case STATION_WRONG_PASSWORD:
         case STATION_NO_AP_FOUND:
         case STATION_CONNECT_FAIL:
@@ -154,45 +160,57 @@ bool ICACHE_FLASH_ATTR check_connect(bool *connected)
             //Connect
             if (wifi_station_connect())
             {
-                db_printf("Retrying...\n");
+                db_printf("Retrying WIFI connectiont...\n");
             }
             else
             {
-                error("Failed to connect\n");
+                error("Failed to connect.\n");
             }
-            *connected = false;
-            return(false);
             break;
         default:
-			*connected = false;
-            return(false);
-            break;    
+            print_status(connect_status);
+            break;
+    }
+    retries--;
+    if (retries == 0)
+    {
+        //Reset retries.
+        retries = CONNECT_DELAY_SEC;
+
+        //Stop calling me.
+        os_timer_disarm(&connected_timer);
+
+        wifi_disconnect();
+        //Call the timeout callback.
+        int_timeout_cb();
     }
 }
 
 /**
- * @brief Create an Access Point.
+ * @brief Switch to Access Point mode.
  * 
- * @param ssid The SSID for the AP.
- * @param passwd The password for the AP.
+ * Swithches the ESP8266 to STATIONAP mode, where both AP, and station mode is active.
+ *
+ * @param ssid Pointer to the SSID for the AP.
+ * @param passwd Pointer to the password for the AP.
  * @param channel Channel for the AP.
  */
-static bool ICACHE_FLASH_ATTR create_softap(char *ssid, char *passwd, unsigned char channel)
+static void ICACHE_FLASH_ATTR create_softap(char *ssid, char *passwd, unsigned char channel)
 {
     struct softap_config    ap_config;
     unsigned char           ret;
-    
+
     debug("Creating AP SSID: %s, password: %s, channel %u\n", ssid, passwd, 
           channel);
-          
+
     //Set AP mode.
-    ret = wifi_set_opmode_current(STATIONAP_MODE);
+    ret = wifi_set_opmode(STATIONAP_MODE);
     if (!ret)
     {
         error("Cannot set soft AP mode (%d).", ret);
-        return(false);
+        return;
     }
-              
+
     //Populate the struct, needed to configure the AP.
     os_strcpy((char *)ap_config.ssid, ssid);
     os_strcpy((char *)ap_config.password, passwd);
@@ -204,43 +222,42 @@ static bool ICACHE_FLASH_ATTR create_softap(char *ssid, char *passwd, unsigned c
     //We don't need a lot of connections for our purposes.
     ap_config.max_connection = 2;
     ap_config.beacon_interval = 100;
-    
+
     //Set AP configuration.
     ret = wifi_softap_set_config(&ap_config);
     if (!ret)
     {
         error("Failed to set soft AP configuration (%d).", ret);
-        return(false);
+        return;
     }
-    return(true);
 }
 
 /**
- * @brief Create a default access point.
- * 
- * @param connected Pointer to a boolean, that will be set to true on success.
- * @return `true` on success.
+ * @brief This function is called when a WIFI connection attempt has timed out.
+ *
+ * Creates an access point named ESP+MAC_ADDR with the password of #SOFTAP_PASSWORD.
  */
-bool ICACHE_FLASH_ATTR setup_ap(bool *connected)
+void timeout_cb(void)
 {
     unsigned char           mac[6];
-    char                    ssid[16];
+    char                    ssid[32];
+    char                    passwd[10];
     unsigned char           i;
     char                    temp_str[3];
     unsigned char           ret;
- 
-    debug("WIFI connection time out.\n");   
+
+    debug("WIFI connection time out.\n")
     db_printf("No AP connection. Entering AP configuration mode.\n");
-    
+
     //Get MAC address.
     ret = wifi_get_macaddr(SOFTAP_IF, mac);
     if (!ret)
     {
         error("Cannot get MAC address (%d).", ret);
-        return(false);
+        return;
     }
     debug("MAC: %02x:%02x:%02x:%02x:%02x:%02x\n", MAC2STR(mac));
-    
+
     //Create an AP with SSID "ESP" + MAC address, and password "1234567890".
     //Generate the SSID.
     strcpy(ssid, "ESP\0");
@@ -253,58 +270,65 @@ bool ICACHE_FLASH_ATTR setup_ap(bool *connected)
     //Zero terminator.
     ssid[15] = '\0';
     debug("SSID: %s\n", ssid);
-    
+
+    //The password.
+    strcpy(passwd, SOFTAP_PASSWORD);
+
     //Create the AP.
-    if (create_softap(ssid, SOFTAP_PASSWORD, 6))
-    {
-		*connected = true;
-		return(true);
-	}
-	return(false);
+    create_softap(ssid, passwd, 6);
 }
 
-/**
- * @brief Start connecting to the default access point.
- * 
- * @param connected Pointer to a boolean telling whether we're connected.
- * @param `true` on success (which just means we're connecting).
+/*
+ * @brief Connect to the configured Access Point.
+ *
+ * @param connect_cb Called when a connection has been made, or an AP has been created.
  */
-bool ICACHE_FLASH_ATTR setup_station(bool *connected)
+void ICACHE_FLASH_ATTR wifi_connect(void (*connect_cb)())
 {
-    unsigned char ret = 0;
+    unsigned char   ret = 0;
+
+    //Set callback
+    wifi_connected_cb = connect_cb;
+    int_timeout_cb = timeout_cb;
 
     //Set station mode
     ret = wifi_set_opmode(STATION_MODE);
     if (!ret)
     {
         error("Cannot set station mode (%d).", ret);
-        return(false);
+        return;
     }
     //Get a pointer the configuration data.
-    ret = wifi_station_get_config(&station_conf); 
+    ret = wifi_station_get_config(&station_conf);
     if (!ret)
     {
         error("Cannot get station configuration (%d).", ret);
-        return(false);
+        return;
     }
 
-    debug("Connecting to SSID: %s, password: %s\n", station_conf.ssid, 
+    debug("Connecting to SSID: %s, password: %s\n", station_conf.ssid,
           station_conf.password);
 
     ret = wifi_disconnect();
     if (!ret)
     {
         error("Cannot disconnect (%d).", ret);
-        return(false);
+        return;
     }
-    *connected = false;
-    
+
     //Set connections config.
     ret = wifi_station_set_config(&station_conf);
     if (!ret)
     {
         error("Failed to set station configuration (%d).\n", ret);
-        return(false);
+        return;
     }
-    return(true);
+
+    //Start connection task
+    //Disarm timer
+    os_timer_disarm(&connected_timer);
+    //Setup timer, pass callback as parameter.
+    os_timer_setfn(&connected_timer, (os_timer_func_t *)connect, NULL);
+    //Arm the timer, run every 1 second.
+    os_timer_arm(&connected_timer, 1000, 1);
 }

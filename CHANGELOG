@@ -1,3 +1,9 @@
+2015-06-23 Martin Grønholdt
+
+* net/tcp.c: Reverted to last version before state machine changes.
+*          : Changes getting up to date.
+
+
 2015-06-22 Martin Grønholdt
 
 * net/tcp.h (tcp_connection): Changed sending to boolean.
