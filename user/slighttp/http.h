@@ -41,7 +41,7 @@
 /**
  * @brief The largest block to read from a file, at a time.
  */
-#define HTTP_FILE_CHUNK_SIZE  256
+#define HTTP_FILE_CHUNK_SIZE  512
 /**
  * @brief Size of send buffer.
  */
@@ -167,33 +167,32 @@ struct http_request
     /**
      * @brief Type of HTTP request.
      */
-    enum request_types   type;
+    enum request_types type;
     /**
      * @brief The URI of the HTTP request.
      */
-    char                *uri;
+    char *uri;
     /**
      * @brief The version of the HTTP request.
      */
-    char                *version;
+    char *version;
     /**
      * @brief Headers of the request.
      */
-    struct http_header  *headers;
+    struct http_header *headers;
     /**
      * @brief Number of headers
      */
-     unsigned short     n_headers;
+     unsigned short n_headers;
     /**
      * @brief The message body of the HTTP request.
      */
-    char                *message;
+    char *message;
     /**
      * @brief Response data for the request.
      */
     struct http_response response;
 };
-
 
 /**
  * @brief Callback function to test URIs.

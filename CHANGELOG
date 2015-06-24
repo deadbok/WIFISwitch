@@ -1,3 +1,10 @@
+2015-06-24 Martin Grønholdt
+
+* Removed main state machine files.
+* net/wifi_connect.* (check_connection): Renamed wifi_check_connection.
+* slighttp/http-response.h (http_process_response): Implemented closing of connection.
+* user_main.c (status_check): Printing of status, and reset on loss of connection.
+
 2015-06-23 Martin Grønholdt
 
 * net/wifi_connect.c: Reverted to last version before state machine changes.

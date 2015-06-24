@@ -28,7 +28,6 @@
 #include "tools/missing_dec.h"
 #include "osapi.h"
 #include "user_interface.h"
-#include "sm_types.h"
 
 /**
  * @brief Firmware version.
@@ -52,7 +51,7 @@
 /**
  * @brief How often to check the status in miliseconds.
  */
-#define CHECK_TIME 100
+#define CHECK_TIME 5000
 /**
  * @brief Network connection time-out.
  */

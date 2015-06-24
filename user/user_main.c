@@ -88,6 +88,40 @@ os_timer_t status_timer;
  */
 static void ICACHE_FLASH_ATTR status_check(void)
 {
+	struct tcp_connection *connection;
+	
+	if (wifi_check_connection())
+	{
+		debug("Still connected...\n");
+	}
+	else
+	{
+		db_printf("Network connection lost, restarting...\n");
+		system_restart();
+	}
+	
+	db_mem_list();
+	
+	connection = tcp_get_connections();
+	if (!connection)
+	{
+		debug("No TCP connections.\n");
+	}
+	else
+	{
+		while (connection)
+		{
+			if (connection->conn->state < 6)
+			{
+				debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
+			}
+			else
+			{
+				debug("Connection %p (%p) state unknown (%d).\n", connection, connection->conn, connection->conn->state);
+			}
+			connection = connection->next;
+		}
+	}
 }
 
 /**

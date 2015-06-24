@@ -161,7 +161,7 @@ static void connect(void)
             //Connect
             if (wifi_station_connect())
             {
-                db_printf("Retrying WIFI connectiont...\n");
+                db_printf("Retrying WIFI connection...\n");
             }
             else
             {
@@ -344,7 +344,7 @@ void ICACHE_FLASH_ATTR wifi_connect(void (*connect_cb)(unsigned char wifi_mode))
  * 
  * @return `true`on connection.
  */
-bool ICACHE_FLASH_ATTR check_connection(void)
+bool ICACHE_FLASH_ATTR wifi_check_connection(void)
 {
 	unsigned char ret = 0;
 	

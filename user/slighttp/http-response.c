@@ -30,6 +30,7 @@
 #include "http-common.h"
 #include "http-mime.h"
 #include "http.h"
+#include "http-request.h"
 #include "http-response.h"
 
 /**
@@ -188,7 +189,7 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 		debug("Still sending.\n");
 		return;
 	}
-// Since request was zalloced, request->type will be zero until parsed.
+	//Since request was zalloced, request->type will be zero until parsed.
 	if (request)
 	{
 		if (request->type != HTTP_NONE)
@@ -215,15 +216,22 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 				case HTTP_STATE_STATUS: //Send response
 				case HTTP_STATE_HEADERS:
 				case HTTP_STATE_MESSAGE: debug(" Calling response handler %p.\n",
-											   request->response.handlers->handlers[request->type - 1]);
+											    request->response.handlers->handlers[request->type - 1]);
 										 request->response.handlers->handlers[request->type - 1](request); 
 										 send_buffer(connection);
 										 break;
 				case HTTP_STATE_ASSEMBLED: debug(" Waiting for message dispatch.\n"); 
 										   break;
-				case HTTP_STATE_DONE: if (!((connection->sending) || (!connection->closing)))
+				case HTTP_STATE_DONE: if (!connection->sending)
 									  {
+										  debug("Closing connection %p.\n", connection);
 										  tcp_disconnect(connection);
+										  if (connection->free)
+										  {
+											  request->response.handlers->destroy(connection->free);
+											  http_free_request(connection);
+										  }
+										  tcp_free(connection);
 									  }
 									  break;
 			}

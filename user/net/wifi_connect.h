@@ -24,6 +24,6 @@
 #define WIFI_CONNECT_H
 
 extern void wifi_connect(void (*connect_cb)(unsigned char wifi_mode));
-extern bool check_connection(void);
+extern bool wifi_check_connection(void);
 
 #endif

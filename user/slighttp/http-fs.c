@@ -190,7 +190,7 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 								 //Stop if only HEAD was requested.
 								 if (request->type == HTTP_HEAD)
 								 {
-									 request->response.state = HTTP_STATE_DONE;
+									 request->response.state = HTTP_STATE_ASSEMBLED;
 								 }
 								 else
 								 {
@@ -242,7 +242,7 @@ size_t ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
 				context->transferred += data_left;
 				//We're done sending the message.
 				fs_close(context->file);
-				request->response.state = HTTP_STATE_DONE;
+				request->response.state = HTTP_STATE_ASSEMBLED;
 			}
 		}
 	}
