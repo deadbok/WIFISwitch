@@ -37,7 +37,7 @@
 /**
  * @brief Tell if we will handle a certain URI.
  * 
- * @param uri The URI to test.
+ * @param request The request to handle.
  * @return True if we can handle the URI.
  */
 bool ICACHE_FLASH_ATTR rest_network_test(struct http_request *request)
@@ -45,10 +45,97 @@ bool ICACHE_FLASH_ATTR rest_network_test(struct http_request *request)
     if (os_strncmp(request->uri, "/rest/net/network\0", 18) == 0)
     {
 		debug("Rest handler network found: %s.\n", request->uri);
-        return(false);
+        return(true);
     }
     debug("Rest handler network will not request,\n"); 
     return(false);       
+}
+
+/**
+ * @brief Create the response.
+ * 
+ * @param request Request to respond to..
+ * @return Size of the response.
+ */
+static size_t create_response(struct http_request *request)
+{
+	struct station_config wifi_config;
+	char *response;
+	char *response_pos;
+	    
+    debug("Creating network REST response.\n");
+	
+	response = db_malloc(sizeof(char) * 51, "response create_response");
+	response_pos = response;
+	
+	os_strcpy(response, "{ \"network\" : \"");
+	response_pos += 15;
+
+	if (!wifi_station_get_config(&wifi_config))
+	{
+		error(" Could not get station configuration.\n");
+		return(0);
+	}
+	os_strcpy(response_pos, (char *)wifi_config.ssid);
+	response_pos += os_strlen((char *)wifi_config.ssid);
+	
+	os_strcpy(response_pos, "\" }");
+	response_pos += 3;
+	*response_pos = '\0';
+	
+	request->response.context = response;
+	
+	return(response_pos - response);
+}
+
+/**
+ * @brief Generate the response for a HEAD request from a file.
+ * 
+ * @param request Request that got us here.
+ * @return Return unused.
+ */
+size_t ICACHE_FLASH_ATTR rest_network_head_handler(struct http_request *request)
+{
+	char str_size[16];
+	size_t size;
+	
+	//If the send buffer is over 200 bytes, this should never fill it.
+	debug("REST network HEAD handler.\n");
+	size = create_response(request);
+	switch(request->response.state)
+	{
+		case HTTP_STATE_STATUS:  http_send_status_line(request->connection, request->response.status_code);
+								 //Onwards
+								 request->response.state = HTTP_STATE_HEADERS;
+								 break;
+		case HTTP_STATE_HEADERS: //Always send connections close and server info.
+								 http_send_header(request->connection, 
+												  "Connection",
+											      "close");
+								 http_send_header(request->connection,
+												  "Server",
+												  HTTP_SERVER_NAME);
+								 //Get data size.
+								 os_sprintf(str_size, "%d", size);
+								 //Send message length.
+								 http_send_header(request->connection, 
+												  "Content-Length",
+											      str_size);
+								 http_send_header(request->connection, "Content-Type", http_mime_types[MIME_JSON].type);	
+								 //Send end of headers.
+								 http_send(request->connection, "\r\n", 2);
+								 //Stop if only HEAD was requested.
+								 if (request->type == HTTP_HEAD)
+								 {
+									 request->response.state = HTTP_STATE_ASSEMBLED;
+								 }
+								 else
+								 {
+									 request->response.state = HTTP_STATE_MESSAGE;
+								 }
+								 break;
+	}
+    return(0);
 }
 
 /**
@@ -58,50 +145,29 @@ bool ICACHE_FLASH_ATTR rest_network_test(struct http_request *request)
  * @param request Data for the request that got us here.
  * @return The HTML.
  */
-size_t ICACHE_FLASH_ATTR rest_network(struct http_request *request)
+size_t ICACHE_FLASH_ATTR rest_network_get_handler(struct http_request *request)
 {
-/*	struct station_config wifi_config;
-	char response[51];
-	char *response_pos = response;
-	char buffer[16];
 	size_t msg_size = 0;
 	char *uri = request->uri;
 	    
     debug("In network name REST handler (%s).\n", uri);
 	
-	if (request->type == HTTP_GET)
+	//Don't duplicate, just call the head handler.
+	if (request->response.state < HTTP_STATE_MESSAGE)
 	{
-		http_send_header(request->connection, "Content-Type", http_mime_types[MIME_JSON].type);
-
-		os_strcpy(response, "{ \"network\" : \"");
-		response_pos += 15;
-
-		if (!wifi_station_get_config(&wifi_config))
-		{
-			error(" Could not get station configuration.\n");
-			return(0);
-		}
-		os_strcpy(response_pos, (char *)wifi_config.ssid);
-		response_pos += os_strlen((char *)wifi_config.ssid);
-		
-		os_strcpy(response_pos, "\" }");
-		response_pos += 3;
-		*response_pos = '\0';
-		
-		//Get the size of the message.
-		msg_size = response_pos - response;
-		os_sprintf(buffer, "%d", msg_size);
-		http_send_header(request->connection, "Content-Length", buffer);
-		tcp_send(request->connection, "\r\n", 2);
-		
-		debug(" Response: %s.\n", response);
-		tcp_send(request->connection, response, msg_size);
+		rest_network_head_handler(request);
 	}
-	
-	debug(" Response size: %d.\n", msg_size);
-    return(msg_size);*/
-    
-    return(0);
+	else
+	{
+		msg_size = os_strlen(request->response.context);
+		debug(" Response: %s.\n", (char *)request->response.context);
+		tcp_send(request->connection, request->response.context, msg_size);
+		request->response.state = HTTP_STATE_ASSEMBLED;
+		
+		debug(" Response size: %d.\n", msg_size);
+		return(msg_size);
+	}
+	return(0);
 }
 
 /**
@@ -111,4 +177,8 @@ size_t ICACHE_FLASH_ATTR rest_network(struct http_request *request)
  */
 void ICACHE_FLASH_ATTR rest_network_destroy(struct http_request *request)
 {
+	if (request->response.context)
+	{
+		db_free(request->response.context);
+	}
 }
