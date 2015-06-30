@@ -97,7 +97,7 @@ bool ICACHE_FLASH_ATTR rest_net_names_test(struct http_request *request)
     if (os_strncmp(request->uri, "/rest/net/networks", 18) == 0)
     {
 		debug("Rest handler net-names found: %s.\n", request->uri);
-        return(true);
+        return(false);
     }
     debug("Rest handler net-names will not request,\n"); 
     return(false);  

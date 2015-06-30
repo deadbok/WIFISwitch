@@ -33,7 +33,7 @@
 /**
  * @brief Server version.
  */
-#define HTTP_SERVER_VERSION         "0.0.3"
+#define HTTP_SERVER_VERSION         "0.0.4"
 /**
  * @brief Version of HTTP that is supported.
  */
@@ -100,7 +100,11 @@ enum response_states
     /**
      * @brief All done,
      */
-    HTTP_STATE_DONE
+    HTTP_STATE_DONE,
+    /**
+     * @brief Error that selected handler couldn’t handle.
+     */
+    HTTP_STATE_ERROR 
 };
 /**
  * @brief A HTTP header entry.

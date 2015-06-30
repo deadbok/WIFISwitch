@@ -1,3 +1,20 @@
+2015-06-30 Martin Grønholdt
+
+* debuc.c (db_dealloc): Added check for empty entry in the alloc list.
+* http.h: Upped version.
+
+
+2015-06-29 Martin Grønholdt
+
+* slighttp/http.h (response_states): Added HTTP_STATE_ERROR.
+
+
+2015-06-27 Martin Grønholdt
+
+* slighttp/http-fs.c (http_fs_test): Added error status code handling.
+* slighttp/http-response.c (http_process_response): Handle error status codes.
+*						   (fall_through_status_handler): Handle errors when no one else will.
+
 2015-06-24 Martin Grønholdt
 
 * Removed main state machine files.

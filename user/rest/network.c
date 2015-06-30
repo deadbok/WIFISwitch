@@ -45,7 +45,7 @@ bool ICACHE_FLASH_ATTR rest_network_test(struct http_request *request)
     if (os_strncmp(request->uri, "/rest/net/network\0", 18) == 0)
     {
 		debug("Rest handler network found: %s.\n", request->uri);
-        return(true);
+        return(false);
     }
     debug("Rest handler network will not request,\n"); 
     return(false);       

@@ -13,7 +13,8 @@
  * - File system access.
  * 
  * The server can have different document roots for pages loaded from the file
- * system, but the error pages like `404.html` are always loaded from the root.
+ * system, including error pages like `404.html that are tried if an error
+ * occurs.
  * 
  * **This server is not compliant with HTTP, to save space, stuff has been
  * omitted. It has been built to be small, not fast, and probably breaks in 100

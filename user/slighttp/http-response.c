@@ -27,6 +27,7 @@
 #include "user_config.h"
 #include "net/tcp.h"
 #include "fs/fs.h"
+#include "tools/strxtra.h"
 #include "http-common.h"
 #include "http-mime.h"
 #include "http.h"
@@ -172,7 +173,47 @@ unsigned char ICACHE_FLASH_ATTR http_send(struct tcp_connection *connection, cha
 	 buffer_use = request->response.send_buffer_pos - request->response.send_buffer;
 	 
 	 return(tcp_send(connection, request->response.send_buffer, buffer_use));
- }	 
+ }
+ 
+/**
+ * @brief Last chance error status handler.
+ * 
+ * @param connection Connection to use.
+ * @param status_code The code to handle.
+ */
+void fall_through_status_handler(struct tcp_connection *connection, unsigned short status_code)
+{
+	size_t size = 0;
+	char str_size[5];
+	char *msg = NULL;
+
+	debug("Last chance handler status code %d.\n", status_code);
+	switch (status_code)
+	{
+		case 400: size = HTTP_400_HTML_LENGTH;
+				  msg = HTTP_400_HTML;
+				  break;
+		case 404: size = HTTP_404_HTML_LENGTH;
+				  msg = HTTP_404_HTML;
+				  break;
+		case 501: size = HTTP_501_HTML_LENGTH;
+				  msg = HTTP_501_HTML;
+				  break;
+	}
+	itoa(size, str_size, 10);
+	http_send_status_line(connection, status_code);
+	http_send_header(connection, "Connection", "close");
+	http_send_header(connection, "Server", HTTP_SERVER_NAME);	
+	//Send message length.
+	http_send_header(connection, "Content-Length", str_size);
+	http_send_header(connection, "Content-Type", http_mime_types[MIME_HTML].type);	
+	//Send end of headers.
+	http_send(connection, "\r\n", 2);
+	if (msg)
+	{
+		http_send(connection, msg, size);
+	}
+}
 
 /**
  * @brief Process and send response data for a connection.
@@ -204,13 +245,23 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 			switch (request->response.state)
 			{
 				case HTTP_STATE_FIND: request->response.handlers = http_get_handlers(request);
-									  //No handler found.
-									  if (!request->response.handlers->handlers[request->type - 1])
+									  //No handler found & and there is yet no error.
+									  if ((!request->response.handlers) && (request->response.status_code < 399))
 									  {
+										  //Try again with new status code.
 										  request->response.status_code = 404;
-									  } 
-									  //Next state.
-									  request->response.state = HTTP_STATE_STATUS;
+									  }
+									  else if ((!request->response.handlers) && (request->response.status_code > 399))
+									  {
+										  //No handler will deal with the error.
+										  request->response.state = HTTP_STATE_ERROR;
+									  }
+									  else
+									  {
+										  //Next state.
+										  request->response.state = HTTP_STATE_STATUS;
+									  }
+									  //Do it again, do it agian.
 									  http_process_response(connection);
 									  break;
 				case HTTP_STATE_STATUS: //Send response
@@ -225,15 +276,30 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 				case HTTP_STATE_DONE: if (!connection->sending)
 									  {
 										  debug("Closing connection %p.\n", connection);
-										  tcp_disconnect(connection);
-										  if (connection->free)
+										  //Set by call back if the SDK has already closed the connection
+										  if (!connection->closing)
 										  {
-											  request->response.handlers->destroy(connection->free);
-											  http_free_request(connection);
+											  tcp_disconnect(connection);
 										  }
+										  if (request->response.handlers)
+										  {
+											  request->response.handlers->destroy(request);
+										  }
+										  if (request->response.send_buffer)
+										  {
+											  db_free(request->response.send_buffer);
+										  }
+										  http_free_request(connection);
 										  tcp_free(connection);
 									  }
 									  break;
+				case HTTP_STATE_ERROR: warn("HTTP response status: %d.\n", request->response.status_code);
+									   fall_through_status_handler(connection, request->response.status_code);
+									   send_buffer(connection);
+									   request->response.state = HTTP_STATE_ASSEMBLED;
+						               http_process_response(connection);
+									   break;
+				default: warn("Unknown HTTP response state %d.\n", request->response.state);
 			}
 		}
 	}

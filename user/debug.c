@@ -114,25 +114,28 @@ void ICACHE_FLASH_ATTR db_dealloc(void *ptr)
 #endif
 	while(i < dbg_mem_n_alloc)
 	{
-		if (dbg_mem_alloc_infos[i].ptr == ptr)
+		if (dbg_mem_alloc_infos[i].ptr)
 		{
-			db_printf(" [%p] size %d info: %s.\n",
-					  dbg_mem_alloc_infos[i].ptr,
-					  dbg_mem_alloc_infos[i].size,
-					  dbg_mem_alloc_infos[i].info);
+			if (dbg_mem_alloc_infos[i].ptr == ptr)
+			{
+				db_printf(" [%p] size %d info: %s.\n",
+						  dbg_mem_alloc_infos[i].ptr,
+						  dbg_mem_alloc_infos[i].size,
+						  dbg_mem_alloc_infos[i].info);
 
-			//Move the last entry here.
-			os_memcpy(dbg_mem_alloc_infos + i, dbg_mem_alloc_infos + dbg_mem_n_alloc - 1, sizeof(struct dbg_mem_alloc_info));
-		}
+				//Move the last entry here.
+				os_memcpy(dbg_mem_alloc_infos + i, dbg_mem_alloc_infos + dbg_mem_n_alloc - 1, sizeof(struct dbg_mem_alloc_info));
+			}
 #ifdef DEBUG_MEM_LIST
-		else
-		{
-			db_printf("  %p size %d info: %s.\n",
-					  dbg_mem_alloc_infos[i].ptr,
-					  dbg_mem_alloc_infos[i].size,
-					  dbg_mem_alloc_infos[i].info);
-		}
+			else
+			{
+				db_printf("  %p size %d info: %s.\n",
+						  dbg_mem_alloc_infos[i].ptr,
+						  dbg_mem_alloc_infos[i].size,
+						  dbg_mem_alloc_infos[i].info);
+			}
 #endif
+		}
 		i++;
 	}
 	os_free(ptr);

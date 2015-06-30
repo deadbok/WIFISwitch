@@ -31,6 +31,7 @@
 #include "user_interface.h"
 #include "user_config.h"
 #include "fs/fs.h"
+#include "tools/strxtra.h"
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
 #include "slighttp/http-response.h"
@@ -78,6 +79,15 @@ bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
 	//Check if we've already done this.
 	if (!request->response.context)
 	{
+		//Return an error page, if status says so.
+		if (request->response.status_code > 399)
+		{
+			uri = db_malloc(sizeof(char) * 10, "uri http_fs_test");
+			uri[0] = '/';
+			itoa(request->response.status_code, uri + 1, 10);
+			os_memcpy(uri + 4, ".html\0", 6);
+			debug(" Status not 200 using URI %s.\n", uri);
+		}	
 		//Skip first slash;
 		uri++;
 		//Change an '/' uri into 'index.html'.
@@ -117,6 +127,12 @@ bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
 		context = db_malloc(sizeof(struct http_fs_context), "context http_fs_test");
 		context->filename = fs_uri;
 		request->response.context = context;
+		
+		//Free URI if needed.
+		if (request->response.status_code > 399)
+		{
+			db_free(--uri);
+		}
 	}
 	else
 	{
@@ -132,6 +148,8 @@ bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
 		context->transferred = 0;		
 		return(true);
 	}
+	//Free data since no one should need them.
+	http_fs_destroy(request);
 	debug("No file system handler found.\n");
     return(false);  
 }

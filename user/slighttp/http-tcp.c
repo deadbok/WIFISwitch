@@ -60,9 +60,18 @@ void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
  */
 void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
 {
-    //struct http_request *request;
+    struct http_request *request;
     
     debug("HTTP reconnect (%p).\n", connection);
+    
+    /*request = connection->free;
+    if (request->response.handlers)
+    {
+		request->response.handlers->destroy(connection->free);
+	}*/
+    http_process_response(connection);
+    
+    tcp_disconnect(connection);
     
 /*    if (connection->free)
     {
@@ -82,8 +91,14 @@ void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
  * @param connection Pointer to the connection that has disconnected. 
  */
 void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
-{ 
+{
+	struct http_request *request = connection->free;
+	
     debug("HTTP disconnect (%p).\n", connection);
+    connection->closing = true;
+	request->response.state = HTTP_STATE_DONE;
+	//Call one last time to clean up.
+	http_process_response(connection);
 }
 
 /**
@@ -134,10 +149,10 @@ void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
 	
 	request->response.send_buffer_pos = request->response.send_buffer;
 	//This was the end of a message. Signal that it is send.
-	debug("Response state: %d.\n", request->response.state);
+	debug(" Response state: %d.\n", request->response.state);
 	if (request->response.state == HTTP_STATE_ASSEMBLED)
 	{
-		debug("Message end.\n");
+		debug(" Message end.\n");
 		request->response.state = HTTP_STATE_DONE;
 		//Call one last time to clean up.
 		http_process_response(connection);
