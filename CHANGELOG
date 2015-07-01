@@ -3,12 +3,15 @@
 * debug.c (db_dealloc): Added check for empty entry in the alloc list.
 * slighttp/http.h: Upped version.
 * response_handlers.h: Added rest_network_head_handler.
-* rest/network.c: Added rest_network_head_handler.
+* response_handlers.h: Added rest_net_names handlers.
+* rest/network.c: Added rest_net_names_head_handler.
 *				: Added create_response.
 *				 (rest_network): Renamed rest_network_get_handler.
+* rest/net-names.c: Added rest_network_head_handler.
+*				  : Added create_response.
+*				   (rest_net_names): Renamed rest_net_names_get_handler.
 * rest/network.h: Added rest_network_head_handler.
 * net/tcp (tcp_sent_cb): Check if connection is NULL.
-
 
 
 2015-06-29 Martin Grønholdt
