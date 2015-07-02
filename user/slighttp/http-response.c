@@ -256,6 +256,16 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 										  //No handler will deal with the error.
 										  request->response.state = HTTP_STATE_ERROR;
 									  }
+									  else if ((!request->response.handlers->handlers[request->type - 1]) && (request->response.status_code < 399))
+									  {
+										  //Try again with new status code.
+										  request->response.status_code = 404;
+									  }
+									  else if ((!request->response.handlers->handlers[request->type - 1]) && (request->response.status_code > 399))
+									  {
+										  //No handler will deal with the error.
+										  request->response.state = HTTP_STATE_ERROR;
+									  }
 									  else
 									  {
 										  //Next state.

@@ -1,3 +1,8 @@
+2015-07-02 Martin Grønholdt
+
+* slighttp/http-response.c (http_process_response): Handle specific method handler missing.
+
+
 2015-06-30 Martin Grønholdt
 
 * debuc.c (db_dealloc): Added check for empty entry in the alloc list.
