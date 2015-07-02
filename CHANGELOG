@@ -1,3 +1,8 @@
+2015-07-01 Martin Grønholdt
+
+* fs/connect/index.html: Status message, and better REST call timer.
+
+
 2015-06-30 Martin Grønholdt
 
 * debug.c (db_dealloc): Added check for empty entry in the alloc list.

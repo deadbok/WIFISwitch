@@ -38,9 +38,7 @@
  *
  * The ESP8266 SDK is a strange beast, it seems a mix of procedural and event
  * driven. The WIFI functions do not use call backs, while the TCP functions
- * do. A little consistency would be nice here, a call back when the connection
- * is lost? But no. Oh and there are bugs, at least that's how I see them, like
- * the TCP disconnect call back, getting passed a mostly unusable parameter.
+ * do.
  *
  * After trying to force a procedural scheme on it all, and chasing the same
  * shortcoming into a corner, I finally realised that, I was working against
@@ -56,15 +54,9 @@
  * up with one more response to send. Stuff will get lost, and things will not
  * behave as expected.
  *
- * I ended up dreaming about my Delphi days (something that I almost never do),
- * and that call, that you could make to get the system to do some processing,
- * while you where in a long chunk of code; But in the SDK there is none.
- * Instead no user code may run for more than 10ms, the docs says. To
- * accomplish this, a state machine seems a good solution. The state machine
- * is triggered at regular intervals using the one timer available. The TCP
- * request is still handled in the receive call back, but the sending code
- * is running in the state machine, which allows me to split the response
- * into chunks, and give back control to the SDK between sending each one.
+ * The SDK staes that you can not send another TCP packet, before the call back
+ * has signalled that the current one is done. All function sending TCP must
+ * therefore be able to split the send data, over consecutive calls. 
  */
 #include "ets_sys.h"
 #include "osapi.h"
