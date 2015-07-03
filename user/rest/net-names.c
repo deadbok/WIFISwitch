@@ -94,7 +94,7 @@ static char ICACHE_FLASH_ATTR *json_create_string_array(char **values, size_t en
  */
 bool ICACHE_FLASH_ATTR rest_net_names_test(struct http_request *request)
 {
-    if (os_strncmp(request->uri, "/rest/net/networks", 18) == 0)
+    if (os_strncmp(request->uri, "/rest/net/networks\0", 19) == 0)
     {
 		debug("Rest handler net-names found: %s.\n", request->uri);
         return(true);

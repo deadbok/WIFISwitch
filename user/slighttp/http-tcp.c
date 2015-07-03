@@ -64,7 +64,7 @@ void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
     
     http_process_response(connection);
     
-    tcp_disconnect(connection);
+    //tcp_disconnect(connection);
 }
 
 /**

@@ -1,6 +1,8 @@
 2015-07-02 Martin Grønholdt
 
 * slighttp/http-commen.*: Added get_header_value.
+* slighttp/http-tcp.c (tcp_reconnect_cb): Don't disconnect, everything chrashes.
+* slighttp/http-request.c (http_parse_headers): Get message if any.
 
 
 2015-07-02 Martin Grønholdt

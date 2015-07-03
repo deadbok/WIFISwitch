@@ -248,8 +248,11 @@ static char ICACHE_FLASH_ATTR *http_parse_headers(struct http_request *request,
     {
 		debug(" Message length: %s.\n", value);
 		size = atoi(value);
+		value = db_malloc(sizeof(char) * (size + 1), "value http_parse_headers");
+		memcpy(value, next_data, size);
+		value[size] = '\0';
 	}
-    return(next_data);
+    return(value);
 }
 
 /**
@@ -355,6 +358,10 @@ void ICACHE_FLASH_ATTR http_free_request(struct tcp_connection *connection)
 				db_free(request->headers[i].value);
 			}
 			db_free(request->headers);
+		}
+		if (request->message)
+		{
+			db_free(request->message);
 		}
 		db_free(request);
 		connection->free = NULL;

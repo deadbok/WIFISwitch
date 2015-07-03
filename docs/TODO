@@ -9,5 +9,6 @@ TODO
  |http-responce.c   | http_generate_response        | Return 404 page, when the function itself has not found a page.      |
  |http-responce.c   | http_generate_response        | Fix bug that shortens message length, and free the pointer.          |
  |tcp.c             | tcp_reconnect_cb              | Maybe close the connection.                                          |
- |sm_http.c         | http_mutter_med_kost_og_spand | Figure out if a disconnect callback is still needed.                 |
  |http-fs.c         | http_fs_head_handler          | Prevent opening and closing the file, if called from the GET request.|
+ |http-tcp.c        | tcp_reconnect_cb              | Disconnect crashes the firmware.                                     |
+ 
