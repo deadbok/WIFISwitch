@@ -23,6 +23,7 @@
  */ 
 #ifndef HTTP_COMMON_H
 #define HTTP_COMMON_H
+#include "slighttp/http-request.h"
 
 /**
  * @brief Eat initial spaces.
@@ -89,6 +90,7 @@ struct http_response_handler *response_handlers;
  */
 unsigned short n_response_handlers;
 
+extern char *get_header_value(struct http_request *request, char *name);
 extern void print_clf_status(struct tcp_connection *connection, 
                              char *status_code, size_t length);
 

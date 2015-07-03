@@ -61,6 +61,27 @@ bool ICACHE_FLASH_ATTR is_header_value(struct http_request *request, char *name,
 }
 
 /**
+ * @brief Get the value of a header by name.
+ * 
+ * @param request HTTP request to look for the header in.
+ * @param name Name of the header.
+ * @return NULL if not found. The value if found.
+ */
+char ICACHE_FLASH_ATTR *get_header_value(struct http_request *request, char *name)
+{
+	unsigned short i;
+	
+	for (i = 0; i < request->n_headers; i++)
+	{
+        if (os_strcmp(request->headers[i].name, name) == 0)
+        {
+            return(request->headers[i].value);
+        }
+    }
+    return(NULL);
+}		
+
+/**
  * @brief Print a Common Log Format message to the console.
  * 
  * Log access to the web server to console in a standardized text file format:

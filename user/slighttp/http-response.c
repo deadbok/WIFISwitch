@@ -246,25 +246,33 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 			{
 				case HTTP_STATE_FIND: request->response.handlers = http_get_handlers(request);
 									  //No handler found & and there is yet no error.
-									  if ((!request->response.handlers) && (request->response.status_code < 399))
+									  if (!request->response.handlers)
 									  {
-										  //Try again with new status code.
-										  request->response.status_code = 404;
+										  debug(" No handlers.\n");
+										  if (request->response.status_code < 399)
+										  {
+											  //Try again with new status code.
+											  request->response.status_code = 404;
+										  }
+										  else
+										  {
+											  //No handler will deal with the error.
+											  request->response.state = HTTP_STATE_ERROR;
+										  }
 									  }
-									  else if ((!request->response.handlers) && (request->response.status_code > 399))
+									  else if (!request->response.handlers->handlers[request->type - 1])
 									  {
-										  //No handler will deal with the error.
-										  request->response.state = HTTP_STATE_ERROR;
-									  }
-									  else if ((!request->response.handlers->handlers[request->type - 1]) && (request->response.status_code < 399))
-									  {
-										  //Try again with new status code.
-										  request->response.status_code = 404;
-									  }
-									  else if ((!request->response.handlers->handlers[request->type - 1]) && (request->response.status_code > 399))
-									  {
-										  //No handler will deal with the error.
-										  request->response.state = HTTP_STATE_ERROR;
+										  debug(" No handler.\n");
+										  if (request->response.status_code < 399)
+										  {
+											  //Try again with new status code.
+											  request->response.status_code = 404;
+										  }
+										  else
+										  {
+											  //No handler will deal with the error.
+											  request->response.state = HTTP_STATE_ERROR;
+										  }
 									  }
 									  else
 									  {

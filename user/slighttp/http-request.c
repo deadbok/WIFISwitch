@@ -241,6 +241,14 @@ static char ICACHE_FLASH_ATTR *http_parse_headers(struct http_request *request,
 	}
     request->headers = headers;
     request->n_headers = n_headers;
+    
+    //Get length of message data if any.
+    value = get_header_value(request, "content-length");
+    if (value)
+    {
+		debug(" Message length: %s.\n", value);
+		size = atoi(value);
+	}
     return(next_data);
 }
 
@@ -248,7 +256,8 @@ static char ICACHE_FLASH_ATTR *http_parse_headers(struct http_request *request,
  * @brief Parse the start-line and header fields.
  * 
  * Parse the start-line and header fields of a HTTP request. Put the whole thing
- * in a #http_request and add it to the #tcp_connection data.
+ * in a #http_request and add it to the #tcp_connection data. Any additional
+ * data ends up in request.message.
  * 
  * @param connection Pointer to the connection data.
  * @return `true`on success.

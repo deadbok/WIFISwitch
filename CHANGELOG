@@ -1,5 +1,10 @@
 2015-07-02 Martin Grønholdt
 
+* slighttp/http-commen.*: Added get_header_value.
+
+
+2015-07-02 Martin Grønholdt
+
 * slighttp/http-response.c (http_process_response): Handle specific method handler missing.
 
 
