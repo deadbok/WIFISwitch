@@ -1,21 +1,23 @@
 <!DOCTYPE html><head>
 <title>Network connection setup.</title>
 <link href="css/min.css" rel="stylesheet" type="text/css" />
+<link href="css/colour.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
 <h1>Network connection setup</h1>
 <p>Current configured network: <div id="network"></div></p>
 <form action="/ap_set.html" method="POST">
 Networks: 
-<select id="networks">
+<select id="networks" onchange="networkSelect()">
 <option value="nets" class="smooth">Networks...</option>
 </select>
 </form>
-<p id="json"></p>
+<div class="msg" id="scnstat">
+	<strong>Scanning!</strong>
+	Still scanning for WIFI networks.
+</div>
 <script src="js/atomic.min.js"></script>
 <script>
-	
-var done = false;
 var pending = false;
 
 function populateNetworks(networks)
@@ -32,37 +34,46 @@ function populateNetworks(networks)
 	for (var i = 0; i < networks.length; i++)
 	{
 		netSelect.options[netSelect.options.length] = new Option(networks[i], networks[i], false, false);
+		var scnstat = document.getElementById("scnstat");
+		scnstat.className += " great";
+		scnstat.innerHTML = "<strong>Done!</strong> WIFI networks have been scanned.";
+		clearInterval(nameTimer);
 	}
 }
 	
 function getNetworks()
 {
-	pending = true;
-	atomic.get('/rest/net/networks')
+	if (!pending)
+	{
+		pending = true;
+		atomic.get('/rest/net/networks')
+		.success(function (data, xhr) 
+		{
+			populateNetworks(data);
+			pending = false;
+		})
+		.error(function (data, xhr) 
+		{
+			populateNetworks(new Array("Error..."));
+			pending = false;
+		});
+	}
+}
+
+function networkSelect()
+{
+    var networkName = document.getElementById("networks").value;
+    var network = document.getElementById("network");
+    
+    atomic.put('/rest/net/network', networkName)
 	.success(function (data, xhr) 
 	{
-		populateNetworks(data);
-		done = true;
-		pending = false;
+		network.innerHTML = networkName;
 	})
 	.error(function (data, xhr) 
 	{
-		populateNetworks(new Array("Error..."));
-		pending = false;
+		network.innerHTML = "Could not set network name.";
 	});
-}
-
-function retryGet()
-{
-	if (!pending)
-	{
-		getNetworks();		
-	}
-	if (!done)
-	{
-		setTimeout(retryGet, 2000);
-	}
-
 }
 
 var network = document.getElementById("network");
@@ -77,7 +88,7 @@ atomic.get('/rest/net/network')
 	network.innerHTML = "Error: Could not get default network name.";
 });
 	
-retryGet();
+var nameTimer = setInterval(getNetworks, 2000);
 </script>
 </body>
 </html>

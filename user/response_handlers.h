@@ -55,8 +55,8 @@ static struct http_response_handler response_handlers[N_RESPONSE_HANDLERS] =
 		rest_network_test,
 		{
 			NULL,
-			rest_network,
-			NULL,
+			rest_network_get_handler,
+			rest_network_head_handler,
 			NULL,
 			NULL,
 			NULL,
@@ -69,8 +69,8 @@ static struct http_response_handler response_handlers[N_RESPONSE_HANDLERS] =
 		rest_net_names_test,
 		{
 			NULL,			 
-			rest_net_names,
-			NULL,
+			rest_net_names_get_handler,
+			rest_net_names_head_handler,
 			NULL,
 			NULL,
 			NULL,

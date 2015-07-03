@@ -59,27 +59,12 @@ void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
  * @param connection Pointer to the connection that has had an error.
  */
 void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
-{
-    struct http_request *request;
-    
+{  
     debug("HTTP reconnect (%p).\n", connection);
     
-    /*request = connection->free;
-    if (request->response.handlers)
-    {
-		request->response.handlers->destroy(connection->free);
-	}*/
     http_process_response(connection);
     
     tcp_disconnect(connection);
-    
-/*    if (connection->free)
-    {
-		request = connection->free;
-		//Retry sending.
-		request->response.state = HTTP_STATE_NONE;
-	}*/
-	//tcp_disconnect(connection);
 }
 
 /**

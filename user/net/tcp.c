@@ -403,17 +403,20 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
     struct tcp_connection *connection = conn->reverse;
     
     debug("TCP sent (%p).\n", connection);
-    connection->sending = false;
-	
-    //Clear previous data.
-    os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
-    //Set new data
-    connection->callback_data.arg = arg;
-    //Call call back.
-    if (listening_connection->callbacks.sent_callback != NULL)
+    if (connection)
     {
-        listening_connection->callbacks.sent_callback(connection);
-    }
+		connection->sending = false;
+		
+		//Clear previous data.
+		os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
+		//Set new data
+		connection->callback_data.arg = arg;
+		//Call call back.
+		if (listening_connection->callbacks.sent_callback != NULL)
+		{
+			listening_connection->callbacks.sent_callback(connection);
+		}
+	}
 }	
 
 /** 

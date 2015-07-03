@@ -97,7 +97,7 @@ bool ICACHE_FLASH_ATTR rest_net_names_test(struct http_request *request)
     if (os_strncmp(request->uri, "/rest/net/networks", 18) == 0)
     {
 		debug("Rest handler net-names found: %s.\n", request->uri);
-        return(false);
+        return(true);
     }
     debug("Rest handler net-names will not request,\n"); 
     return(false);  
@@ -170,6 +170,89 @@ static void scan_done_cb(void *arg, STATUS status)
 	updating = false;
 }
 
+static size_t create_response(struct http_request *request)
+{
+	char *response = NULL;
+	    
+    debug("Creating network names REST response.\n");
+
+	if (!updating)
+	{
+		if (n_aps && ap_ssids)
+		{
+			response = json_create_string_array(ap_ssids, n_aps);
+		}
+
+		debug(" Starting scan.\n");
+		if (wifi_station_scan(NULL, &scan_done_cb))
+		{
+			debug(" Scanning for AP's.\n");
+		}
+		else
+		{
+			error(" Could not scan AP's.\n");
+		}				
+	}
+	if (!response)
+	{
+		response = db_malloc(sizeof(char) * 3, "ret rest_net_names_html");
+		os_memcpy(response, "[]\0", sizeof(char) * 3);
+	}
+	request->response.context = response;
+	//Get the size of the message.
+	return(os_strlen(response));
+}
+
+/**
+ * @brief Generate the response for a HEAD request from a file.
+ * 
+ * @param request Request that got us here.
+ * @return Return unused.
+ */
+size_t ICACHE_FLASH_ATTR rest_net_names_head_handler(struct http_request *request)
+{
+	char str_size[16];
+	size_t size;
+	
+	//If the send buffer is over 200 bytes, this should never fill it.
+	debug("REST network names HEAD handler.\n");
+	size = create_response(request);
+	switch(request->response.state)
+	{
+		case HTTP_STATE_STATUS:  http_send_status_line(request->connection, request->response.status_code);
+								 //Onwards
+								 request->response.state = HTTP_STATE_HEADERS;
+								 break;
+		case HTTP_STATE_HEADERS: //Always send connections close and server info.
+								 http_send_header(request->connection, 
+												  "Connection",
+											      "close");
+								 http_send_header(request->connection,
+												  "Server",
+												  HTTP_SERVER_NAME);
+								 //Get data size.
+								 os_sprintf(str_size, "%d", size);
+								 //Send message length.
+								 http_send_header(request->connection, 
+												  "Content-Length",
+											      str_size);
+								 http_send_header(request->connection, "Content-Type", http_mime_types[MIME_JSON].type);	
+								 //Send end of headers.
+								 http_send(request->connection, "\r\n", 2);
+								 //Stop if only HEAD was requested.
+								 if (request->type == HTTP_HEAD)
+								 {
+									 request->response.state = HTTP_STATE_ASSEMBLED;
+								 }
+								 else
+								 {
+									 request->response.state = HTTP_STATE_MESSAGE;
+								 }
+								 break;
+	}
+    return(0);
+}
+
 /**
  * @brief Generate a JSON array of available access points.
  * 
@@ -177,54 +260,29 @@ static void scan_done_cb(void *arg, STATUS status)
  * @param request Data for the request that got us here.
  * @return The JSON.
  */
-size_t ICACHE_FLASH_ATTR rest_net_names(struct http_request *request)
+size_t ICACHE_FLASH_ATTR rest_net_names_get_handler(struct http_request *request)
 {
-/*    char *response = NULL;
-	char buffer[16];
 	size_t msg_size = 0;
 	char *uri = request->uri;
 	    
     debug("In network names REST handler (%s).\n", uri);
-
-	if (request->type == HTTP_GET)
-	{
-		http_send_header(request->connection, "Content-Type", http_mime_types[MIME_JSON].type);
-		
-		if (!updating)
-		{
-			if (n_aps && ap_ssids)
-			{
-				response = json_create_string_array(ap_ssids, n_aps);
-			}
-
-			debug(" Starting scan.\n");
-			if (wifi_station_scan(NULL, &scan_done_cb))
-			{
-				debug(" Scanning for AP's.\n");
-			}
-			else
-			{
-				error(" Could not scan AP's.\n");
-			}				
-		}
-		if (!response)
-		{
-			response = db_malloc(sizeof(char) * 3, "ret rest_net_names_html");
-			os_memcpy(response, "[]\0", sizeof(char) * 3);
-		}
-		//Get the size of the message.
-		msg_size = os_strlen(response);
-		os_sprintf(buffer, "%d", msg_size);
-		http_send_header(request->connection, "Content-Length", buffer);
-		tcp_send(request->connection, "\r\n", 2);
-				
-		debug(" Response: %s.\n", response);
-		tcp_send(request->connection, response, msg_size);
-	}
 	
-	debug(" Response size: %d.\n", msg_size);
-    return(msg_size);*/
-    return(0);
+	//Don't duplicate, just call the head handler.
+	if (request->response.state < HTTP_STATE_MESSAGE)
+	{
+		rest_net_names_head_handler(request);
+	}
+	else
+	{
+		msg_size = os_strlen(request->response.context);
+		debug(" Response: %s.\n", (char *)request->response.context);
+		tcp_send(request->connection, request->response.context, msg_size);
+		request->response.state = HTTP_STATE_ASSEMBLED;
+		
+		debug(" Response size: %d.\n", msg_size);
+		return(msg_size);
+	}
+	return(0);
 }
 
 /**
@@ -234,4 +292,8 @@ size_t ICACHE_FLASH_ATTR rest_net_names(struct http_request *request)
  */
 void ICACHE_FLASH_ATTR rest_net_names_destroy(struct http_request *request)
 {
+	if (request->response.context)
+	{
+		db_free(request->response.context);
+	}
 }
