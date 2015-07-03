@@ -41,6 +41,10 @@
  */
 #define HTTP_STATUS_200 HTTP_STATUS_LINE("200", "OK")
 /**
+ * @brief HTTP 204 No content response.
+ */
+#define HTTP_STATUS_204 HTTP_STATUS_LINE("204", "No Content")
+/**
  * @brief HTTP 400 bad request.
  */
 #define HTTP_STATUS_400 HTTP_STATUS_LINE("400", "Bad Request")

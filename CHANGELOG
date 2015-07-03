@@ -1,5 +1,10 @@
 2015-07-02 Martin Grønholdt
 
+* slighttp/http-response.c: Added http_status_line_204.
+*						   (http_send_status_line): Added 204.
+* slighttp/http-response.h: Added HTTP_STATUS_204.
+* rest/network.c: Added rest_network_put_handler.
+* rest/rest.h: Added rest_network_put_handler.
 * slighttp/http-commen.*: Added get_header_value.
 * slighttp/http-tcp.c (tcp_reconnect_cb): Don't disconnect, everything chrashes.
 * slighttp/http-request.c (http_parse_headers): Get message if any.

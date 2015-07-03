@@ -28,6 +28,7 @@
 extern bool rest_network_test(struct http_request *request);
 extern size_t rest_network_head_handler(struct http_request *request);
 extern size_t rest_network_get_handler(struct http_request *request);
+extern size_t rest_network_put_handler(struct http_request *request);
 extern void rest_network_destroy(struct http_request *request);
 
 //Scan for access points.

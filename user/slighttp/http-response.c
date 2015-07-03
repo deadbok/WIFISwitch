@@ -39,6 +39,10 @@
  */
 char *http_status_line_200 = HTTP_STATUS_200;
 /**
+ * @brief 204 status-line.
+ */
+char *http_status_line_204 = HTTP_STATUS_204;
+/**
  * @brief 400 status-line.
  */
 char *http_status_line_400 = HTTP_STATUS_400;
@@ -86,6 +90,8 @@ unsigned char ICACHE_FLASH_ATTR http_send_status_line(struct tcp_connection *con
 	switch (status_code)
 	{
 		case 200: ret = http_send(connection, http_status_line_200, os_strlen(http_status_line_200));
+				  break;
+		case 204: ret = http_send(connection, http_status_line_204, os_strlen(http_status_line_204));
 				  break;
 		case 400: ret = http_send(connection, http_status_line_400, os_strlen(http_status_line_400));
 				  break;

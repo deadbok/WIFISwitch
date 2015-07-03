@@ -141,9 +141,8 @@ size_t ICACHE_FLASH_ATTR rest_network_head_handler(struct http_request *request)
 /**
  * @brief Generate the HTML for configuring the network connection.
  * 
- * @param uri The URI to answer.
  * @param request Data for the request that got us here.
- * @return The HTML.
+ * @return Size of the return massage.
  */
 size_t ICACHE_FLASH_ATTR rest_network_get_handler(struct http_request *request)
 {
@@ -170,6 +169,36 @@ size_t ICACHE_FLASH_ATTR rest_network_get_handler(struct http_request *request)
 	return(0);
 }
 
+/**
+ * @brief Set the network name for the WIFI connection.
+ * 
+ * @param request Data for the request that got us here.
+ * @return The HTML.
+ */
+size_t ICACHE_FLASH_ATTR rest_network_put_handler(struct http_request *request)
+{
+	size_t msg_size = 0;
+	char *uri = request->uri;
+	    
+    debug("In network name REST handler (%s).\n", uri);
+	
+	//Don't duplicate, just call the head handler.
+	if (request->response.state < HTTP_STATE_MESSAGE)
+	{
+		rest_network_head_handler(request);
+	}
+	else
+	{
+		msg_size = os_strlen(request->response.context);
+		debug(" Response: %s.\n", (char *)request->response.context);
+		tcp_send(request->connection, request->response.context, msg_size);
+		request->response.state = HTTP_STATE_ASSEMBLED;
+		
+		debug(" Response size: %d.\n", msg_size);
+		return(msg_size);
+	}
+	return(0);
+}
 /**
  * @brief Deallocate memory used for the HTML.
  * 
