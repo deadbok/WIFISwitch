@@ -1,5 +1,7 @@
 2015-07-02 Martin Grønholdt
 
+* Makefile: Added JSON lib.
+* response_handlers.h: Added rest_network_put_handler.
 * slighttp/http-response.c: Added http_status_line_204.
 *						   (http_send_status_line): Added 204.
 * slighttp/http-response.h: Added HTTP_STATUS_204.

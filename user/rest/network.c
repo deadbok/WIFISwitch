@@ -29,6 +29,7 @@
 #include "eagle_soc.h"
 #include "osapi.h"
 #include "user_interface.h"
+#include "json/jsonparse.h"
 #include "user_config.h"
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
@@ -149,7 +150,7 @@ size_t ICACHE_FLASH_ATTR rest_network_get_handler(struct http_request *request)
 	size_t msg_size = 0;
 	char *uri = request->uri;
 	    
-    debug("In network name REST handler (%s).\n", uri);
+    debug("In network name GET REST handler (%s).\n", uri);
 	
 	//Don't duplicate, just call the head handler.
 	if (request->response.state < HTTP_STATE_MESSAGE)
@@ -177,25 +178,42 @@ size_t ICACHE_FLASH_ATTR rest_network_get_handler(struct http_request *request)
  */
 size_t ICACHE_FLASH_ATTR rest_network_put_handler(struct http_request *request)
 {
-	size_t msg_size = 0;
+	struct jsonparse_state state;
 	char *uri = request->uri;
+	char net_name[32];
+	int type;
+	struct station_config sc;
 	    
-    debug("In network name REST handler (%s).\n", uri);
-	
-	//Don't duplicate, just call the head handler.
-	if (request->response.state < HTTP_STATE_MESSAGE)
+    debug("In network name PUT REST handler (%s).\n", uri);
+    
+	if (request->response.state == HTTP_STATE_STATUS)
 	{
-		rest_network_head_handler(request);
-	}
-	else
-	{
-		msg_size = os_strlen(request->response.context);
-		debug(" Response: %s.\n", (char *)request->response.context);
-		tcp_send(request->connection, request->response.context, msg_size);
-		request->response.state = HTTP_STATE_ASSEMBLED;
+		http_send_status_line(request->connection, 204);
+		debug(" Network selected: %s.\n", request->message);
 		
-		debug(" Response size: %d.\n", msg_size);
-		return(msg_size);
+		jsonparse_setup(&state, request->message, os_strlen(request->message));
+		while ((type = jsonparse_next(&state)) != 0)
+		{
+			if (type == JSON_TYPE_PAIR_NAME)
+			{
+				if (jsonparse_strcmp_value(&state, "network") == 0)
+				{
+					debug(" Found network value in JSON.\n");
+                    jsonparse_next(&state);
+                    jsonparse_next(&state);
+                    jsonparse_copy_value(&state, net_name, sizeof(net_name));
+                    debug(" Name: %s.\n", net_name);
+
+					sc.bssid_set = 0;
+					//need not check MAC address of AP
+				   
+					os_memcpy(&sc.ssid, net_name, 32);
+					sc.password[0] = '\0';
+					wifi_station_set_config(&sc);
+				}
+			}
+		}
+		request->response.state = HTTP_STATE_ASSEMBLED;
 	}
 	return(0);
 }

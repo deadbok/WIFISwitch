@@ -58,7 +58,7 @@ static struct http_response_handler response_handlers[N_RESPONSE_HANDLERS] =
 			rest_network_get_handler,
 			rest_network_head_handler,
 			NULL,
-			NULL,
+			rest_network_put_handler,
 			NULL,
 			NULL,
 			NULL

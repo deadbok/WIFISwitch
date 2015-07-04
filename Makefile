@@ -47,7 +47,7 @@ EXTRA_INCDIR    = include
 FS_DIR		?= fs
 
 # libraries used in this project, mainly provided by the SDK
-LIBS		= c gcc hal pp phy net80211 lwip wpa main
+LIBS		= c gcc hal pp phy net80211 lwip wpa main json
 
 # compiler flags using during compilation of source files
 CFLAGS		= -Os -g -O2 -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
