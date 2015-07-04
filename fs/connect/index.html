@@ -65,7 +65,7 @@ function networkSelect()
     var networkName = document.getElementById("networks").value;
     var network = document.getElementById("network");
     
-    atomic.put('/rest/net/network', networkName)
+    atomic.put('/rest/net/network', "{ \"network\" : \"" + networkName + "\" }")
 	.success(function (data, xhr) 
 	{
 		network.innerHTML = networkName;
