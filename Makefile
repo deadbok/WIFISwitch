@@ -97,7 +97,7 @@ OBJ			:= $(patsubst %.c,$(BUILD_BASE)/%.o,$(SRC))
 LIBS		:= $(addprefix -l,$(LIBS))
 APP_AR		:= $(addprefix $(BUILD_BASE)/,$(TARGET)_app.a)
 TARGET_OUT	:= $(addprefix $(BUILD_BASE)/,$(TARGET).out)
-FS_FILES	:= $(foreach sdir,$(FS_DIR),$(wildcard $(sdir)/*))
+FS_FILES	:= $(shell find $(FS_DIR) -type f -name '*')
 
 LD_SCRIPT		:= $(addprefix -T$(SDK_BASE)/$(SDK_LDDIR)/,$(LD_SCRIPT))
 

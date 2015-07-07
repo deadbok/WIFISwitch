@@ -24,12 +24,17 @@
 #ifndef REST_H
 #define REST_H
 
-//Get configured network.
+//Get/Set configured network.
 extern bool rest_network_test(struct http_request *request);
 extern size_t rest_network_head_handler(struct http_request *request);
 extern size_t rest_network_get_handler(struct http_request *request);
 extern size_t rest_network_put_handler(struct http_request *request);
 extern void rest_network_destroy(struct http_request *request);
+
+//Set password for current network.
+extern bool rest_net_passwd_test(struct http_request *request);
+extern size_t rest_net_passwd_put_handler(struct http_request *rquest);
+extern void rest_net_passwd_destroy(struct http_request *request);
 
 //Scan for access points.
 extern bool rest_net_names_test(struct http_request *request);

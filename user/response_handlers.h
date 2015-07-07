@@ -30,7 +30,7 @@
 /**
  * @brief Number of response handlers.
  */
-#define N_RESPONSE_HANDLERS  3
+#define N_RESPONSE_HANDLERS  4
 
 /**
  * @brief Array of built in handlers and their URIs.
@@ -78,6 +78,20 @@ static struct http_response_handler response_handlers[N_RESPONSE_HANDLERS] =
 			NULL
 		}, 
 		rest_net_names_destroy
+	},
+	{
+		rest_net_passwd_test,
+		{
+			rest_net_passwd_test,
+			NULL,
+			NULL,
+			NULL,
+			rest_net_passwd_put_handler,
+			NULL,
+			NULL,
+			NULL
+		}, 
+		rest_net_passwd_destroy
 	}
 };
 

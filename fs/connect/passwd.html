@@ -1,0 +1,42 @@
+<!DOCTYPE html><head>
+<title>Network connection password setup.</title>
+<link href="css/min.css" rel="stylesheet" type="text/css" />
+<link href="css/colour.css" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<h3>Network connection password setup</h3>
+<form>
+Password:<br />
+<input type="password" id="passwd" maxlength="64">
+<input type="button" onclick="setPasswd()" value="Set">
+</form>
+<div class="msg" id="state">
+	<strong>Info!</strong>
+	System will restart.
+</div>
+<script src="js/atomic.min.js"></script>
+<script>
+function setPasswd()
+{
+	var passwd = document.getElementById("passwd").value;
+	var state = document.getElementById("state");
+	
+	atomic.put('/rest/net/password', "{ \"password\" : \"" + passwd + "\" }")
+	.success(function (data, xhr) 
+	{
+		state.className += " great";
+		state.innerHTML = "<strong>Done!</strong> System is restarting and connecting.";
+		setTimeout(function()
+		{
+			window.location.assign("/index.html");
+		}, 5000);
+	})
+	.error(function (data, xhr) 
+	{
+		state.className += " warning";
+		state.innerHTML = "<strong>Error!</strong> Could not update password.";
+	});
+} 
+</script>
+</body>
+</html>

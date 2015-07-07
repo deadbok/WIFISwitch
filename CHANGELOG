@@ -1,4 +1,24 @@
-2015-07-02 Martin Grønholdt
+2015-07-07 Martin Grønholdt
+
+* rest/net-passwd.c (rest_net_passwd_destroy): Resets the esp8266 when called.
+
+
+2015-07-05 Martin Grønholdt
+
+* fs/connect/js/atmic.min.js: Changes content type to JSON.
+* Makefile: Fixed file system scanning.
+
+
+2015-07-04 Martin Grønholdt
+
+* response_handlers.h: Added password handler.
+* rest/rest.h: Added WIFI password routines.
+* rest/net-passwd.c: Added file to handle setting WIFI password.
+* 				    (rest_net_passwd_put_handler): Send header end.
+* rest/network.c (rest_network_put_handler): Send header end.
+
+
+2015-07-03 Martin Grønholdt
 
 * Makefile: Added JSON lib.
 * response_handlers.h: Added rest_network_put_handler.

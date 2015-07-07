@@ -4,12 +4,13 @@
 <link href="css/colour.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-<h1>Network connection setup</h1>
+<h3>Network connection setup</h3>
 <p>Current configured network: <div id="network"></div></p>
-<form action="/ap_set.html" method="POST">
+<form>
 Networks: 
-<select id="networks" onchange="networkSelect()">
+<select id="networks">
 <option value="nets" class="smooth">Networks...</option>
+ <input type="button" onclick="networkSelect()" value="Set">
 </select>
 </form>
 <div class="msg" id="scnstat">
@@ -69,6 +70,10 @@ function networkSelect()
 	.success(function (data, xhr) 
 	{
 		network.innerHTML = networkName;
+		setTimeout(function()
+		{
+			window.location.assign("/passwd.html");
+		}, 1000);
 	})
 	.error(function (data, xhr) 
 	{
