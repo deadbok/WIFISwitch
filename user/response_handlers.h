@@ -82,7 +82,7 @@ static struct http_response_handler response_handlers[N_RESPONSE_HANDLERS] =
 	{
 		rest_net_passwd_test,
 		{
-			rest_net_passwd_test,
+			NULL,
 			NULL,
 			NULL,
 			NULL,

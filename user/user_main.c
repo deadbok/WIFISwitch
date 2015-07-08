@@ -68,6 +68,7 @@
 #include "fs/fs.h"
 #include "net/wifi_connect.h"
 #include "slighttp/http.h"
+#include "slighttp/http-request.h"
 #include "response_handlers.h"
 
 /**
@@ -81,6 +82,7 @@ os_timer_t status_timer;
 static void ICACHE_FLASH_ATTR status_check(void)
 {
 	struct tcp_connection *connection;
+	struct http_request *request;
 	
 	if (wifi_check_connection())
 	{
@@ -109,7 +111,18 @@ static void ICACHE_FLASH_ATTR status_check(void)
 			}
 			else
 			{
-				debug("Connection %p (%p) state unknown (%d).\n", connection, connection->conn, connection->conn->state);
+				debug("Closing connection %p (%p) state unknown (%d).\n", connection, connection->conn, connection->conn->state);
+				request = connection->free;
+				if (request->response.handlers)
+				{
+				  request->response.handlers->destroy(request);
+				}
+				if (request->response.send_buffer)
+				{
+				  db_free(request->response.send_buffer);
+				}
+				http_free_request(connection);
+				tcp_free(connection);
 			}
 			connection = connection->next;
 		}

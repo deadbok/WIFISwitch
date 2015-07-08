@@ -1,5 +1,7 @@
 2015-07-08 Martin Grønholdt
 
+* rest_hanslers.h: Fixed call of test function in wrong place.
+* user_main.c (status_check): Deallocation of dangling connections.
 * rest/net-names.c (scan_done_cb): Only free data on error.
 *								 : Better error handling.
 * 				   (create_response): Free old data.
