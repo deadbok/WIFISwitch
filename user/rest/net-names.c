@@ -37,6 +37,7 @@
 static char **ap_ssids;
 static unsigned short n_aps;
 static bool updating;
+bool error = true;
 
 static char ICACHE_FLASH_ATTR *json_create_string_array(char **values, size_t entries)
 {
@@ -124,16 +125,6 @@ static void scan_done_cb(void *arg, STATUS status)
 		debug(" Scanning went OK (%p).\n", arg);
 		scn_info = (struct bss_info *)arg;
 		debug(" Processing AP list (%p, %p).\n", scn_info, scn_info->next.stqe_next);
-		//Free old data if there is any.
-		if (ap_ssids)
-		{
-			for (i = 0; i < n_aps; i++)
-			{
-				db_free(ap_ssids[i]);
-			}
-			db_free(ap_ssids);
-			n_aps = 0;
-		}
 		debug(" Counting AP's.");
 		//Skip first according to docs.
 		for (current_ap_info = scn_info->next.stqe_next;
@@ -166,6 +157,19 @@ static void scan_done_cb(void *arg, STATUS status)
 	else
 	{
 		error(" Scanning AP's.\n");
+
+		if (n_aps && ap_ssids)
+		{
+			//Free old data if there is any.
+			for (i = 0; i < n_aps; i++)
+			{
+				db_free(ap_ssids[i]);
+			}
+			db_free(ap_ssids);
+			ap_ssids = NULL;
+			n_aps = 0;
+		}
+		error = true;
 	}
 	updating = false;
 }
@@ -173,6 +177,7 @@ static void scan_done_cb(void *arg, STATUS status)
 static size_t create_response(struct http_request *request)
 {
 	char *response = NULL;
+	unsigned short i;
 	    
     debug("Creating network names REST response.\n");
 
@@ -181,17 +186,31 @@ static size_t create_response(struct http_request *request)
 		if (n_aps && ap_ssids)
 		{
 			response = json_create_string_array(ap_ssids, n_aps);
-		}
-
-		debug(" Starting scan.\n");
-		if (wifi_station_scan(NULL, &scan_done_cb))
-		{
-			debug(" Scanning for AP's.\n");
+			//Free old data if there is any.
+			for (i = 0; i < n_aps; i++)
+			{
+				db_free(ap_ssids[i]);
+			}
+			db_free(ap_ssids);
+			ap_ssids = NULL;
+			n_aps = 0;
 		}
 		else
 		{
-			error(" Could not scan AP's.\n");
-		}				
+			//Get set if there is an error in the callback.
+			error = false;
+			//Prevent more scans until the call back has done it job.
+			updating = true;
+			debug(" Starting scan.\n");
+			if (wifi_station_scan(NULL, &scan_done_cb) && (!error))
+			{
+				debug(" Scanning for AP's.\n");
+			}
+			else
+			{
+				error(" Could not scan AP's.\n");
+			}				
+		}
 	}
 	if (!response)
 	{

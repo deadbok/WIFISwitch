@@ -1,3 +1,12 @@
+2015-07-08 Martin Grønholdt
+
+* rest/net-names.c (scan_done_cb): Only free data on error.
+*								 : Better error handling.
+* 				   (create_response): Free old data.
+*									: Only scan until response is send.
+*									: Better error handling.
+
+
 2015-07-07 Martin Grønholdt
 
 * rest/net-passwd.c (rest_net_passwd_destroy): Resets the esp8266 when called.
