@@ -5,7 +5,11 @@
 *				   (rest_net_names_head_handler): Uses context and only replies with a real answer.
 *				   (create_response): Uses context and create a response when done scanning.
 * slighttp/http-response.c (http_process_response): Keep processing if there is no response yet.
-
+* 						   (http_send_status_line): Return size of data sent.
+*						   (http_send_header): Return the size of the data sent.
+*						   (http_send): Return number of bytes buffered.
+* slighttp/http-fs.c (http_fs_head_handler): Return size of data sent.
+*					 (http_fs_get_handler): Return size of the data sent.
 
 2015-07-08 Martin Grønholdt
 
