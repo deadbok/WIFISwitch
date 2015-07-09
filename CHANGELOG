@@ -4,6 +4,7 @@
 *				   (rest_net_names_get_handler): Uses context struct.
 *				   (rest_net_names_head_handler): Uses context and only replies with a real answer.
 *				   (create_response): Uses context and create a response when done scanning.
+* slighttp/http-response.c (http_process_response): Keep processing if there is no response yet.
 
 
 2015-07-08 Martin Grønholdt
