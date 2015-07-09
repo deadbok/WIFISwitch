@@ -166,28 +166,29 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 	char str_size[16];
 	unsigned char i;
 	size_t ext_size;
+	unsigned short ret = 0;
 	
 	//If the send buffer is over 200 bytes, this should never fill it.
 	debug("File system HEAD handler handling %s.\n", context->filename);
 	
 	switch(request->response.state)
 	{
-		case HTTP_STATE_STATUS:  http_send_status_line(request->connection, request->response.status_code);
+		case HTTP_STATE_STATUS:  ret = http_send_status_line(request->connection, request->response.status_code);
 								 //Onwards
 								 request->response.state = HTTP_STATE_HEADERS;
 								 break;
 		case HTTP_STATE_HEADERS: //Always send connections close and server info.
-								 http_send_header(request->connection, 
+								 ret = http_send_header(request->connection, 
 												  "Connection",
 											      "close");
-								 http_send_header(request->connection,
+								 ret += http_send_header(request->connection,
 												  "Server",
 												  HTTP_SERVER_NAME);
 								 //Get data size.
 								 context->total_size = fs_size(context->file);
 								 os_sprintf(str_size, "%d", context->total_size);
 								 //Send message length.
-								 http_send_header(request->connection, 
+								 ret += http_send_header(request->connection, 
 												  "Content-Length",
 											      str_size);
 								 //Find the MIME-type
@@ -196,15 +197,14 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 									 ext_size = os_strlen(http_mime_types[i].ext);
 									 if (os_strncmp(http_mime_types[i].ext, 
 									                context->filename + os_strlen(context->filename) - ext_size,
-									                ext_size)
-									     == 0)
+									                ext_size) == 0)
 									 {
 										 break;
 									 }
 								 }
-								 http_send_header(request->connection, "Content-Type", http_mime_types[i].type);	
+								 ret += http_send_header(request->connection, "Content-Type", http_mime_types[i].type);	
 								 //Send end of headers.
-								 http_send(request->connection, "\r\n", 2);
+								 ret += http_send(request->connection, "\r\n", 2);
 								 //Stop if only HEAD was requested.
 								 if (request->type == HTTP_HEAD)
 								 {
@@ -216,8 +216,7 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 								 }
 								 break;
 	}
-	
-    return(0);
+    return(ret);
 }
 
 /**
@@ -231,13 +230,14 @@ size_t ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
 	struct http_fs_context *context = request->response.context;
 	char buffer[HTTP_FILE_CHUNK_SIZE];
 	size_t data_left;
+	size_t ret = 0;
 	
 	debug("File system GET handler handling %s.\n", context->filename);
 	
 	//Don't duplicate, just call the head handler.
 	if (request->response.state < HTTP_STATE_MESSAGE)
 	{
-		http_fs_head_handler(request);
+		ret = http_fs_head_handler(request);
 	}
 	else
 	{
@@ -249,14 +249,14 @@ size_t ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
 			{
 				//There is still more than HTTP_FILE_CHUNK_SIZE to read.
 				fs_read(buffer, HTTP_FILE_CHUNK_SIZE, sizeof(char), context->file);
-				http_send(request->connection, buffer, HTTP_FILE_CHUNK_SIZE);
+				ret = http_send(request->connection, buffer, HTTP_FILE_CHUNK_SIZE);
 				context->transferred += HTTP_FILE_CHUNK_SIZE;
 			}
 			else
 			{
 				//Last block.
 				fs_read(buffer, data_left, sizeof(char), context->file);
-				http_send(request->connection, buffer, data_left);
+				ret = http_send(request->connection, buffer, data_left);
 				context->transferred += data_left;
 				//We're done sending the message.
 				fs_close(context->file);
@@ -264,8 +264,7 @@ size_t ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
 			}
 		}
 	}
-
-    return(context->total_size);
+    return(ret);
 }
 
 /**

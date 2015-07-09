@@ -63,9 +63,9 @@ char *http_status_line_501 = HTTP_STATUS_501;
  * @param connection Pointer to the connection to use.
  * @param name The name of the header.
  * @param value The value of the header.
- * @return 0 on failure, 1 on success.
+ * @return Size of data sent.
  */
-unsigned char ICACHE_FLASH_ATTR http_send_header(struct tcp_connection *connection, char *name, char *value)
+unsigned short ICACHE_FLASH_ATTR http_send_header(struct tcp_connection *connection, char *name, char *value)
 {
 	char header[512];
 	size_t size;
@@ -73,6 +73,7 @@ unsigned char ICACHE_FLASH_ATTR http_send_header(struct tcp_connection *connecti
 	debug("Sending header (%s: %s).\n", name, value);
 	size = os_sprintf(header, "%s: %s\r\n", name, value);
 	return(http_send(connection, header, size));
+
 }
 
 /**
@@ -80,30 +81,37 @@ unsigned char ICACHE_FLASH_ATTR http_send_header(struct tcp_connection *connecti
  * 
  * @param connection Pointer to the connection to use. 
  * @param code Status code to use in the status line.
- * @return 0 on failure, 1 on success.
+ * @return Size of data that has been sent.
  */
 unsigned char ICACHE_FLASH_ATTR http_send_status_line(struct tcp_connection *connection, unsigned short status_code)
 {
-	unsigned char ret;
-	debug("Sending status line with status code %d.\n", status_code);
-	
+	size_t size;
+	char *response;
+
+	debug("Sending status line with status code %d.\n", status_code);	
 	switch (status_code)
 	{
-		case 200: ret = http_send(connection, http_status_line_200, os_strlen(http_status_line_200));
+		case 200: response = http_status_line_200;
+				  size = os_strlen(http_status_line_200);
 				  break;
-		case 204: ret = http_send(connection, http_status_line_204, os_strlen(http_status_line_204));
+		case 204: response = http_status_line_204;
+				  size = os_strlen(http_status_line_204);
 				  break;
-		case 400: ret = http_send(connection, http_status_line_400, os_strlen(http_status_line_400));
+		case 400: response = http_status_line_400;
+				  size = os_strlen(http_status_line_400);
 				  break;
-		case 404: ret = http_send(connection, http_status_line_404, os_strlen(http_status_line_404));
+		case 404: response = http_status_line_404;
+				  size = os_strlen(http_status_line_404);
 				  break;
-		case 501: ret = http_send(connection, http_status_line_501, os_strlen(http_status_line_501));
+		case 501: response = http_status_line_501;
+				  size = os_strlen(http_status_line_501);
 				  break;
 		default:  warn(" Unknown response code: %d.\n", status_code);
-				  ret = http_send(connection, http_status_line_501, os_strlen(http_status_line_501));
+				  response = http_status_line_501;
+				  size = os_strlen(http_status_line_501);
 				  break;
 	}
-	return(ret);
+	return(http_send(connection, response, size));
 }
 
 /**
@@ -137,9 +145,9 @@ struct http_response_handler ICACHE_FLASH_ATTR *http_get_handlers(struct http_re
  * @param connection A pointer to the connection to use to send the data.
  * @param data A pointer to the data to send.
  * @param size Size (in bytes) of the data to send.
- * @return 0 on failure, 1 on success.
+ * @return Number of bytes buffered.
  */
-unsigned char ICACHE_FLASH_ATTR http_send(struct tcp_connection *connection, char *data, size_t size)
+size_t ICACHE_FLASH_ATTR http_send(struct tcp_connection *connection, char *data, size_t size)
 {
     struct http_request *request;
     size_t buffer_free;
@@ -162,7 +170,7 @@ unsigned char ICACHE_FLASH_ATTR http_send(struct tcp_connection *connection, cha
 	request->response.send_buffer_pos += size;
 	debug(" Buffer free %d.\n", buffer_free - size);
 	
-	return(1);
+	return(size);
 }
 
 /**
@@ -229,6 +237,7 @@ void fall_through_status_handler(struct tcp_connection *connection, unsigned sho
 void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 {
 	struct http_request *request = connection->free;
+	unsigned short size;
 	
 	debug("Processing request for connection %p.\n", connection);
 	if (connection->sending)
@@ -292,13 +301,16 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 				case HTTP_STATE_HEADERS:
 				case HTTP_STATE_MESSAGE: debug(" Calling response handler %p.\n",
 											    request->response.handlers->handlers[request->type - 1]);
-										 if (request->response.handlers->handlers[request->type - 1](request))
+										 if ((size = request->response.handlers->handlers[request->type - 1](request))
+										 )
 										 {
+											 debug(" Response %d bytes.\n", size); 
 											 //There was a response. 
 											send_buffer(connection);
 										 }
 										 else
 										 {
+											 debug(" No response, one more time for the world!\n");
 											 //Do it again, do it agian.
 											 http_process_response(connection);
 										 }
