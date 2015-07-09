@@ -206,6 +206,7 @@ static void create_response(struct http_request *request)
 			db_free(ap_ssids);
 			ap_ssids = NULL;
 			n_aps = 0;
+			http_process_response(request->connection);
 		}
 		else
 		{
