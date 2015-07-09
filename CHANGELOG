@@ -1,6 +1,7 @@
 2015-07-09 Martin Grønholdt
 
 * rest/net-names.c: Added rest_net_names_context.
+*				  : Adjusted for new http_process_response behaviour.
 *				   (rest_net_names_get_handler): Uses context struct.
 *				   (rest_net_names_head_handler): Uses context and only replies with a real answer.
 *				   (create_response): Uses context and create a response when done scanning.

@@ -235,6 +235,7 @@ static void create_response(struct http_request *request)
 size_t ICACHE_FLASH_ATTR rest_net_names_head_handler(struct http_request *request)
 {
 	char str_size[16];
+	size_t ret = 0;
 	
 	//If the send buffer is over 200 bytes, this should never fill it.
 	debug("REST network names HEAD handler.\n");
@@ -248,27 +249,27 @@ size_t ICACHE_FLASH_ATTR rest_net_names_head_handler(struct http_request *reques
 								 else
 								 {
 									 //Start sending the response.									 
-									 http_send_status_line(request->connection, request->response.status_code);
+									 ret = http_send_status_line(request->connection, request->response.status_code);
 									 //Onwards
 									 request->response.state = HTTP_STATE_HEADERS;
 								 }
 								 break;
 		case HTTP_STATE_HEADERS: //Always send connections close and server info.
-								 http_send_header(request->connection, 
+								 ret = http_send_header(request->connection, 
 												  "Connection",
 											      "close");
-								 http_send_header(request->connection,
+								 ret += http_send_header(request->connection,
 												  "Server",
 												  HTTP_SERVER_NAME);
 								 //Get data size.
 								 os_sprintf(str_size, "%d", ((struct rest_net_names_context *)request->response.context)->size);
 								 //Send message length.
-								 http_send_header(request->connection, 
+								 ret += http_send_header(request->connection, 
 												  "Content-Length",
 											      str_size);
-								 http_send_header(request->connection, "Content-Type", http_mime_types[MIME_JSON].type);	
+								 ret += http_send_header(request->connection, "Content-Type", http_mime_types[MIME_JSON].type);	
 								 //Send end of headers.
-								 http_send(request->connection, "\r\n", 2);
+								 ret += http_send(request->connection, "\r\n", 2);
 								 //Stop if only HEAD was requested.
 								 if (request->type == HTTP_HEAD)
 								 {
@@ -280,7 +281,7 @@ size_t ICACHE_FLASH_ATTR rest_net_names_head_handler(struct http_request *reques
 								 }
 								 break;
 	}
-    return(0);
+    return(ret);
 }
 
 /**
@@ -294,6 +295,7 @@ size_t ICACHE_FLASH_ATTR rest_net_names_get_handler(struct http_request *request
 {
 	struct rest_net_names_context context;
 	char *uri = request->uri;
+	size_t ret;
 	    
     debug("In network names REST handler (%s).\n", uri);
 
@@ -304,20 +306,19 @@ size_t ICACHE_FLASH_ATTR rest_net_names_get_handler(struct http_request *request
 	//Don't duplicate, just call the head handler.
 	if (request->response.state < HTTP_STATE_MESSAGE)
 	{
-		rest_net_names_head_handler(request);
+		ret = rest_net_names_head_handler(request);
 	}
 	else
 	{
 		debug(" Response: %s.\n", ((struct rest_net_names_context *)request->response.context)->response);
-		tcp_send(request->connection, 
+		ret = http_send(request->connection, 
 				 ((struct rest_net_names_context *)request->response.context)->response,
 				 ((struct rest_net_names_context *)request->response.context)->size);
 		request->response.state = HTTP_STATE_ASSEMBLED;
 		
 		debug(" Response size: %d.\n", ((struct rest_net_names_context *)request->response.context)->size);
-		return(((struct rest_net_names_context *)request->response.context)->size);
 	}
-	return(0);
+	return(ret);
 }
 
 /**
