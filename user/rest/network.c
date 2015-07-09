@@ -99,32 +99,33 @@ size_t ICACHE_FLASH_ATTR rest_network_head_handler(struct http_request *request)
 {
 	char str_size[16];
 	size_t size;
+	size_t ret = 0;
 	
 	//If the send buffer is over 200 bytes, this should never fill it.
 	debug("REST network HEAD handler.\n");
 	size = create_response(request);
 	switch(request->response.state)
 	{
-		case HTTP_STATE_STATUS:  http_send_status_line(request->connection, request->response.status_code);
+		case HTTP_STATE_STATUS:  ret = http_send_status_line(request->connection, request->response.status_code);
 								 //Onwards
 								 request->response.state = HTTP_STATE_HEADERS;
 								 break;
 		case HTTP_STATE_HEADERS: //Always send connections close and server info.
-								 http_send_header(request->connection, 
+								 ret = http_send_header(request->connection, 
 												  "Connection",
 											      "close");
-								 http_send_header(request->connection,
+								 ret += http_send_header(request->connection,
 												  "Server",
 												  HTTP_SERVER_NAME);
 								 //Get data size.
 								 os_sprintf(str_size, "%d", size);
 								 //Send message length.
-								 http_send_header(request->connection, 
+								 ret += http_send_header(request->connection, 
 												  "Content-Length",
 											      str_size);
-								 http_send_header(request->connection, "Content-Type", http_mime_types[MIME_JSON].type);	
+								 ret += http_send_header(request->connection, "Content-Type", http_mime_types[MIME_JSON].type);	
 								 //Send end of headers.
-								 http_send(request->connection, "\r\n", 2);
+								 ret += http_send(request->connection, "\r\n", 2);
 								 //Stop if only HEAD was requested.
 								 if (request->type == HTTP_HEAD)
 								 {
@@ -136,7 +137,7 @@ size_t ICACHE_FLASH_ATTR rest_network_head_handler(struct http_request *request)
 								 }
 								 break;
 	}
-    return(0);
+    return(ret);
 }
 
 /**
@@ -149,25 +150,26 @@ size_t ICACHE_FLASH_ATTR rest_network_get_handler(struct http_request *request)
 {
 	size_t msg_size = 0;
 	char *uri = request->uri;
+	size_t ret = 0;
 	    
     debug("In network name GET REST handler (%s).\n", uri);
 	
 	//Don't duplicate, just call the head handler.
 	if (request->response.state < HTTP_STATE_MESSAGE)
 	{
-		rest_network_head_handler(request);
+		ret = rest_network_head_handler(request);
 	}
 	else
 	{
 		msg_size = os_strlen(request->response.context);
 		debug(" Response: %s.\n", (char *)request->response.context);
-		tcp_send(request->connection, request->response.context, msg_size);
+		ret = http_send(request->connection, request->response.context, msg_size);
 		request->response.state = HTTP_STATE_ASSEMBLED;
 		
 		debug(" Response size: %d.\n", msg_size);
 		return(msg_size);
 	}
-	return(0);
+	return(ret);
 }
 
 /**

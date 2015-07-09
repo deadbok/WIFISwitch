@@ -66,13 +66,14 @@ size_t ICACHE_FLASH_ATTR rest_net_passwd_put_handler(struct http_request *reques
 	char passwd[64];
 	int type;
 	struct station_config sc;
+	size_t ret = 0;
 	    
     debug("In network password PUT REST handler (%s).\n", uri);
     
 	if (request->response.state == HTTP_STATE_STATUS)
 	{
-		http_send_status_line(request->connection, 204);
-		http_send(request->connection, "\r\n", 2);		
+		ret = http_send_status_line(request->connection, 204);
+		ret += http_send(request->connection, "\r\n", 2);		
 		
 		jsonparse_setup(&state, request->message, os_strlen(request->message));
 		while ((type = jsonparse_next(&state)) != 0)
@@ -99,7 +100,7 @@ size_t ICACHE_FLASH_ATTR rest_net_passwd_put_handler(struct http_request *reques
 		}
 		request->response.state = HTTP_STATE_ASSEMBLED;
 	}
-	return(0);
+	return(ret);
 }
 /**
  * @brief Deallocate memory used for the HTML.
