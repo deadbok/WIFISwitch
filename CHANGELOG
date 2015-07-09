@@ -1,6 +1,14 @@
+2015-07-09 Martin Grønholdt
+
+* rest/net-names.c: Added rest_net_names_context.
+*				   (rest_net_names_get_handler): Uses context struct.
+*				   (rest_net_names_head_handler): Uses context and only replies with a real answer.
+*				   (create_response): Uses context and create a response when done scanning.
+
+
 2015-07-08 Martin Grønholdt
 
-* rest_hanslers.h: Fixed call of test function in wrong place.
+* rest_handlers.h: Fixed call of test function in wrong place.
 * user_main.c (status_check): Deallocation of dangling connections.
 * rest/net-names.c (scan_done_cb): Only free data on error.
 *								 : Better error handling.
