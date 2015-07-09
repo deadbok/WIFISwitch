@@ -76,7 +76,7 @@
 
 extern unsigned char http_send_status_line(struct tcp_connection *connection, 
                                   unsigned short status_code);
-extern unsigned char http_send_header(struct tcp_connection *connection, char *name,
+extern unsigned short http_send_header(struct tcp_connection *connection, char *name,
 							 char *value);
 extern void http_process_response(struct tcp_connection *connection);
 

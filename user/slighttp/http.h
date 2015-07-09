@@ -257,7 +257,7 @@ extern char *http_fs_doc_root;
 
 extern bool init_http(char *path, struct http_response_handler *handlers, unsigned short n_handlers);
 extern struct http_response_handler *http_get_handlers(struct http_request *request);
-extern unsigned char http_send(struct tcp_connection *connection, char *data, size_t size);
+extern size_t http_send(struct tcp_connection *connection, char *data, size_t size);
 
 extern bool http_fs_test(struct http_request *request);
 extern size_t http_fs_head_handler(struct http_request *request);
