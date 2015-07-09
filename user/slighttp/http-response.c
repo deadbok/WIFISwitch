@@ -292,8 +292,16 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 				case HTTP_STATE_HEADERS:
 				case HTTP_STATE_MESSAGE: debug(" Calling response handler %p.\n",
 											    request->response.handlers->handlers[request->type - 1]);
-										 request->response.handlers->handlers[request->type - 1](request); 
-										 send_buffer(connection);
+										 if (request->response.handlers->handlers[request->type - 1](request))
+										 {
+											 //There was a response. 
+											send_buffer(connection);
+										 }
+										 else
+										 {
+											 //Do it again, do it agian.
+											 http_process_response(connection);
+										 }
 										 break;
 				case HTTP_STATE_ASSEMBLED: debug(" Waiting for message dispatch.\n"); 
 										   break;
