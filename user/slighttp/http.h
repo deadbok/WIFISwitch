@@ -217,10 +217,9 @@ typedef bool (*uri_comp_callback)(struct http_request *request);
  * is used to keep track of the progress, and must be updated.
  * If request->response.status_code is set to anything but 200, an error
  * response send instead.
- * Return the size of the response message in bytes. (Not status-line, and headers).
  * 
  * @param request The request that led us here.
- * @return The size of the response message send.
+ * @return The size of the of what has been sent.
  */
 typedef size_t (*uri_response_callback)(struct http_request *request);
 /**
