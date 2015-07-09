@@ -51,7 +51,7 @@
 /**
  * @brief How often to check the status in miliseconds.
  */
-#define CHECK_TIME 5000
+#define CHECK_TIME 2000
 /**
  * @brief Network connection time-out.
  */

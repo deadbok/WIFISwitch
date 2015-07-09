@@ -248,6 +248,9 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 	//Since request was zalloced, request->type will be zero until parsed.
 	if (request)
 	{
+		//Increase recursion level.
+		request->response.level++;
+		debug(" Recursion level; %d.\n", request->response.level);
 		if (request->type != HTTP_NONE)
 		{
 			//Get started
@@ -308,12 +311,6 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 											 //There was a response. 
 											send_buffer(connection);
 										 }
-										 else
-										 {
-											 debug(" No response, one more time for the world!\n");
-											 //Do it again, do it agian.
-											 http_process_response(connection);
-										 }
 										 break;
 				case HTTP_STATE_ASSEMBLED: debug(" Waiting for message dispatch.\n"); 
 										   break;
@@ -346,6 +343,9 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 				default: warn("Unknown HTTP response state %d.\n", request->response.state);
 			}
 		}
+		//Increase recursion level.
+		request->response.level--;
+		debug(" Recursion level; %d.\n", request->response.level);
 	}
 	else
 	{

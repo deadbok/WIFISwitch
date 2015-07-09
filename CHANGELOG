@@ -1,5 +1,6 @@
 2015-07-09 Martin Grønholdt
 
+* slighttp/http..h (http_response): Removed unused send member.
 * rest/network.c: Adjusted for new http_process_response behaviour.
 * rest/net-names.c: Added rest_net_names_context.
 *				  : Adjusted for new http_process_response behaviour.
@@ -8,6 +9,7 @@
 *				   (create_response): Uses context and create a response when done scanning.
 * rest/net-passwd.c: Adjusted for new http_process_response behaviour.
 * slighttp/http-response.c (http_process_response): Keep processing if there is no response yet.
+*												  : Keep count of recursion level.
 * 						   (http_send_status_line): Return size of data sent.
 *						   (http_send_header): Return the size of the data sent.
 *						   (http_send): Return number of bytes buffered.

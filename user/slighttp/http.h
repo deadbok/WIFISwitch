@@ -154,9 +154,9 @@ struct http_response
       */
      char *send_buffer_pos;
          /**
-     * @brief Number of blocks is waiting to be send.
+     * @brief Number of recursion levels in response handler.
      */
-    size_t send;
+     unsigned char level;
 };
 
 /**

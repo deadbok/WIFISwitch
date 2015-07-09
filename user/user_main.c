@@ -103,9 +103,21 @@ static void ICACHE_FLASH_ATTR status_check(void)
 	}
 	else
 	{
+		/* Call response handler on first connection, it might be hanging with 
+		 * no data. Only one connection per run, to not take up to much time.
+		 */
+		if (connection->conn->state < ESPCONN_CLOSE)
+		{
+			//Make sure no one is working on this.
+			if (!((struct http_request *)connection->free)->response.level)
+			{
+				debug("Calling response handler for connection %p (%p).\n", connection, connection->conn);
+				http_process_response(connection);
+			}
+		}
 		while (connection)
 		{
-			if (connection->conn->state < 6)
+			if (connection->conn->state <= ESPCONN_CLOSE)
 			{
 				debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
 			}
@@ -199,10 +211,10 @@ void ICACHE_FLASH_ATTR user_init(void)
     gpio_init();
 
     //Set GPIO2 to output mode
-    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5);
+    //PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5);
 
     //Set GPIO2 low
-    gpio_output_set(0, BIT5, BIT5, 0);
+    //gpio_output_set(0, BIT5, BIT5, 0);
 
     db_printf("\nLeaving user_init...\n");
 }
