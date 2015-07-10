@@ -1,5 +1,7 @@
 2015-07-10 Martin Grønholdt
 
+* fs/connect/index.html: Added form onsubmit.
+* fs/connect/passwd.html: Added form onsubmit.
 * user_config.h: Version 0.0.3.
 * slighttp/http.h: Upped version.
 * rest/network.c (create_response): Only create a response if there isn't one.
