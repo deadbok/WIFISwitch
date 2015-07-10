@@ -33,7 +33,7 @@
 /**
  * @brief Server version.
  */
-#define HTTP_SERVER_VERSION         "0.0.4"
+#define HTTP_SERVER_VERSION         "0.0.5"
 /**
  * @brief Version of HTTP that is supported.
  */

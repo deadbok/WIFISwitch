@@ -1,3 +1,12 @@
+2015-07-10 Martin Grønholdt
+
+* user_config.h: Version 0.0.3.
+* slighttp/http.h: Upped version.
+* rest/network.c (create_response): Only create a response if there isn't one.
+*				 (rest_network_put_handler): Return size of data sent.
+* slighttp/net-names.c (rest_net_names_head_handler): Allocate context struct.
+
+
 2015-07-09 Martin Grønholdt
 
 * slighttp/http..h (http_response): Removed unused send member.
@@ -7,7 +16,7 @@
 *				   (rest_net_names_get_handler): Uses context struct.
 *				   (rest_net_names_head_handler): Uses context and only replies with a real answer.
 *				   (create_response): Uses context and create a response when done scanning.
-*									: Call http response handler when done scanning.
+*				   (scan_done_cb): Call http response handler when done scanning.
 * rest/net-passwd.c: Adjusted for new http_process_response behaviour.
 * slighttp/http-response.c (http_process_response): Keep processing if there is no response yet.
 *												  : Keep count of recursion level.

@@ -86,7 +86,7 @@ size_t ICACHE_FLASH_ATTR rest_net_passwd_put_handler(struct http_request *reques
                     jsonparse_next(&state);
                     jsonparse_next(&state);
                     jsonparse_copy_value(&state, passwd, sizeof(passwd));
-                    debug(" Name: %s.\n", passwd);
+                    debug(" Password: %s.\n", passwd);
 
 					wifi_station_get_config(&sc);
 					
@@ -114,5 +114,6 @@ void ICACHE_FLASH_ATTR rest_net_passwd_destroy(struct http_request *request)
 		db_free(request->response.context);
 	}
 	//Restart to apply new WIFI configuration.
+	debug(" System restart.\n");
 	system_restart();
 }

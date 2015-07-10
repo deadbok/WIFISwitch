@@ -36,8 +36,8 @@
 
 static char **ap_ssids;
 static unsigned short n_aps;
-static bool updating;
-bool error = true;
+static struct http_request *waiting_request = NULL;
+static bool error = false;
 
 struct rest_net_names_context
 {
@@ -127,9 +127,8 @@ static void scan_done_cb(void *arg, STATUS status)
 	struct bss_info *current_ap_info;
 	struct bss_info *scn_info;
 	unsigned short i;
-	size_t size;	
-	
-	updating = true;
+	size_t size;
+	struct http_request *request;
 	
 	debug("AP scan callback for REST.\n");
 	if (status == OK)
@@ -183,21 +182,25 @@ static void scan_done_cb(void *arg, STATUS status)
 		}
 		error = true;
 	}
-	updating = false;
+	request = waiting_request;
+	waiting_request = NULL;
+	http_process_response(request->connection);
 }
 
 static void create_response(struct http_request *request)
 {
 	unsigned short i;
-	    
-    debug("Creating network names REST response.\n");
-
-	if (!updating)
+	
+	if (!waiting_request)
 	{
+		debug("Creating network names REST response.\n");
 		if (n_aps && ap_ssids)
 		{
 			((struct rest_net_names_context *)request->response.context)->response = json_create_string_array(ap_ssids, n_aps);
 			((struct rest_net_names_context *)request->response.context)->size = os_strlen(((struct rest_net_names_context *)request->response.context)->response);
+
+			http_process_response(request->connection);
+			
 			//Free old data if there is any.
 			for (i = 0; i < n_aps; i++)
 			{
@@ -206,14 +209,13 @@ static void create_response(struct http_request *request)
 			db_free(ap_ssids);
 			ap_ssids = NULL;
 			n_aps = 0;
-			http_process_response(request->connection);
 		}
 		else
 		{
 			//Get set if there is an error in the callback.
 			error = false;
 			//Prevent more scans until the call back has done it job.
-			updating = true;
+			waiting_request = request;
 			debug(" Starting scan.\n");
 			if (wifi_station_scan(NULL, &scan_done_cb) && (!error))
 			{
@@ -240,6 +242,10 @@ size_t ICACHE_FLASH_ATTR rest_net_names_head_handler(struct http_request *reques
 	
 	//If the send buffer is over 200 bytes, this should never fill it.
 	debug("REST network names HEAD handler.\n");
+	if (!request->response.context)
+    {
+		request->response.context = db_zalloc(sizeof(struct rest_net_names_context), "request->response.context rest_names_get_handler");
+	}
 	switch(request->response.state)
 	{
 		case HTTP_STATE_STATUS:  //Start scanning until a response is ready.
@@ -294,16 +300,11 @@ size_t ICACHE_FLASH_ATTR rest_net_names_head_handler(struct http_request *reques
  */
 size_t ICACHE_FLASH_ATTR rest_net_names_get_handler(struct http_request *request)
 {
-	struct rest_net_names_context context;
 	char *uri = request->uri;
 	size_t ret;
 	    
     debug("In network names REST handler (%s).\n", uri);
 
-	context.response = NULL;
-	context.size = 0;
-	request->response.context = &context;
-	
 	//Don't duplicate, just call the head handler.
 	if (request->response.state < HTTP_STATE_MESSAGE)
 	{
@@ -329,8 +330,12 @@ size_t ICACHE_FLASH_ATTR rest_net_names_get_handler(struct http_request *request
  */
 void ICACHE_FLASH_ATTR rest_net_names_destroy(struct http_request *request)
 {
-	if (((struct rest_net_names_context *)request->response.context)->response)
-	{
-		db_free(((struct rest_net_names_context *)request->response.context)->response);
+	if (request->response.context)
+	{	
+		if (((struct rest_net_names_context *)request->response.context)->response)
+		{
+			db_free(((struct rest_net_names_context *)request->response.context)->response);
+		}
+		db_free(request->response.context);
 	}
 }

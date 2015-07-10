@@ -32,7 +32,7 @@
 /**
  * @brief Firmware version.
  */
-#define STRING_VERSION "0.0.2"
+#define STRING_VERSION "0.0.3"
 
 /**
  * @brief Name of the default network to try and connect to.
@@ -51,7 +51,7 @@
 /**
  * @brief How often to check the status in miliseconds.
  */
-#define CHECK_TIME 2000
+#define CHECK_TIME 5000
 /**
  * @brief Network connection time-out.
  */

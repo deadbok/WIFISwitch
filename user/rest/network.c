@@ -65,28 +65,30 @@ static size_t create_response(struct http_request *request)
 	char *response_pos;
 	    
     debug("Creating network REST response.\n");
-	
-	response = db_malloc(sizeof(char) * 51, "response create_response");
-	response_pos = response;
-	
-	os_strcpy(response, "{ \"network\" : \"");
-	response_pos += 15;
 
-	if (!wifi_station_get_config(&wifi_config))
-	{
-		error(" Could not get station configuration.\n");
-		return(0);
+	if (!request->response.context)
+	{	
+		response = db_malloc(sizeof(char) * 51, "response create_response");
+		response_pos = response;
+		
+		os_strcpy(response, "{ \"network\" : \"");
+		response_pos += 15;
+
+		if (!wifi_station_get_config(&wifi_config))
+		{
+			error(" Could not get station configuration.\n");
+			return(0);
+		}
+		os_strcpy(response_pos, (char *)wifi_config.ssid);
+		response_pos += os_strlen((char *)wifi_config.ssid);
+		
+		os_strcpy(response_pos, "\" }");
+		response_pos += 3;
+		*response_pos = '\0';
+	
+		request->response.context = response;
 	}
-	os_strcpy(response_pos, (char *)wifi_config.ssid);
-	response_pos += os_strlen((char *)wifi_config.ssid);
-	
-	os_strcpy(response_pos, "\" }");
-	response_pos += 3;
-	*response_pos = '\0';
-	
-	request->response.context = response;
-	
-	return(response_pos - response);
+	return(os_strlen(request->response.context));
 }
 
 /**
@@ -185,14 +187,15 @@ size_t ICACHE_FLASH_ATTR rest_network_put_handler(struct http_request *request)
 	char net_name[32];
 	int type;
 	struct station_config sc;
+	size_t ret = 0;
 	    
     debug("In network name PUT REST handler (%s).\n", uri);
     
 	if (request->response.state == HTTP_STATE_STATUS)
 	{
-		http_send_status_line(request->connection, 204);
+		ret = http_send_status_line(request->connection, 204);
 		//Send end of headers.
-		http_send(request->connection, "\r\n", 2);
+		ret += http_send(request->connection, "\r\n", 2);
 		debug(" Network selected: %s.\n", request->message);
 		
 		jsonparse_setup(&state, request->message, os_strlen(request->message));
@@ -219,7 +222,7 @@ size_t ICACHE_FLASH_ATTR rest_network_put_handler(struct http_request *request)
 		}
 		request->response.state = HTTP_STATE_ASSEMBLED;
 	}
-	return(0);
+	return(ret);
 }
 /**
  * @brief Deallocate memory used for the HTML.
@@ -231,5 +234,6 @@ void ICACHE_FLASH_ATTR rest_network_destroy(struct http_request *request)
 	if (request->response.context)
 	{
 		db_free(request->response.context);
+		request->response.context = NULL;
 	}
 }

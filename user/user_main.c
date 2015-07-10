@@ -106,15 +106,15 @@ static void ICACHE_FLASH_ATTR status_check(void)
 		/* Call response handler on first connection, it might be hanging with 
 		 * no data. Only one connection per run, to not take up to much time.
 		 */
-		if (connection->conn->state < ESPCONN_CLOSE)
-		{
-			//Make sure no one is working on this.
-			if (!((struct http_request *)connection->free)->response.level)
-			{
-				debug("Calling response handler for connection %p (%p).\n", connection, connection->conn);
-				http_process_response(connection);
-			}
-		}
+		//if (connection->conn->state < ESPCONN_CLOSE)
+		//{
+			////Make sure no one is working on this.
+			//if (!((struct http_request *)connection->free)->response.level)
+			//{
+				//debug("Calling response handler for connection %p (%p).\n", connection, connection->conn);
+				//http_process_response(connection);
+			//}
+		//}
 		while (connection)
 		{
 			if (connection->conn->state <= ESPCONN_CLOSE)
