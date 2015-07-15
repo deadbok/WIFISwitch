@@ -1,5 +1,8 @@
 2015-07-15 Martin Grønholdt
 
+* slighttp/http-common.c (print_clf_status): Renamed http_print_clf_status and reimplemented.
+* slighttp/http-common.h: Changed renamed and changed print_clf_status as http_print_clf_status.
+* slighttp/http.h (http_response): Added message_size.
 * slighttp/http-response.c: Added 405 status.
 * slighttp/http-response.h: Added 405 status.
 * rest/gpio.c: Reading of an individual GPIO's status.
@@ -593,7 +596,7 @@
 * net/tcp.c (global): Added tcp_stop.
 * net/wifi_connect (timeout_cb): Added HTTP server.
 * CHANGELOG: Added commit history.
-* File system:: fs/ added connect directory and files.
+* File system: fs/ added connect directory and files.
 
 Thu May 28 23:38:34 2015 +0200 by deadbok (martin.groenholdt@gmail.com)
 V0.0.2
