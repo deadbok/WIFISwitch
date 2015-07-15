@@ -1,7 +1,9 @@
 2015-07-15 Martin Grønholdt
 
 * rest/net-passwd.c(rest_net_passwd_put_handler): Proper handling of states.
+*												: Process response at HTTP_STATE_ASSEMBLED to print CLF:
 * rest/network.c (rest_network_put_handler): Proper handling of states.
+*										   : Process response at HTTP_STATE_ASSEMBLED to print CLF:
 * user_main.c (connected): Don't repeat message.
 * net/wifi_connect.c (print_status): Nicer output.
 * user_config.h: Fixed scope of db_mem_list and rearranged a bit.
@@ -14,6 +16,7 @@
 * rest/gpio.c: Reading of an individual GPIO's status.
 *			 : Setting of an individual GPIO's status.
 *			  (rest_gpio_put_handler): Proper handling of states.
+*									 : Process response at HTTP_STATE_ASSEMBLED to print CLF:
 
 
 2015-07-14 Martin Grønholdt

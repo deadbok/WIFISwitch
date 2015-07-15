@@ -106,6 +106,8 @@ size_t ICACHE_FLASH_ATTR rest_net_passwd_put_handler(struct http_request *reques
 			}
 		}
 		request->response.state = HTTP_STATE_ASSEMBLED;
+		//We're not sending so we call this our selves.
+		http_process_response(connection);
 	}
 	return(ret);
 }
