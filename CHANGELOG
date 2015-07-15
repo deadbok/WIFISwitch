@@ -1,7 +1,14 @@
-2015-07-10 Martin Grønholdt
+2015-07-15 Martin Grønholdt
 
+* slighttp/http-common.c (print_clf_status): Renamed http_print_clf_status and reimplemented.
+* slighttp/http-common.h: Changed renamed and changed print_clf_status as http_print_clf_status.
+* slighttp/http.h (http_response): Added message_size.
 * slighttp/http-response.c: Added 405 status.
 * slighttp/http-response.h: Added 405 status.
+
+
+2015-07-10 Martin Grønholdt
+
 * user_config.h: Version 0.0.3.
 * slighttp/http.h: Upped version.
 * rest/network.c (create_response): Only create a response if there isn't one.

@@ -314,15 +314,19 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 				case HTTP_STATE_HEADERS:
 				case HTTP_STATE_MESSAGE: debug(" Calling response handler %p.\n",
 											    request->response.handlers->handlers[request->type - 1]);
-										 if ((size = request->response.handlers->handlers[request->type - 1](request))
-										 )
+										 if ((size = request->response.handlers->handlers[request->type - 1](request)))
 										 {
+											 if (request->response.state == HTTP_STATE_MESSAGE)
+											 {
+												 request->response.message_size += size;
+											 }
 											 debug(" Response %d bytes.\n", size); 
 											 //There was a response. 
 											send_buffer(connection);
 										 }
 										 break;
 				case HTTP_STATE_ASSEMBLED: debug(" Waiting for message dispatch.\n"); 
+										   http_print_clf_status(request);
 										   break;
 				case HTTP_STATE_DONE: if (!connection->sending)
 									  {

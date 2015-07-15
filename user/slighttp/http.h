@@ -153,10 +153,14 @@ struct http_response
       * @brief Pointer to the current position in the send buffer.
       */
      char *send_buffer_pos;
-         /**
-     * @brief Number of recursion levels in response handler.
-     */
+     /**
+      * @brief Number of recursion levels in response handler.
+      */
      unsigned char level;
+     /**
+      * @brief Size of the message.
+      */
+     size_t message_size;
 };
 
 /**

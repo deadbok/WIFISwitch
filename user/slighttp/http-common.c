@@ -94,19 +94,33 @@ char ICACHE_FLASH_ATTR *get_header_value(struct http_request *request, char *nam
  * 
  * See [CLF](https://en.wikipedia.org/wiki/Common_Log_Format).
  */
-void ICACHE_FLASH_ATTR print_clf_status(struct tcp_connection *connection,
-                                        char *status_code, size_t length)
+void ICACHE_FLASH_ATTR http_print_clf_status(struct http_request *request)
 {
-    struct http_request *request = connection->free;
-
     char *unknown = "-";
     
-    if (connection)
-    {
-        db_printf(IPSTR " %s %s %s %s HTTP/%s %s %d\n",
-                  IP2STR(connection->conn->proto.tcp->remote_ip), unknown,
-                  unknown, unknown, connection->callback_data.data,
-                  request->version, status_code, length);
+	db_printf(IPSTR, IP2STR(request->connection->conn->proto.tcp->remote_ip));
+	db_printf(" %s %s %s", unknown, unknown, unknown);
+	db_printf(" \"");
+	switch(request->type)
+	{
+		case HTTP_OPTIONS: db_printf("OPTIONS");
+						   break;
+		case HTTP_GET: db_printf("GET");
+					   break;
+    	case HTTP_HEAD: db_printf("HEAD");
+						break;
+    	case HTTP_POST: db_printf("POST");
+						break;
+    	case HTTP_PUT: db_printf("PUT");
+					   break;
+    	case HTTP_DELETE: db_printf("DELETE");
+						  break;
+    	case HTTP_TRACE: db_printf("TRACE");
+						 break;
+    	case HTTP_CONNECT: db_printf("CONNECT");
+						   break;
+    	default: db_printf("-");
     }
+    db_printf(" HTTP/%s %d %d\n", request->version, request->response.status_code, request->response.message_size);
 }
 
