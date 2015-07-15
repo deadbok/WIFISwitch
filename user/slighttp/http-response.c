@@ -326,10 +326,10 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 										 }
 										 break;
 				case HTTP_STATE_ASSEMBLED: debug(" Waiting for message dispatch.\n"); 
-										   http_print_clf_status(request);
 										   break;
 				case HTTP_STATE_DONE: if (!connection->sending)
 									  {
+										  http_print_clf_status(request);
 										  debug("Closing connection %p.\n", connection);
 										  //Set by call back if the SDK has already closed the connection
 										  if (!connection->closing)
