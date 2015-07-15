@@ -1,5 +1,7 @@
 2015-07-10 Martin Grønholdt
 
+* slighttp/http-response.c: Added 405 status.
+* slighttp/http-response.h: Added 405 status.
 * user_config.h: Version 0.0.3.
 * slighttp/http.h: Upped version.
 * rest/network.c (create_response): Only create a response if there isn't one.
@@ -9,7 +11,7 @@
 
 2015-07-09 Martin Grønholdt
 
-* slighttp/http..h (http_response): Removed unused send member.
+* slighttp/http.h (http_response): Removed unused send member.
 * rest/network.c: Adjusted for new http_process_response behaviour.
 * rest/net-names.c: Added rest_net_names_context.
 *				  : Adjusted for new http_process_response behaviour.

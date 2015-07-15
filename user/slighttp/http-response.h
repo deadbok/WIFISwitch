@@ -53,6 +53,10 @@
  */
 #define HTTP_STATUS_404 HTTP_STATUS_LINE("404", "Not Found")
 /**
+ * @brief HTTP 405 method not allowed response.
+ */
+#define HTTP_STATUS_405 HTTP_STATUS_LINE("405", "Method Not Allowed")
+/**
  * @brief HTTP 501 Not implemented response.
  */
 #define HTTP_STATUS_501 HTTP_STATUS_LINE("501", "Not Implemented")
@@ -68,6 +72,11 @@
  */
 #define HTTP_404_HTML               "<!DOCTYPE html><head><title>Resource not found.</title></head><body><h1>404 Not Found</h1><br />Resource not found.</body></html>"                                    
 #define HTTP_404_HTML_LENGTH		129
+/**
+ * @brief HTTP 404 response HTML.
+ */
+#define HTTP_405_HTML               "<!DOCTYPE html><head><title>Method Not Allowed.</title></head><body><h1>405 Method Not Allowed</h1><br />You cannot do that to this URL.</body></html>"                                    
+#define HTTP_405_HTML_LENGTH		150
 /**
  * @brief HTTP 501 response HTML.
  */
