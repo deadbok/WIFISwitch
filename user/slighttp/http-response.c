@@ -51,6 +51,10 @@ char *http_status_line_400 = HTTP_STATUS_400;
  */
 char *http_status_line_404 = HTTP_STATUS_404;
 /**
+ * @brief 405 status-line.
+ */
+char *http_status_line_405 = HTTP_STATUS_405;
+/**
  * @brief 501 status-line.
  */
 char *http_status_line_501 = HTTP_STATUS_501;
@@ -103,6 +107,9 @@ unsigned char ICACHE_FLASH_ATTR http_send_status_line(struct tcp_connection *con
 		case 404: response = http_status_line_404;
 				  size = os_strlen(http_status_line_404);
 				  break;
+		case 405: response = http_status_line_405;
+				  size = os_strlen(http_status_line_405);
+				  break;				  
 		case 501: response = http_status_line_501;
 				  size = os_strlen(http_status_line_501);
 				  break;
@@ -209,6 +216,9 @@ void fall_through_status_handler(struct tcp_connection *connection, unsigned sho
 				  break;
 		case 404: size = HTTP_404_HTML_LENGTH;
 				  msg = HTTP_404_HTML;
+				  break;
+		case 405: size = HTTP_405_HTML_LENGTH;
+				  msg = HTTP_405_HTML;
 				  break;
 		case 501: size = HTTP_501_HTML_LENGTH;
 				  msg = HTTP_501_HTML;
