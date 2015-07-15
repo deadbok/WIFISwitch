@@ -57,6 +57,11 @@
  */
 #define CONNECT_DELAY_SEC 10
 
+/**
+ * @brief Bit mask of which GPIO pins the REST interface can control.
+ */
+#define REST_GPIO_ENABLED 0x30
+
 /***
  * @brief Mostly shut off output from the SDK.
  */
@@ -65,8 +70,8 @@
 /**
  * @brief Customised print function.
  * 
- * This is an ugly but simple way, to shut up most of the ESP8266 SDK output.
- * Simple only turn the os_printf function on, when we are using it.
+ * If #SDK_DEBUG is TRUE, the regular os_printf function stops doing anything,
+ * but ets_prinf still does it's job.
  */
 #ifdef SDK_DEBUG
 #define db_printf(...) 	os_printf(__VA_ARGS__)

@@ -1,3 +1,30 @@
+2015-07-15 Martin Grønholdt
+
+* rest/gpio.c: Reading of an individual GPIO's status.
+*			 : Setting of an individual GPIO's status.
+
+
+2015-07-14 Martin Grønholdt
+
+* rest/net-names.c (rest_net_names_test): Incomprehensible debug output.
+*				   (rest_net_names_destroy): If debugging, tell that we're here.
+* rest/gpio.c: Listing of usable GPIO's work.
+*			  (rest_gpio_test): Check for actual GPIO number before accepting.
+*			  (rest_gpio_destroy): If debugging, tell that we're here.
+* response_handlers.h: Added GPIO rest functions.
+* rest/rest.h: Added GPIO rest functions.
+* user_config.h: Added REST_GPIO_ENABLED.
+
+
+2015-07-13 Martin Grønholdt
+
+* rest/gpio.c: Added file.
+*			   Added json_create_int_array.
+* rest/rest.c: Added file.
+* 			   Added rest_init.
+* rest/rest.h: Added rest_init.
+
+
 2015-07-10 Martin Grønholdt
 
 * fs/connect/index.html: Added form onsubmit.
@@ -330,7 +357,7 @@
 *		   : Added tcp__timer_cb.
 * fs/fs.c (fs_read): Did not advance position after reading.
 * rest/rest.h: Changes for slighttp.
-* rest(network.c: Changes for slighttp.
+* rest/network.c: Changes for slighttp.
 * rest/net-names.c: Changes for slighttp.
 * slighttp/http-tcp.c (tcp_connect_cb): Forgot to set the connection pointer in the request.
 * slighttp/http-request.c (http_parse_headers): Fixed handling of no headers.

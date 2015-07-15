@@ -112,7 +112,7 @@ bool ICACHE_FLASH_ATTR rest_net_names_test(struct http_request *request)
 		debug("Rest handler net-names found: %s.\n", request->uri);
         return(true);
     }
-    debug("Rest handler net-names will not request,\n"); 
+    debug("Rest handler net-names will not handle request,\n"); 
     return(false);  
 }
 
@@ -330,6 +330,8 @@ size_t ICACHE_FLASH_ATTR rest_net_names_get_handler(struct http_request *request
  */
 void ICACHE_FLASH_ATTR rest_net_names_destroy(struct http_request *request)
 {
+	debug("Freeing network names REST handler data.\n");
+	
 	if (request->response.context)
 	{	
 		if (((struct rest_net_names_context *)request->response.context)->response)

@@ -24,6 +24,9 @@
 #ifndef REST_H
 #define REST_H
 
+//General REST function.
+extern bool rest_init(void);
+
 //Get/Set configured network.
 extern bool rest_network_test(struct http_request *request);
 extern size_t rest_network_head_handler(struct http_request *request);
@@ -41,5 +44,12 @@ extern bool rest_net_names_test(struct http_request *request);
 extern size_t rest_net_names_head_handler(struct http_request *request);
 extern size_t rest_net_names_get_handler(struct http_request *request);
 extern void rest_net_names_destroy(struct http_request *request);
+
+//GPIO access.
+extern bool rest_gpio_test(struct http_request *request);
+extern size_t rest_gpio_head_handler(struct http_request *request);
+extern size_t rest_gpio_get_handler(struct http_request *request);
+extern size_t rest_gpio_put_handler(struct http_request *request);
+extern void rest_gpio_destroy(struct http_request *request);
 
 #endif
