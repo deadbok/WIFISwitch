@@ -4,6 +4,7 @@
 * slighttp/http-common.h: Changed renamed and changed print_clf_status as http_print_clf_status.
 * slighttp/http.h (http_response): Added message_size.
 * slighttp/http-response.c: Added 405 status.
+* 			   (http_process_response): Print CLF log to serial port.
 * slighttp/http-response.h: Added 405 status.
 * rest/gpio.c: Reading of an individual GPIO's status.
 *			 : Setting of an individual GPIO's status.
