@@ -42,6 +42,10 @@
  * @brief Password for the default network.
  */
 #define SSID_PASSWORD "password"
+/**
+ * @brief Network connection time-out.
+ */
+#define CONNECT_DELAY_SEC 10
 
 /**
  * @brief Password for the configuration AP.
@@ -52,18 +56,33 @@
  * @brief How often to check the status in miliseconds.
  */
 #define CHECK_TIME 5000
-/**
- * @brief Network connection time-out.
- */
-#define CONNECT_DELAY_SEC 10
 
 /**
  * @brief Bit mask of which GPIO pins the REST interface can control.
  */
 #define REST_GPIO_ENABLED 0x30
 
-/***
- * @brief Mostly shut off output from the SDK.
+/* Enable any of the following to have different levels of debug output on the
+ * serial port. 
+ */
+/**
+ * @brief Print warnings on the serial port.
+ */
+#define WARNINGS
+/**
+ * @brief Print debug info on the serial port.
+ */
+#define DEBUG
+/**
+ * @brief Print memory allocation info.
+ */
+#define DEBUG_MEM
+/**
+ * @brief List memory allocations.
+ */
+//#define DEBUG_MEM_LIST
+/**
+ * @brief Mostly shut up output from the SDK.
  */
 #define SDK_DEBUG
 
@@ -83,23 +102,6 @@
  * @brief Print an error message.
  */
 #define error(...)     db_printf("ERROR: " __VA_ARGS__ )
-
-/**
- * @brief Print warnings on the serial port.
- */
-#define WARNINGS
-/**
- * @brief Print debug info on the serial port.
- */
-#define DEBUG
-/**
- * @brief Print memory allocation info.
- */
-#define DEBUG_MEM
-/**
- * @brief List memory allocations.
- */
-//#define DEBUG_MEM_LIST
 
 //Macro for debugging. Prints the message if warnings is enabled.
 #ifdef WARNINGS
@@ -127,13 +129,13 @@
 
 extern void *db_alloc(size_t size, bool zero, char *info);
 extern void db_dealloc(void *ptr);
+extern void db_mem_list(void);
                         
 #else
 #define db_malloc(ARG, INFO)      os_malloc(ARG)
 #define db_free(ARG)        os_free(ARG)
 #define db_zalloc(ARG, INFO)      os_zalloc(ARG)
+#define db_mem_list(ARG)
 #endif
-
-extern void db_mem_list(void);
 
 #endif //USER_CONFIG_H

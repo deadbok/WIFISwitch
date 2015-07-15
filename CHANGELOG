@@ -1,5 +1,6 @@
 2015-07-15 Martin Grønholdt
 
+* user_config.h: Fixed scope of db_mem_list and rearranged a bit.
 * slighttp/http-common.c (print_clf_status): Renamed http_print_clf_status and reimplemented.
 * slighttp/http-common.h: Changed renamed and changed print_clf_status as http_print_clf_status.
 * slighttp/http.h (http_response): Added message_size.
