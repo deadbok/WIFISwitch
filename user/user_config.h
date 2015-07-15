@@ -76,7 +76,7 @@
 /**
  * @brief Print memory allocation info.
  */
-#define DEBUG_MEM
+//#define DEBUG_MEM
 /**
  * @brief List memory allocations.
  */
@@ -84,7 +84,7 @@
 /**
  * @brief Mostly shut up output from the SDK.
  */
-#define SDK_DEBUG
+//#define SDK_DEBUG
 
 /**
  * @brief Customised print function.

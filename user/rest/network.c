@@ -169,6 +169,7 @@ size_t ICACHE_FLASH_ATTR rest_network_get_handler(struct http_request *request)
 		request->response.state = HTTP_STATE_ASSEMBLED;
 		
 		debug(" Response size: %d.\n", msg_size);
+		request->response.message_size = msg_size;
 		return(msg_size);
 	}
 	return(ret);
@@ -227,6 +228,7 @@ size_t ICACHE_FLASH_ATTR rest_network_put_handler(struct http_request *request)
 				}
 			}
 		}
+		request->response.message_size = 0;
 		request->response.state = HTTP_STATE_ASSEMBLED;
 		//We're not sending so we call this our selves.
 		http_process_response(request->connection);

@@ -160,7 +160,7 @@ struct http_response
      /**
       * @brief Size of the message.
       */
-     size_t message_size;
+     signed long message_size;
 };
 
 /**

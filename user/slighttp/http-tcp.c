@@ -137,6 +137,7 @@ void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
 	debug(" Response state: %d.\n", request->response.state);
 	if (request->response.state == HTTP_STATE_ASSEMBLED)
 	{
+		http_process_response(connection);
 		debug(" Message end.\n");
 		request->response.state = HTTP_STATE_DONE;
 		//Call one last time to clean up.

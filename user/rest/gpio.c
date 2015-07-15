@@ -295,6 +295,7 @@ size_t ICACHE_FLASH_ATTR rest_gpio_get_handler(struct http_request *request)
 		request->response.state = HTTP_STATE_ASSEMBLED;
 		
 		debug(" Response size: %d.\n", msg_size);
+		request->response.message_size = msg_size;
 		return(msg_size);
 	}
 	return(ret);
@@ -346,6 +347,7 @@ size_t ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
 		if (current_gpio < 0)
 		{
 			ret += http_send(request->connection, "<!DOCTYPE html><head><title>Method Not Allowed.</title></head><body><h1>405 Method Not Allowed.</h1><br />I won't PUT up with this.</body></html>", 145);
+			request->response.message_size = 145;
 		}
 		else
 		{
@@ -366,7 +368,8 @@ size_t ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
 						GPIO_OUTPUT_SET(current_gpio, gpio_state);
 					}
 				}
-			}		
+			}
+			request->response.message_size = 0;		
 		}
 		request->response.state = HTTP_STATE_ASSEMBLED;
 		//We're not sending so we call this our selves.

@@ -262,6 +262,7 @@ size_t ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
 				fs_close(context->file);
 				request->response.state = HTTP_STATE_ASSEMBLED;
 			}
+			request->response.message_size += ret;
 		}
 	}
     return(ret);

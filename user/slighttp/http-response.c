@@ -247,7 +247,7 @@ void fall_through_status_handler(struct tcp_connection *connection, unsigned sho
 void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 {
 	struct http_request *request = connection->free;
-	unsigned short size;
+	size_t size;
 	
 	debug("Processing request for connection %p.\n", connection);
 	if (connection->sending)
@@ -311,15 +311,11 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 									  http_process_response(connection);
 									  break;
 				case HTTP_STATE_STATUS: //Send response
-				case HTTP_STATE_HEADERS:
+				case HTTP_STATE_HEADERS: 
 				case HTTP_STATE_MESSAGE: debug(" Calling response handler %p.\n",
 											    request->response.handlers->handlers[request->type - 1]);
 										 if ((size = request->response.handlers->handlers[request->type - 1](request)))
 										 {
-											 if (request->response.state == HTTP_STATE_MESSAGE)
-											 {
-												 request->response.message_size += size;
-											 }
 											 debug(" Response %d bytes.\n", size); 
 											 //There was a response. 
 											send_buffer(connection);
