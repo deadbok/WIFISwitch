@@ -370,7 +370,7 @@ size_t ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
 		}
 		request->response.state = HTTP_STATE_ASSEMBLED;
 		//We're not sending so we call this our selves.
-		http_process_response(connection);	
+		http_process_response(request->connection);	
 	}
 	return(ret);
 }
