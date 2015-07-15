@@ -29,7 +29,6 @@
 
 2015-07-10 Martin Grønholdt
 
-<<<<<<< HEAD
 * fs/connect/index.html: Added form onsubmit.
 * fs/connect/passwd.html: Added form onsubmit.
 * user_config.h: Version 0.0.3.
