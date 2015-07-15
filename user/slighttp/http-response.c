@@ -325,11 +325,11 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 											send_buffer(connection);
 										 }
 										 break;
-				case HTTP_STATE_ASSEMBLED: debug(" Waiting for message dispatch.\n"); 
+				case HTTP_STATE_ASSEMBLED: debug(" Waiting for message dispatch.\n");
+										   http_print_clf_status(request); 
 										   break;
 				case HTTP_STATE_DONE: if (!connection->sending)
 									  {
-										  http_print_clf_status(request);
 										  debug("Closing connection %p.\n", connection);
 										  //Set by call back if the SDK has already closed the connection
 										  if (!connection->closing)
@@ -357,7 +357,7 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 				default: warn("Unknown HTTP response state %d.\n", request->response.state);
 			}
 		}
-		//Increase recursion level.
+		//Decrease recursion level.
 		request->response.level--;
 		debug(" Recursion level; %d.\n", request->response.level);
 	}
