@@ -146,8 +146,6 @@ static void ICACHE_FLASH_ATTR status_check(void)
  */
 static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 {
-	db_printf("WIFI connected...\n");
-
 	//Start status task.
 	//Disarm timer.
 	os_timer_disarm(&status_timer);

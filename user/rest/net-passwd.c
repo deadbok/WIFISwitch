@@ -73,8 +73,15 @@ size_t ICACHE_FLASH_ATTR rest_net_passwd_put_handler(struct http_request *reques
 	if (request->response.state == HTTP_STATE_STATUS)
 	{
 		ret = http_send_status_line(request->connection, 204);
+		request->response.state = HTTP_STATE_HEADERS;
+	}
+	else if (request->response.state == HTTP_STATE_HEADERS)
+	{
 		ret += http_send(request->connection, "\r\n", 2);		
-		
+				request->response.state = HTTP_STATE_MESSAGE;
+	}
+	else if (request->response.state == HTTP_STATE_MESSAGE)
+	{
 		jsonparse_setup(&state, request->message, os_strlen(request->message));
 		while ((type = jsonparse_next(&state)) != 0)
 		{

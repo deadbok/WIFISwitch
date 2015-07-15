@@ -100,26 +100,27 @@ static void ICACHE_FLASH_ATTR print_status(unsigned char status)
 {
     switch(status)
     {
+		db_printf("WIFI connection ");
         case STATION_IDLE:
-            db_printf("Idle...\n");
+            db_printf("is idle.\n");
             break;
         case STATION_CONNECTING:
-            db_printf("Connecting...\n");
+            db_printf("is connecting.\n");
             break;
         case STATION_WRONG_PASSWORD:
-            db_printf("Wrong password...\n");
+            db_printf("has wrong password.\n");
             break;
         case STATION_NO_AP_FOUND:
-            db_printf("Could not find an AP...\n");
+            db_printf("could not find an AP.\n");
             break;
         case STATION_CONNECT_FAIL:
-            db_printf("Connection failed...\n");
+            db_printf("has failed.\n");
             break;
         case STATION_GOT_IP:
-            db_printf("Connected.\n");
+            db_printf("is connected.\n");
             break;
         default:
-            db_printf("Unknown status: %d\n", status);
+            db_printf("has unknown status: %d\n", status);
             break;
     }
 }  
@@ -145,7 +146,7 @@ static void connect(void)
             ret = wifi_get_ip_info(STATION_IF, &ipinfo);
             if (!ret)
             {
-                error("Failed get IP address (%d).\n", ret);
+                error("Failed to get IP address (%d).\n", ret);
                 return;
             }
             db_printf("Got IP address: %d.%d.%d.%d.\n", IP2STR(&ipinfo.ip) );

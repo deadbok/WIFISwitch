@@ -1,5 +1,9 @@
 2015-07-15 Martin Grønholdt
 
+* rest/net-passwd.c(rest_net_passwd_put_handler): Proper handling of states.
+* rest/network.c (rest_network_put_handler): Proper handling of states.
+* user_main.c (connected): Don't repeat message.
+* net/wifi_connect.c (print_status): Nicer output.
 * user_config.h: Fixed scope of db_mem_list and rearranged a bit.
 * slighttp/http-common.c (print_clf_status): Renamed http_print_clf_status and reimplemented.
 * slighttp/http-common.h: Changed renamed and changed print_clf_status as http_print_clf_status.
@@ -9,6 +13,7 @@
 * slighttp/http-response.h: Added 405 status.
 * rest/gpio.c: Reading of an individual GPIO's status.
 *			 : Setting of an individual GPIO's status.
+*			  (rest_gpio_put_handler): Proper handling of states.
 
 
 2015-07-14 Martin Grønholdt

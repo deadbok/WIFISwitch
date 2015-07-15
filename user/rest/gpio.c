@@ -322,18 +322,35 @@ size_t ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
 		if (current_gpio < 0)
 		{
 			ret = http_send_status_line(request->connection, 405);
-			ret += http_send_header(request->connection, "Allow", "GET");
-			ret += http_send_header(request->connection, "Content-length", "145");
-			ret += http_send(request->connection, "\r\n", 2);
-			ret += http_send(request->connection, "<!DOCTYPE html><head><title>Method Not Allowed.</title></head><body><h1>405 Method Not Allowed.</h1><br />I won't PUT up with this.</body></html>", 145);
 		}
 		else
 		{
 			ret = http_send_status_line(request->connection, 204);
-			//Send end of headers.
-			ret += http_send(request->connection, "\r\n", 2);
+		}
+		request->response.state = HTTP_STATE_HEADERS;
+	}
+	else if (request->response.state == HTTP_STATE_HEADERS)
+	{
+		if (current_gpio < 0)
+		{
+			ret += http_send_header(request->connection, "Allow", "GET");
+			ret += http_send_header(request->connection, "Content-length", "145");
+		}
+		//Send end of headers.
+		ret += http_send(request->connection, "\r\n", 2);
+		request->response.state = HTTP_STATE_MESSAGE;	
+	}
+	else if (request->response.state == HTTP_STATE_MESSAGE)
+	{
+		//Handle trying to PUT to /rest/gpios
+		if (current_gpio < 0)
+		{
+			ret += http_send(request->connection, "<!DOCTYPE html><head><title>Method Not Allowed.</title></head><body><h1>405 Method Not Allowed.</h1><br />I won't PUT up with this.</body></html>", 145);
+		}
+		else
+		{
 			debug(" GPIO selected: %s.\n", request->message);
-			
+		
 			jsonparse_setup(&json_state, request->message, os_strlen(request->message));
 			while ((type = jsonparse_next(&json_state)) != 0)
 			{
@@ -349,9 +366,9 @@ size_t ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
 						GPIO_OUTPUT_SET(current_gpio, gpio_state);
 					}
 				}
-			}
+			}		
 		}
-		request->response.state = HTTP_STATE_ASSEMBLED;
+		request->response.state = HTTP_STATE_ASSEMBLED;	
 	}
 	return(ret);
 }
