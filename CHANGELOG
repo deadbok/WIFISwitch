@@ -1,5 +1,9 @@
 2015-07-15 Martin Grønholdt
 
+* Makefile: Added flashfs to only flash file system.
+*		   (checkdirs): Added some missing directories.
+* fs/index.html: Created on/of button.
+* fs/admin.html: Removed file.
 * rest/net-passwd.c(rest_net_passwd_put_handler): Proper handling of states.
 *												: Process response at HTTP_STATE_ASSEMBLED to print CLF:
 * rest/network.c (rest_network_put_handler): Proper handling of states.

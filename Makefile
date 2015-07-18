@@ -33,8 +33,8 @@ SDK_BASE	?= /home/oblivion/esp-open-sdk/sdk/
 
 # esptool.py path and port
 ESPTOOL		?= esptool.py
-ESPPORT		?= /dev/ttyAMA0
-ESPSPEED	?= 921600
+ESPPORT		?= /dev/ttyUSB0
+ESPSPEED	?= 115200
 
 # name for the target project
 TARGET		= wifiswitch
@@ -122,7 +122,7 @@ $1/%.o: %.c
 	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS) -MD -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs flash flashblank clean debug debugflash docs
+.PHONY: all checkdirs flash flashblank clean debug debugflash docs flashfs
 
 all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2) $(FW_FS)
 	@./mem_usage.sh $(TARGET_OUT) 81920
@@ -139,7 +139,7 @@ $(TARGET_OUT): $(APP_AR)
 $(APP_AR): $(OBJ)
 	$(AR) cru $@ $^
 
-checkdirs: $(BUILD_DIR) $(FW_BASE)
+checkdirs: $(BUILD_DIR) $(FW_BASE) $(LOG_DIR) $(TOOLS_DIR)
 
 $(BUILD_DIR):
 	$(MKDIR) $@
@@ -181,6 +181,10 @@ $(FW_FS): $(FS_FILES)
 	-$(RM) $(FW_FS) 
 	(cd $(FS_DIR); $(ZIP) -0 -r0 ../$@ .; cd ..;);
 	
+flashfs: $(FW_FS)
+	tools/testsize.sh $(FW_FS) $(FS_MAX_SIZE)
+	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FS_START_OFFSET) $(FW_FS)
+
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
 
 #Include .d files with targets and dependencies.

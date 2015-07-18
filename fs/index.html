@@ -1,9 +1,158 @@
 <!DOCTYPE html>
 <head>
-<title>Default page.</title>
+<title>WIFI Switch.</title>
 <link href="css/min.css" rel="stylesheet" type="text/css" />
+<!-- http://tympanus.net/codrops/2012/09/13/button-switches-with-checkboxes-and-css3-fanciness/ -->
+<style>
+*,
+*:after,
+*:before {
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+.switch {
+  margin: 50px auto;
+  position: relative;
+}
+
+.switch label {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: block;
+}
+
+.switch input {
+  top: 0; 
+  right: 0; 
+  bottom: 0; 
+  left: 0;
+  opacity: 0;
+  z-index: 100;
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.switch.demo1 {
+  width: 100px;
+  height: 100px;
+}
+
+.switch.demo1 label {
+  border-radius: 50%;
+  background: #eaeaea;
+  box-shadow: 
+      0 3px 5px rgba(0,0,0,0.25),
+      inset 0 1px 0 rgba(255,255,255,0.3),
+      inset 0 -5px 5px rgba(100,100,100,0.1),
+      inset 0 5px 5px rgba(255,255,255,0.3);
+}
+
+.switch.demo1 label:after {
+  content: "";
+  position: absolute;
+  top: -8%; right: -8%; bottom: -8%; left: -8%;
+  z-index: -1;
+  border-radius: inherit;
+  background: #ddd;
+  background: -moz-linear-gradient(#ccc, #fff);
+  background: -ms-linear-gradient(#ccc, #fff);
+  background: -o-linear-gradient(#ccc, #fff);
+  background: -webkit-gradient(linear, 0 0, 0 100%, from(#ccc), to(#fff));
+  background: -webkit-linear-gradient(#ccc, #fff);
+  background: linear-gradient(#ccc, #fff);
+  box-shadow: 
+    inset 0 2px 1px rgba(0,0,0,0.15),
+    0 2px 5px rgba(200,200,200,0.1);
+}
+
+.switch.demo1 label:before {
+  content: "";
+  position: absolute;
+  width: 20%;
+  height: 20%;
+  border-radius: inherit;
+  left: 40%;
+  top: 40%;
+  background: #969696;
+  background: radial-gradient(40% 35%, #ccc, #969696 60%);
+  box-shadow:
+      inset 0 2px 4px 1px rgba(0,0,0,0.3),
+      0 1px 0 rgba(255,255,255,1),
+      inset 0 1px 0 white;
+}
+
+.switch.demo1 input:checked ~ label {
+  background: #dedede;
+  background: -moz-linear-gradient(#dedede, #fdfdfd);
+  background: -ms-linear-gradient(#dedede, #fdfdfd);
+  background: -o-linear-gradient(#dedede, #fdfdfd);
+  background: -webkit-gradient(linear, 0 0, 0 100%, from(#dedede), to(#fdfdfd));
+  background: -webkit-linear-gradient(#dedede, #fdfdfd);
+  background: linear-gradient(#dedede, #fdfdfd);
+}
+
+.switch.demo1 input:checked ~ label:before {
+  background: #25d025;
+  background: radial-gradient(40% 35%, #5aef5a, #25d025 60%);
+  box-shadow:
+      inset 0 3px 5px 1px rgba(0,0,0,0.1),
+      0 1px 0 rgba(255,255,255,0.4),
+      0 0 10px 2px rgba(0, 210, 0, 0.5);
+}
+</style>
 </head>
 <body>
-<h1>Hello world.</h1>
+<div class="switch demo1">
+	<input id="switch" type="checkbox" onclick="buttonSwitch()">
+	<label></label>
+</div>
+<script src="js/atomic.min.js"></script>
+<script>
+var button = document.getElementById("switch");
+var state = false;
+
+function buttonSwitch()
+{
+	if (button.checked)
+	{
+		var request = "{\"state\":0}";
+	}
+	else
+	{
+		var request = "{\"state\":1}";
+	}
+    
+    atomic.put('/rest/gpios/5', request)
+	.success(function (data, xhr) 
+	{
+	})
+	.error(function (data, xhr) 
+	{
+	});
+}
+
+atomic.get('/rest/gpios/5')
+.success(function (data, xhr) 
+{
+	if (data.state)
+	{
+		button.checked = true;
+	}
+	else
+	{
+		button.checked = false;
+	}
+})
+.error(function (data, xhr) 
+{
+});
+</script>
 </body>
 </html>

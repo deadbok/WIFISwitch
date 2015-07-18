@@ -98,7 +98,7 @@ static bool ICACHE_FLASH_ATTR wifi_disconnect(void)
  */
 static void ICACHE_FLASH_ATTR print_status(unsigned char status)
 {
-	db_printf("WIFI connection ");
+	db_printf("WIFI ");
     switch(status)
     {
         case STATION_IDLE:

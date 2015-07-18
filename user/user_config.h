@@ -44,8 +44,11 @@
 #define SSID_PASSWORD "password"
 /**
  * @brief Network connection time-out.
+ * 
+ * Seconds before the firmware stop trying to connect to the configured WIFI
+ * network, and switches to network configuration mode.
  */
-#define CONNECT_DELAY_SEC 10
+#define CONNECT_DELAY_SEC 15
 
 /**
  * @brief Password for the configuration AP.
