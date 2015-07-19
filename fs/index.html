@@ -136,6 +136,21 @@ function buttonSwitch()
 	.error(function (data, xhr) 
 	{
 	});
+	atomic.get('/rest/gpios/5')
+	.success(function (data, xhr) 
+	{
+		if (data.state)
+		{
+			button.checked = true;
+		}
+		else
+		{
+			button.checked = false;
+		}
+	})
+	.error(function (data, xhr) 
+	{
+	});
 }
 
 atomic.get('/rest/gpios/5')

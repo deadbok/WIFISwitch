@@ -194,11 +194,19 @@ size_t ICACHE_FLASH_ATTR rest_network_put_handler(struct http_request *request)
     
 	if (request->response.state == HTTP_STATE_STATUS)
 	{
-		ret = http_send_status_line(request->connection, 204);
+		request->response.status_code = 204;
+		ret = http_send_status_line(request->connection, request->response.status_code);
 		request->response.state = HTTP_STATE_HEADERS;
 	}
 	else if (request->response.state == HTTP_STATE_HEADERS)
 	{
+		//Always send connections close and server info.
+		ret = http_send_header(request->connection, 
+					  "Connection",
+					  "close");
+		ret += http_send_header(request->connection,
+					  "Server",
+					  HTTP_SERVER_NAME);
 		ret += http_send(request->connection, "\r\n", 2);		
 		request->response.state = HTTP_STATE_MESSAGE;
 	}
@@ -242,6 +250,8 @@ size_t ICACHE_FLASH_ATTR rest_network_put_handler(struct http_request *request)
  */
 void ICACHE_FLASH_ATTR rest_network_destroy(struct http_request *request)
 {
+	debug("Freeing network name REST handler data.\n");
+	
 	if (request->response.context)
 	{
 		db_free(request->response.context);

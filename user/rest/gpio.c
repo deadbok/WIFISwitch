@@ -322,11 +322,13 @@ size_t ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
 		//Handle trying to PUT to /rest/gpios
 		if (current_gpio < 0)
 		{
-			ret = http_send_status_line(request->connection, 405);
+			request->response.status_code = 405;
+			ret = http_send_status_line(request->connection, request->response.status_code);
 		}
 		else
 		{
-			ret = http_send_status_line(request->connection, 204);
+			request->response.status_code = 204;
+			ret = http_send_status_line(request->connection, request->response.status_code);
 		}
 		request->response.state = HTTP_STATE_HEADERS;
 	}
@@ -336,6 +338,11 @@ size_t ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
 		{
 			ret += http_send_header(request->connection, "Allow", "GET");
 			ret += http_send_header(request->connection, "Content-length", "145");
+		}
+		else
+		{
+			ret = http_send_header(request->connection, "Connection", "close");
+			ret += http_send_header(request->connection, "Server", HTTP_SERVER_NAME);
 		}
 		//Send end of headers.
 		ret += http_send(request->connection, "\r\n", 2);

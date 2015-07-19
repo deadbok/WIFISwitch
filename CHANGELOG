@@ -1,3 +1,9 @@
+2015-07-19 Martin Grønholdt
+
+* rest/network.c (rest_network_put_handler): Handle status code properly.
+* rest/net-passwd.c (rest_net_passwd_put_handler): Handle status code properly.
+* rest/gpio.c (rest_gpio_put_handler): Handle status code properly.
+
 2015-07-15 Martin Grønholdt
 
 * Makefile: Added flashfs to only flash file system.
