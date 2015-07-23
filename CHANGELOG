@@ -1,3 +1,8 @@
+2015-07-23 Martin Grønholdt
+
+* fs/fs.c (fs_init): Output flash ROM size.
+* fs/int_flash.c: Added flash_size.
+
 2015-07-22 Martin Grønholdt
 
 * slighttp/http-response (http_process_response): Process request buffer entries.

@@ -65,6 +65,7 @@ static FS_FILE_H n_open_files = 0;
  */
 void ICACHE_FLASH_ATTR fs_init(void)
 {
+	db_printf("ROM size %d KiB.\n", flash_size() >> 10);
 	init_zip();
 }
 

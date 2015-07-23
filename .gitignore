@@ -44,3 +44,8 @@ debug.log
 doxygen.log
 # Doxygen generated files
 docs/html
+
+#Eclipse
+.settings
+.cproject
+.project

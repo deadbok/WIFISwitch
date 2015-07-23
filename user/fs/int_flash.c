@@ -38,6 +38,25 @@
 //Flash: W25Q32BV
 
 /**
+ * @brief Return the flash chip's size, in bytes.
+ * 
+ * From "draco" on http://www.esp8266.com/viewtopic.php?f=13&t=2506
+ */
+size_t ICACHE_FLASH_ATTR flash_size(void)
+{ 
+	unsigned int id = spi_flash_get_id(); 
+	unsigned char mfg_id = id & 0xff;
+	unsigned char size_id = (id >> 16) & 0xff; 
+	
+	debug("Flash ID 0x%x.\n", id);
+	if ((mfg_id != 0xEF) && (mfg_id != 0xC8)) // 0xEF is WinBond and 0xC8 is GigaDevice;
+	{
+		return(0);
+	}
+	return(1 << size_id);
+}
+
+/**
  * @brief Easy convert read bytes to printable format.
  */
 #define FLASH2STR(a) (a)[0], (a)[1], (a)[2], (a)[3]
@@ -95,7 +114,7 @@ void ICACHE_FLASH_ATTR flash_dump_mem(unsigned int src_addr, size_t size)
 }
 
 /**
- * @brief Do an 4 bit aligned copy.
+ * @brief Do a 4 bit aligned copy.
  * 
  * @param d Destination memory.
  * @param s Source memory.

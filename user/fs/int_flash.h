@@ -45,6 +45,7 @@ union flash_data_u
 };
 
 //Flash access functions.
+extern size_t flash_size(void);
 extern void flash_dump(unsigned int src_addr, size_t size);
 extern void flash_dump_mem(unsigned int src_addr, size_t size);
 extern bool aflash_read(const void *data, unsigned int read_addr, size_t size);
