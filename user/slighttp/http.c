@@ -57,6 +57,7 @@
 #include "http-common.h"
 #include "http-tcp.h"
 #include "http.h"
+#include "tools/ring.h"
 
 /**
  * @brief Where to serve files from, in the file system.
@@ -82,10 +83,14 @@ bool ICACHE_FLASH_ATTR init_http(char *path, struct http_response_handler *handl
     {
 		return(false);
 	}
-	if (tcp_listen(80, tcp_connect_cb, tcp_reconnect_cb, tcp_disconnect_cb, 
+	if (!tcp_listen(80, tcp_connect_cb, tcp_reconnect_cb, tcp_disconnect_cb, 
 				   tcp_write_finish_cb, tcp_recv_cb, tcp_sent_cb))
 	{
 		return(false);
 	}
+	//Create buffer for 50 requests.
+	debug("Creating request buffer.\n");
+	init_ring(&request_buffer, sizeof(struct tcp_connection *), HTTP_REQUEST_BUFFER_SIZE);
+	
 	return(true);
 }

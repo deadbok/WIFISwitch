@@ -251,6 +251,7 @@ static char ICACHE_FLASH_ATTR *http_parse_headers(struct http_request *request,
 		value = db_malloc(sizeof(char) * (size + 1), "value http_parse_headers");
 		memcpy(value, next_data, size);
 		value[size] = '\0';
+		debug("%s\n", value);
 	}
     return(value);
 }

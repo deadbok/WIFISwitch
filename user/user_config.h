@@ -79,7 +79,7 @@
 /**
  * @brief Print memory allocation info.
  */
-//#define DEBUG_MEM
+#define DEBUG_MEM
 /**
  * @brief List memory allocations.
  */

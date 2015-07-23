@@ -151,8 +151,6 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 	os_timer_disarm(&status_timer);
 	//Setup timer, pass call back as parameter.
 	os_timer_setfn(&status_timer, (os_timer_func_t *)status_check, NULL);
-	//Arm the timer, run every #CHECK_TIME  ms.
-	os_timer_arm(&status_timer, CHECK_TIME, 1);
 	
 	if (mode < 2)
 	{
@@ -164,6 +162,8 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 		//Start in network configuration mode.
 		init_http("/connect/", response_handlers, N_RESPONSE_HANDLERS);
 	}
+	//Arm the timer, run every #CHECK_TIME  ms.
+	os_timer_arm(&status_timer, CHECK_TIME, 1);
 }
 
 /**

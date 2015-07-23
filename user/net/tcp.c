@@ -433,12 +433,17 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
 bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, size_t size)
 {
     debug("Sending %d bytes of TCP data (%p using %p),\n", size, data, connection);
-    
+
+	if (connection->sending)
+	{
+		error(" Still sending something else.\n");
+		return(false);
+	}    
 #ifdef DEBUG
 	uart0_tx_buffer((unsigned char *)data, size);
 #endif //DEBUG
 
-	connection->sending++;
+	connection->sending = true;
 	return(espconn_sent(connection->conn, (unsigned char*)data, size));
 }
 

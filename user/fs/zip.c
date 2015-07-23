@@ -168,6 +168,7 @@ struct zip_file_hdr *zip_find_file_header(char *path)
     {
 		while ((offset < zip_flut_entries))
 		{
+			debug(" Trying file %s.\n", zip_flut[offset].filename);
 			filename_length = os_strlen(zip_flut[offset].filename);			
 			if ((!os_strncmp(zip_flut[offset].filename, path, filename_length)) &&
             (filename_length == path_length))
@@ -347,7 +348,7 @@ void ICACHE_FLASH_ATTR init_zip(void)
 			if (file_hdr->filename[file_hdr->filename_len - 1] != '/')
 			{
 				debug(" Adding \"%s\" at 0x%x.\n", file_hdr->filename, offset);
-				zip_flut[files].filename = db_malloc(os_strlen(file_hdr->filename), "zip_flut[files].filename init_zip.");
+				zip_flut[files].filename = db_malloc(os_strlen(file_hdr->filename) + 1, "zip_flut[files].filename init_zip.");
 				os_strcpy(zip_flut[files].filename, file_hdr->filename);
 				zip_flut[files].hdr_offset = offset;
 				zip_flut[files].data_offset = data_offset;

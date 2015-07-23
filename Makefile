@@ -26,15 +26,15 @@ BUILD_BASE	= build
 FW_BASE		= firmware
 
 # base directory for the compiler
-XTENSA_TOOLS_ROOT ?= /home/oblivion/esp-open-sdk/xtensa-lx106-elf/bin/
+XTENSA_TOOLS_ROOT ?= /home/oblivion/esp8266/esp-open-sdk/xtensa-lx106-elf/bin/
 
 # base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= /home/oblivion/esp-open-sdk/sdk/
+SDK_BASE	?= /home/oblivion/esp8266/esp-open-sdk/sdk/
 
 # esptool.py path and port
 ESPTOOL		?= esptool.py
 ESPPORT		?= /dev/ttyUSB0
-ESPSPEED	?= 115200
+ESPSPEED	?= 230400
 
 # name for the target project
 TARGET		= wifiswitch

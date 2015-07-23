@@ -30,6 +30,17 @@
 #include "http-request.h"
 #include "http-response.h"
 #include "http.h"
+#include "http-tcp.h"
+
+/**
+ * @brief Ring buffer for incomming request, that are waiting for a response.
+ */
+struct ring_buffer request_buffer;
+
+/**
+ * @brief Response handler mutex, add one when handling request, substract one when done.
+ */
+int http_response_mutex = 0;
 
 /**
  * @brief Callback when a connection is made.
@@ -105,6 +116,8 @@ void ICACHE_FLASH_ATTR tcp_write_finish_cb(struct tcp_connection *connection)
  */
 void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 {
+	void *buffer_ptr;
+	
 	struct http_request *request = connection->free;
 	
     debug("HTTP received (%p).\n", connection);
@@ -121,14 +134,36 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 		warn("Empty request received.<n");
 	}
 
-    http_parse_request(connection);
-    //Start sending the response
-    http_process_response(connection);
+	//A bad idea to parser latter since the data apparently may be gone.
+	http_parse_request(connection);
+	
+    debug(" Response handler mutex %d.\n", http_response_mutex);
+    if ((!http_response_mutex) && (request_buffer.count < 1))
+    {  
+		http_response_mutex++;
+		//No request waiting just process.
+		http_process_response(connection);
+	}
+	else
+	{
+		if (request_buffer.count < (HTTP_REQUEST_BUFFER_SIZE - 1))
+		{
+			debug(" Adding request to buffer.\n");
+			buffer_ptr = ring_push_back(&request_buffer);
+			*((struct tcp_connection **)buffer_ptr) = connection;
+		}
+		else
+		{
+			error("Dumping request, no free buffers.\n");
+		}
+	}
+    debug(" Request %p done.\n", request);
 }
 
 void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
 {
 	struct http_request *request = connection->free;
+	//void *buffer_ptr;
 		
 	debug("HTTP send (%p).\n", connection);
 	
@@ -142,6 +177,20 @@ void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
 		request->response.state = HTTP_STATE_DONE;
 		//Call one last time to clean up.
 		http_process_response(connection);
+		//http_response_mutex--;
+		////Answer buffered request.
+		//debug(" Response handler mutex %d.\n", http_response_mutex);
+		//debug(" %d buffered Requests.\n", request_buffer.count); 
+		//if ((!http_response_mutex) && (request_buffer.count > 0))
+		//{
+			//debug(" Handling request from buffer.\n");
+			//buffer_ptr = ring_pop_front(&request_buffer);
+			//if (buffer_ptr)
+			//{
+				//http_response_mutex++;
+				//http_process_response(*((struct tcp_connection **)buffer_ptr));
+			//}
+		//}
 	}
 	else
 	{

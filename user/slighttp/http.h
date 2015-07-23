@@ -46,6 +46,10 @@
  * @brief Size of send buffer.
  */
 #define HTTP_SEND_BUFFER_SIZE 1024
+/**
+ * @brief Number of request that can be buffered.
+ */
+#define HTTP_REQUEST_BUFFER_SIZE 50
 
 /**
  * @brief HTTP request types.

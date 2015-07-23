@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <head>
 <title>WIFI Switch.</title>
-<link href="css/min.css" rel="stylesheet" type="text/css" />
+<link href="/css/min.css" rel="stylesheet" type="text/css" />
 <!-- http://tympanus.net/codrops/2012/09/13/button-switches-with-checkboxes-and-css3-fanciness/ -->
 <style>
 *,
@@ -113,20 +113,20 @@
 	<input id="switch" type="checkbox" onclick="buttonSwitch()">
 	<label></label>
 </div>
-<script src="js/atomic.min.js"></script>
+<script src="/js/atomic.min.js"></script>
 <script>
 var button = document.getElementById("switch");
-var state = false;
 
 function buttonSwitch()
 {
+	console.log(button.checked);
 	if (button.checked)
 	{
-		var request = "{\"state\":0}";
+		var request = "{\"state\":1";
 	}
 	else
 	{
-		var request = "{\"state\":1}";
+		var request = "{\"state\":0}";
 	}
     
     atomic.put('/rest/gpios/5', request)

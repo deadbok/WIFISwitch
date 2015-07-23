@@ -318,7 +318,8 @@ size_t ICACHE_FLASH_ATTR rest_net_names_get_handler(struct http_request *request
 				 ((struct rest_net_names_context *)request->response.context)->size);
 		request->response.state = HTTP_STATE_ASSEMBLED;
 		
-		debug(" Response size: %d.\n", ((struct rest_net_names_context *)request->response.context)->size);
+		request->response.message_size = ((struct rest_net_names_context *)request->response.context)->size;
+		debug(" Response size: %d.\n", request->response.message_size);
 	}
 	return(ret);
 }

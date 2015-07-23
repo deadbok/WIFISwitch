@@ -66,10 +66,10 @@ void ICACHE_FLASH_ATTR *ring_push_back(struct ring_buffer *rb)
 		debug(" Buffer is full.\n");
 		return(NULL);
 	}
-	
-	//Handle wrap around.
+
 	ret = rb->tail;
 	rb->tail = rb->tail + rb->item_size;
+	//Handle wrap around.
 	if (rb->tail > (rb->data + ((rb->capacity - 1) * rb->item_size)))
 	{
 		debug(" Reached the end of the buffer array.\n");
@@ -103,7 +103,7 @@ void ICACHE_FLASH_ATTR *ring_pop_front(struct ring_buffer *rb)
 
 	//Handle wrap around.
 	new_head = rb->head + rb->item_size;
-	if (new_head > &rb->data[rb->capacity - 1])
+	if (new_head > (rb->data + ((rb->capacity - 1) * rb->item_size)))
 	{
 		debug(" Reached the end of the buffer array.\n");
 		//Go back to the start.

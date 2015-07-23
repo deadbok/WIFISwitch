@@ -33,6 +33,7 @@
 #include "http.h"
 #include "http-request.h"
 #include "http-response.h"
+#include "http-tcp.h"
 
 /**
  * @brief 200 status-line.
@@ -248,6 +249,7 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 {
 	struct http_request *request = connection->free;
 	size_t size;
+	void *buffer_ptr;
 	
 	debug("Processing request for connection %p.\n", connection);
 	if (connection->sending)
@@ -260,7 +262,7 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 	{
 		//Increase recursion level.
 		request->response.level++;
-		debug(" Recursion level; %d.\n", request->response.level);
+		debug(" -> Recursion level; %d.\n", request->response.level);
 		if (request->type != HTTP_NONE)
 		{
 			//Get started
@@ -342,6 +344,21 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 										  }
 										  http_free_request(connection);
 										  tcp_free(connection);
+										  		
+										  http_response_mutex--;
+										  //Answer buffered request.
+										  debug(" Response handler mutex %d.\n", http_response_mutex);
+										  debug(" %d buffered Requests.\n", request_buffer.count); 
+										  if ((!http_response_mutex) && (request_buffer.count > 0))
+										  {
+											  debug(" Handling request from buffer.\n");
+											  buffer_ptr = ring_pop_front(&request_buffer);
+											  if (buffer_ptr)
+											  {
+												  http_response_mutex++;
+												  http_process_response(*((struct tcp_connection **)buffer_ptr));
+											  }
+										  }
 									  }
 									  break;
 				case HTTP_STATE_ERROR: warn("HTTP response status: %d.\n", request->response.status_code);
@@ -355,7 +372,7 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 		}
 		//Decrease recursion level.
 		request->response.level--;
-		debug(" Recursion level; %d.\n", request->response.level);
+		debug(" <- Recursion level; %d.\n", request->response.level);
 	}
 	else
 	{

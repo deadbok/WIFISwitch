@@ -1,3 +1,18 @@
+2015-07-22 Martin Grønholdt
+
+* slighttp/http-response (http_process_response): Process request buffer entries.
+* fs/index.html: Corrected toggle function.
+* fs/zip.c (zip_file_hdr): More debug output.
+*		   (init_zip): Fixed zero termination bug.
+* slighttp/http.h: Added HTTP_REQUEST_BUFFER_SIZE.
+* rest/net-names.c (rest_net_names_get_handler): Set request->response.message_size.
+* net/tcp.c (tcp_send): Throw an error if already sending.
+* slighttp/http.c (init_http): Init request buffer, fixed boolean error when calling tcp_listen.
+* user_main.c (connected): Start the timer after the web server.
+* slighttp/http-tcp.*: Added request buffer and response mutex.
+* tools/ring.c (ring_pop_front): Fixed dereferencing void pointer. 
+* slighttp/http-request.c (http_parse_headers): Print message when debugging.
+
 2015-07-19 Martin Grønholdt
 
 * rest/network.c (rest_network_put_handler): Handle status code properly.
