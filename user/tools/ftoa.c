@@ -42,9 +42,12 @@ char ICACHE_FLASH_ATTR *ftoa(float value, char *result, const unsigned char frac
 	while (fractional_digits > 0)
 	{
 		//Get the digit.
-		tmp_value = frac_part * 10;
+		frac_part = frac_part * 10;
+		tmp_value = frac_part;
 		//Look up the number.
-        *ptr++ = chr_map[tmp_value];		
+        *ptr++ = chr_map[tmp_value];
+        //Remove integer.
+        frac_part = frac_part - tmp_value;		
 	}
 	
 	//Convert integer part.

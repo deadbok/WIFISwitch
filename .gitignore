@@ -49,3 +49,8 @@ docs/html
 .settings
 .cproject
 .project
+
+#Coverity
+*.bz2
+cov-int
+

@@ -202,7 +202,15 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 										 break;
 									 }
 								 }
-								 ret += http_send_header(request->connection, "Content-Type", http_mime_types[i].type);	
+								 if (I >= HTTP_N_MIME_TYPES)
+								 {
+									 warn(" Did not find a usable MIME type, using text.\n");
+									 ret += http_send_header(request->connection, "Content-Type", http_mime_types[MIME_TXT].type);
+								 }
+								 else
+								 {
+									 ret += http_send_header(request->connection, "Content-Type", http_mime_types[i].type);
+								 }
 								 //Send end of headers.
 								 ret += http_send(request->connection, "\r\n", 2);
 								 //Stop if only HEAD was requested.

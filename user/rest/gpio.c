@@ -164,7 +164,7 @@ static char ICACHE_FLASH_ATTR *json_create_int_array(long *values, size_t entrie
 static size_t create_enabled_response(struct http_request *request)
 {
 	unsigned char n_gpios = 0;
-	long gpios[16];
+	long gpios[16]  = { 0 };
 	
 	debug("Creating JSON array of enabled GPIO's.\n");
 	//Run through all GPIO's

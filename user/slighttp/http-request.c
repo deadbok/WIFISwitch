@@ -243,17 +243,21 @@ static char ICACHE_FLASH_ATTR *http_parse_headers(struct http_request *request,
     request->n_headers = n_headers;
     
     //Get length of message data if any.
-    value = get_header_value(request, "content-length");
-    if (value)
+    if (next_data)
     {
-		debug(" Message length: %s.\n", value);
-		size = atoi(value);
-		value = db_malloc(sizeof(char) * (size + 1), "value http_parse_headers");
-		memcpy(value, next_data, size);
-		value[size] = '\0';
-		debug("%s\n", value);
+		value = get_header_value(request, "content-length");
+		if (value)
+		{
+			debug(" Message length: %s.\n", value);
+			size = atoi(value);
+			value = db_malloc(sizeof(char) * (size + 1), "value http_parse_headers");
+			memcpy(value, next_data, size);
+			value[size] = '\0';
+			debug("%s\n", value);
+		}
+		return(value);
 	}
-    return(value);
+	return(NULL);
 }
 
 /**

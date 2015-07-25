@@ -175,6 +175,11 @@ struct zip_file_hdr *zip_find_file_header(char *path)
 			{
 				debug(" Found file in flut at %d.\n", offset);
 				file_hdr = zip_load_header(zip_flut[offset].hdr_offset);
+				if (!file_hdr)
+				{
+					error("Could not read file header for: %s.\n", path);
+					return(NULL);
+				}
 				file_hdr->data_pos = zip_flut[offset].data_offset;
 				return(file_hdr);
 			}
@@ -276,13 +281,21 @@ bool zip_is_dir(char *path)
 void ICACHE_FLASH_ATTR zip_free_header(struct zip_file_hdr *file_hdr)
 {
 	debug("Freeing zip header (%p).\n", file_hdr);
-	if (file_hdr->filename)
-	{
-		db_free(file_hdr->filename);
-	}
+	
 	if (file_hdr)
 	{
-		db_free(file_hdr);
+		if (file_hdr->filename)
+		{
+			db_free(file_hdr->filename);
+		}
+		if (file_hdr)
+		{
+			db_free(file_hdr);
+		}
+	}
+	else
+	{
+		debug(" Already empty.\n");
 	}
 }
 

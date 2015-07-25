@@ -1,3 +1,16 @@
+2015-07-25 Martin Grønholdt
+
+* rest/gpio.c (create_enabled_response): Initialize gpio array to 0.
+* slighttp/htp-request.c (http_parse_headers): Chech for NULL pointer.
+* tools/ftoa.c (ftoa): Braindead infinite loop and non working algo fixed.
+* slighttp/http-fs.c (http_fs_head_handler): Check for MIME type overflow.
+* net/tcp.c (tcp_listen): Fixed some pointer checks.
+*			(tcp_free):  Fixed some pointer checks.
+* fs/zip.c (zip_free_header): Check if the file_hdr is allocated.
+*		   (zip_find_file_header): Handle errors correctly.
+* net/wifi_connect.c (timeout_cb): Fixed an array's size.
+
+
 2015-07-23 Martin Grønholdt
 
 * fs/fs.c (fs_init): Output flash ROM size.

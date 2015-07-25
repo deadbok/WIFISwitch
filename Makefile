@@ -32,7 +32,7 @@ XTENSA_TOOLS_ROOT ?= /home/oblivion/esp8266/esp-open-sdk/xtensa-lx106-elf/bin/
 SDK_BASE	?= /home/oblivion/esp8266/esp-open-sdk/sdk/
 
 # esptool.py path and port
-ESPTOOL		?= esptool.py
+ESPTOOL		?= $(XTENSA_TOOLS_ROOT)/esptool.py
 ESPPORT		?= /dev/ttyUSB0
 ESPSPEED	?= 230400
 

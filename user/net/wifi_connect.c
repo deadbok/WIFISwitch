@@ -242,7 +242,7 @@ void timeout_cb(void)
 {
     unsigned char           mac[6];
     char                    ssid[32];
-    char                    passwd[10];
+    char                    passwd[11];
     unsigned char           i;
     char                    temp_str[3];
     unsigned char           ret;

@@ -197,13 +197,14 @@ void ICACHE_FLASH_ATTR tcp_free(struct tcp_connection *connection)
     /* As far as I can tell the espconn library takes care of freeing up the
      * structures it has allocated. */
 
-    //Remove connection from, the list of active connections.
-    DL_LIST_UNLINK(connection, tcp_connections);
-    debug(" Unlinked.\n");
-    
-	connection->conn->reverse = NULL;
     if (connection != NULL)
     {
+		//Remove connection from, the list of active connections.
+		DL_LIST_UNLINK(connection, tcp_connections);
+		debug(" Unlinked.\n");
+
+		connection->conn->reverse = NULL;
+		
         db_free(connection);
         debug(" Connection data freed.\n");
     }
@@ -500,11 +501,22 @@ bool ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
         connection->conn = (struct espconn *)db_zalloc(sizeof(struct espconn), "espconn tcp_listen");
         connection->conn->proto.tcp = (esp_tcp *)db_zalloc(sizeof(esp_tcp), "esp_tcp tcp_listen");
         
-        if ((!connection) || (!connection->conn) || (!connection->conn->proto.tcp))
+        if (!connection)
         {
+			error("Could not allocate memory for connection.\n");
+			return(false);
+		}
+		else if (!connection->conn)
+		{
+			error("Could not allocate memory for ESP connection.\n");
+			return(false);
+		}
+		else if (!connection->conn->proto.tcp)
+		{
 			error("Could not allocate memory for TCP connection.\n");
 			return(false);
 		}
+
         
         debug(" Created connection %p.\n", connection);        
         conn = connection->conn;

@@ -28,14 +28,13 @@
  */
 struct http_mime_type http_mime_types[HTTP_N_MIME_TYPES] =
 {
-	{"htm", "text/htm"},
-	{"html", "text/html"},
-	{"css", "text/css"},
-	{"js", "text/javascript"},
-	{"json", "application/json"},
-	{"txt", "text/plain"},
-	{"jpg", "image/jpeg"},
-	{"jpeg", "image/jpeg"},
-	{"png", "image/png"}
+	{"htm", "text/htm"}, //MIME_HTM
+	{"html", "text/html"}, //MIME_HTML
+	{"css", "text/css"}, //MIME_CSS
+	{"js", "text/javascript"}, //MIME_JS
+	{"json", "application/json"}, //MIME_JSON
+	{"txt", "text/plain"}, //MIME_TXT
+	{"jpg", "image/jpeg"}, //MIME_JPG
+	{"jpeg", "image/jpeg"}, //MIME_JPEG
+	{"png", "image/png"} //MIME_PNG
 };
-
