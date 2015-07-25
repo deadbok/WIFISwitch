@@ -26,7 +26,7 @@ char ICACHE_FLASH_ATTR *ftoa(float value, char *result, unsigned char fractional
 	char *ptr1 = result;
 	char tmp_char;
 	long tmp_value;
-	bool sign;
+	bool sign = false;
 	
 	//Negative number handling.
 	if ((value < 0))
