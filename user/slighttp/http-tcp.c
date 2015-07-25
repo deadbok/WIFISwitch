@@ -59,6 +59,8 @@ void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
     //Allocate memory for the request data, and tie it to the connection.
     request = (struct http_request *)db_zalloc(sizeof(struct http_request), "request tcp_connect_cb"); 
     debug(" Allocated memory for request data: %p.\n", request);
+    //Reset send buffer position.
+    request->response.send_buffer_pos = request->response.send_buffer;
     connection->free = request;
     request->connection = connection;
     request->response.status_code = 200;
@@ -177,20 +179,6 @@ void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
 		request->response.state = HTTP_STATE_DONE;
 		//Call one last time to clean up.
 		http_process_response(connection);
-		//http_response_mutex--;
-		////Answer buffered request.
-		//debug(" Response handler mutex %d.\n", http_response_mutex);
-		//debug(" %d buffered Requests.\n", request_buffer.count); 
-		//if ((!http_response_mutex) && (request_buffer.count > 0))
-		//{
-			//debug(" Handling request from buffer.\n");
-			//buffer_ptr = ring_pop_front(&request_buffer);
-			//if (buffer_ptr)
-			//{
-				//http_response_mutex++;
-				//http_process_response(*((struct tcp_connection **)buffer_ptr));
-			//}
-		//}
 	}
 	else
 	{

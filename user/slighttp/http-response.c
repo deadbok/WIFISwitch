@@ -61,6 +61,13 @@ char *http_status_line_405 = HTTP_STATUS_405;
 char *http_status_line_501 = HTTP_STATUS_501;
 
 /**
+ * @brief Pointer to a pointer to the connection.
+ * 
+ * Pointer to connection pointer, from the response queue.
+ */
+ void *connection_ptr = NULL;
+
+/**
  * @brief Send a header.
  * 
  * @note Header name and value may be no larger than 508 bytes.
@@ -162,11 +169,6 @@ size_t ICACHE_FLASH_ATTR http_send(struct tcp_connection *connection, char *data
     
     debug("Buffering %d bytes of TCP data (%p using %p),\n", size, data, connection);
 	request = connection->free;
-	if (!request->response.send_buffer)
-	{
-		request->response.send_buffer = db_malloc(HTTP_SEND_BUFFER_SIZE, "request->response.send_buffer http_send");
-		request->response.send_buffer_pos = request->response.send_buffer;
-	}
 	
 	buffer_free = HTTP_SEND_BUFFER_SIZE - (request->response.send_buffer_pos - request->response.send_buffer);
 	if (buffer_free < size)
@@ -249,7 +251,6 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 {
 	struct http_request *request = connection->free;
 	size_t size;
-	void *buffer_ptr;
 	
 	debug("Processing request for connection %p.\n", connection);
 	if (connection->sending)
@@ -338,25 +339,28 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 										  {
 											  request->response.handlers->destroy(request);
 										  }
-										  if (request->response.send_buffer)
-										  {
-											  db_free(request->response.send_buffer);
-										  }
 										  http_free_request(connection);
 										  tcp_free(connection);
 										  		
+										  //Remove from response buffer.
 										  http_response_mutex--;
+										  if (connection_ptr)
+										  {
+											  debug(" Freeing response buffer pointer.\n");
+											  db_free(connection_ptr);
+											  connection_ptr = NULL;
+										  }
 										  //Answer buffered request.
 										  debug(" Response handler mutex %d.\n", http_response_mutex);
 										  debug(" %d buffered Requests.\n", request_buffer.count); 
 										  if ((!http_response_mutex) && (request_buffer.count > 0))
 										  {
 											  debug(" Handling request from buffer.\n");
-											  buffer_ptr = ring_pop_front(&request_buffer);
-											  if (buffer_ptr)
+											  connection_ptr = ring_pop_front(&request_buffer);
+											  if (connection_ptr)
 											  {
 												  http_response_mutex++;
-												  http_process_response(*((struct tcp_connection **)buffer_ptr));
+												  http_process_response(*((struct tcp_connection **)connection_ptr));
 											  }
 										  }
 									  }

@@ -44,11 +44,6 @@
 #include "tcp.h"
 
 /**
- * @brief Timer for housekeeping.
- */
-static os_timer_t timer;
-
-/**
  * @brief Array to look up a string from connection state.
  */
 const char *state_names[] = {"ESPCONN_NONE", "ESPCONN_WAIT", "ESPCONN_LISTEN",\
@@ -488,7 +483,6 @@ bool ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
                                 tcp_callback sent_cb)
 {
     int                         ret;
-    struct tcp_cb_connection    *connection;
     struct espconn              *conn;
     struct tcp_callback_funcs   *callbacks;
     
@@ -497,30 +491,29 @@ bool ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
     if (listening_connection == NULL)
     {
         //Allocate memory for the new connection.
-        connection = (struct tcp_cb_connection *)db_zalloc(sizeof(struct tcp_cb_connection), "connection tcp_listen");
-        connection->conn = (struct espconn *)db_zalloc(sizeof(struct espconn), "espconn tcp_listen");
-        connection->conn->proto.tcp = (esp_tcp *)db_zalloc(sizeof(esp_tcp), "esp_tcp tcp_listen");
-        
-        if (!connection)
+        listening_connection = (struct tcp_cb_connection *)db_zalloc(sizeof(struct tcp_cb_connection), "listening_connection tcp_listen");
+        if (!listening_connection)
         {
 			error("Could not allocate memory for connection.\n");
 			return(false);
 		}
-		else if (!connection->conn)
+        listening_connection->conn = (struct espconn *)db_zalloc(sizeof(struct espconn), "espconn tcp_listen");
+		if (!listening_connection->conn)
 		{
 			error("Could not allocate memory for ESP connection.\n");
 			return(false);
 		}
-		else if (!connection->conn->proto.tcp)
+        listening_connection->conn->proto.tcp = (esp_tcp *)db_zalloc(sizeof(esp_tcp), "esp_tcp tcp_listen");
+		if (!listening_connection->conn->proto.tcp)
 		{
 			error("Could not allocate memory for TCP connection.\n");
 			return(false);
 		}
 
         
-        debug(" Created connection %p.\n", connection);        
-        conn = connection->conn;
-        callbacks = &connection->callbacks;
+        debug(" Created connection %p.\n", listening_connection);        
+        conn = listening_connection->conn;
+        callbacks = &listening_connection->callbacks;
         
         //Setup TCP connection configuration.
         //TCP connection.
@@ -555,7 +548,6 @@ bool ICACHE_FLASH_ATTR tcp_listen(int port, tcp_callback connect_cb,
 		{
 			return(false);
 		}
-        listening_connection = connection;
         debug(" Setting connection timeout to 60 secs...");
         //Set timeout for all connections.
         ret = espconn_regist_time(conn, 60, 0);
@@ -622,8 +614,6 @@ void ICACHE_FLASH_ATTR tcp_stop(void)
 #ifdef DEBUG
     print_status(ret);
 #endif
-
-	os_timer_disarm(&timer);
 }
 
 /**

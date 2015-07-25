@@ -129,10 +129,6 @@ static void ICACHE_FLASH_ATTR status_check(void)
 				{
 				  request->response.handlers->destroy(request);
 				}
-				if (request->response.send_buffer)
-				{
-				  db_free(request->response.send_buffer);
-				}
 				http_free_request(connection);
 				tcp_free(connection);
 			}

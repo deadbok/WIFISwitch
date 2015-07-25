@@ -1,11 +1,20 @@
 2015-07-25 Martin Grønholdt
 
+* slighttp/http-common.c (http_print_clf_status): Proper type in format string.
+* user_main.c (status_check): Adjustments for staticly allocated send buffer.
+* slighttp/http-tcp.c (tcp_connect_cb): Adjustments for staticly allocated send buffer.
+* slighttp/http_response.c: Adjustments for staticly allocated send buffer.
+*							Make the current response connection pointer global.
+*						    (http_process_response): Free response buffer pointer.
+* slighttp/http.h (http_response): Made send_buffer staticly allocated.
 * rest/gpio.c (create_enabled_response): Initialize gpio array to 0.
 * slighttp/htp-request.c (http_parse_headers): Chech for NULL pointer.
 * tools/ftoa.c (ftoa): Braindead infinite loop and non working algo fixed.
 * slighttp/http-fs.c (http_fs_head_handler): Check for MIME type overflow.
 * net/tcp.c (tcp_listen): Fixed some pointer checks.
+						: Eleminated a local connection pointer.
 *			(tcp_free):  Fixed some pointer checks.
+*			: Removed some old timer code.
 * fs/zip.c (zip_free_header): Check if the file_hdr is allocated.
 *		   (zip_find_file_header): Handle errors correctly.
 * net/wifi_connect.c (timeout_cb): Fixed an array's size.

@@ -121,7 +121,7 @@ void ICACHE_FLASH_ATTR http_print_clf_status(struct http_request *request)
 						   break;
     	default: db_printf("-");
     }
-    db_printf(" %s HTTP/%s\" %d %d\n", request->uri, request->version, 
+    db_printf(" %s HTTP/%s\" %d %ld\n", request->uri, request->version, 
 			  request->response.status_code, request->response.message_size);
 }
 

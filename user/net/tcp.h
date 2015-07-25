@@ -42,8 +42,8 @@
 /**
  * @brief Data used by the callback functions.
  * 
- * Data passed from espconn to the current callback. *Members that are unused 
- * are zeroed.*
+ * Data passed from espconn to the current callback. *Members that are 
+ * unused are zeroed.
  */
 struct tcp_callback_data
 {

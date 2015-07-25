@@ -152,7 +152,7 @@ struct http_response
      /**
       * @brief Buffer with TCP data waiting to be send.
       */
-     char *send_buffer;
+     char send_buffer[HTTP_SEND_BUFFER_SIZE];
      /**
       * @brief Pointer to the current position in the send buffer.
       */

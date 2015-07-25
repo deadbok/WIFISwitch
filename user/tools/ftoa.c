@@ -17,7 +17,7 @@
  * @param fractional_digits Digits after the point.
  * @return A pointer to #result, or NULL on error.
  */ 
-char ICACHE_FLASH_ATTR *ftoa(float value, char *result, const unsigned char fractional_digits)
+char ICACHE_FLASH_ATTR *ftoa(float value, char *result, unsigned char fractional_digits)
 {
 	const char *chr_map = "0123456789";
 	unsigned long int_part;
@@ -47,7 +47,9 @@ char ICACHE_FLASH_ATTR *ftoa(float value, char *result, const unsigned char frac
 		//Look up the number.
         *ptr++ = chr_map[tmp_value];
         //Remove integer.
-        frac_part = frac_part - tmp_value;		
+        frac_part = frac_part - tmp_value;
+        //We're done
+        fractional_digits--;	
 	}
 	
 	//Convert integer part.
