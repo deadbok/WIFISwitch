@@ -202,7 +202,7 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 										 break;
 									 }
 								 }
-								 if (I >= HTTP_N_MIME_TYPES)
+								 if (i >= HTTP_N_MIME_TYPES)
 								 {
 									 warn(" Did not find a usable MIME type, using text.\n");
 									 ret += http_send_header(request->connection, "Content-Type", http_mime_types[MIME_TXT].type);
