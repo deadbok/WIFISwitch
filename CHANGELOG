@@ -1,3 +1,9 @@
+2015-07-27 Martin Grønholdt
+
+* fs/*.html: Added HTML tag.
+* fs/css: Added skeleton and normalize.
+* fs/css/skeleton.css: Changed base font to Georgia, serif.
+
 2015-07-25 Martin Grønholdt
 
 * slighttp/http-common.c (http_print_clf_status): Proper type in format string.

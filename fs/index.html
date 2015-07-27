@@ -1,134 +1,59 @@
 <!DOCTYPE html>
+<html lang="en">
 <head>
 <title>WIFI Switch.</title>
-<link href="/css/min.css" rel="stylesheet" type="text/css" />
-<!-- http://tympanus.net/codrops/2012/09/13/button-switches-with-checkboxes-and-css3-fanciness/ -->
+<link href="css/pure-min.css" rel="stylesheet" type="text/css" />
+<link href="css/pure-typography-min.css" rel="stylesheet" type="text/css" />
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-*,
-*:after,
-*:before {
-  -webkit-box-sizing: border-box;
-  -moz-box-sizing: border-box;
-  box-sizing: border-box;
-  padding: 0;
-  margin: 0;
-}
+	.button-off {
+		color: white;
+		background: rgb(28, 28, 28);
+	}
 
-.switch {
-  margin: 50px auto;
-  position: relative;
-}
-
-.switch label {
-  width: 100%;
-  height: 100%;
-  position: relative;
-  display: block;
-}
-
-.switch input {
-  top: 0; 
-  right: 0; 
-  bottom: 0; 
-  left: 0;
-  opacity: 0;
-  z-index: 100;
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
-}
-
-.switch.demo1 {
-  width: 100px;
-  height: 100px;
-}
-
-.switch.demo1 label {
-  border-radius: 50%;
-  background: #eaeaea;
-  box-shadow: 
-      0 3px 5px rgba(0,0,0,0.25),
-      inset 0 1px 0 rgba(255,255,255,0.3),
-      inset 0 -5px 5px rgba(100,100,100,0.1),
-      inset 0 5px 5px rgba(255,255,255,0.3);
-}
-
-.switch.demo1 label:after {
-  content: "";
-  position: absolute;
-  top: -8%; right: -8%; bottom: -8%; left: -8%;
-  z-index: -1;
-  border-radius: inherit;
-  background: #ddd;
-  background: -moz-linear-gradient(#ccc, #fff);
-  background: -ms-linear-gradient(#ccc, #fff);
-  background: -o-linear-gradient(#ccc, #fff);
-  background: -webkit-gradient(linear, 0 0, 0 100%, from(#ccc), to(#fff));
-  background: -webkit-linear-gradient(#ccc, #fff);
-  background: linear-gradient(#ccc, #fff);
-  box-shadow: 
-    inset 0 2px 1px rgba(0,0,0,0.15),
-    0 2px 5px rgba(200,200,200,0.1);
-}
-
-.switch.demo1 label:before {
-  content: "";
-  position: absolute;
-  width: 20%;
-  height: 20%;
-  border-radius: inherit;
-  left: 40%;
-  top: 40%;
-  background: #969696;
-  background: radial-gradient(40% 35%, #ccc, #969696 60%);
-  box-shadow:
-      inset 0 2px 4px 1px rgba(0,0,0,0.3),
-      0 1px 0 rgba(255,255,255,1),
-      inset 0 1px 0 white;
-}
-
-.switch.demo1 input:checked ~ label {
-  background: #dedede;
-  background: -moz-linear-gradient(#dedede, #fdfdfd);
-  background: -ms-linear-gradient(#dedede, #fdfdfd);
-  background: -o-linear-gradient(#dedede, #fdfdfd);
-  background: -webkit-gradient(linear, 0 0, 0 100%, from(#dedede), to(#fdfdfd));
-  background: -webkit-linear-gradient(#dedede, #fdfdfd);
-  background: linear-gradient(#dedede, #fdfdfd);
-}
-
-.switch.demo1 input:checked ~ label:before {
-  background: #25d025;
-  background: radial-gradient(40% 35%, #5aef5a, #25d025 60%);
-  box-shadow:
-      inset 0 3px 5px 1px rgba(0,0,0,0.1),
-      0 1px 0 rgba(255,255,255,0.4),
-      0 0 10px 2px rgba(0, 210, 0, 0.5);
-}
+	.button-on {
+		background: rgb(250, 60, 60);
+	}
+	
+	.inverted {
+		color: rgb(220, 200, 200);
+		background: rgb(28, 28, 28);
+	}
 </style>
+
 </head>
 <body>
-<div class="switch demo1">
-	<input id="switch" type="checkbox" onclick="buttonSwitch()">
-	<label></label>
+<div class="header">
+	<div class="pure-menu pure-menu-horizontal pure-menu-scrollable pure-menu-fixed inverted">
+		<a href="index.html" class="pure-menu-heading pure-menu-link">WIFISwitch</a>
+		<ul class="pure-menu-list">
+			<li class="pure-menu-item"><a href="about.html" class="pure-menu-link">About</a></li>
+		</ul>
+	</div>
+</div>
+<input id="switch" type="checkbox" class="hidden">
+<div class="content" style="padding-top:60px;">
+	<div class="pure-g">
+		<div class="pure-u-1-5"></div>
+		<div class="pure-u-3-5" style="background-color:black;"><button class="button-off pure-button" id="button" onclick="buttonSwitch()"></button></div>
+		<div class="pure-u-1-5"></div>
+	</div>
+</div>
+<div class="footer inverted">
+	<small class="text-center">Copyright 2015 Martin Bo Kristensen Grønholdt</small>
 </div>
 <script src="/js/atomic.min.js"></script>
 <script>
-var button = document.getElementById("switch");
+var button = document.getElementById("button");
+var checkbox = document.getElementById("switch");
 
 function buttonSwitch()
 {
-	console.log(button.checked);
-	if (button.checked)
-	{
-		var request = "{\"state\":1";
-	}
-	else
-	{
-		var request = "{\"state\":0}";
-	}
-    
+	checkbox.checked = !checkbox.checked;
+	console.log(checkbox.checked);
+
+	var request = "{\"state\":" + Number(checkbox.checked).toString() + "}";
+    console.log(request);
     atomic.put('/rest/gpios/5', request)
 	.success(function (data, xhr) 
 	{
@@ -141,11 +66,13 @@ function buttonSwitch()
 	{
 		if (data.state)
 		{
-			button.checked = true;
+			checkbox.checked = true;
+			button.className = "button-on pure-button"
 		}
 		else
 		{
-			button.checked = false;
+			checkbox.checked = false;
+			button.className = "button-off pure-button"
 		}
 	})
 	.error(function (data, xhr) 
@@ -158,11 +85,13 @@ atomic.get('/rest/gpios/5')
 {
 	if (data.state)
 	{
-		button.checked = true;
+		checkbox.checked = true;
+		button.className = "button-on pure-button"
 	}
 	else
 	{
-		button.checked = false;
+		checkbox.checked = false;
+		button.className = "button-off pure-button"
 	}
 })
 .error(function (data, xhr) 

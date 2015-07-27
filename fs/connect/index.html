@@ -1,99 +1,85 @@
-<!DOCTYPE html><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
 <title>Network connection setup.</title>
 <link href="css/min.css" rel="stylesheet" type="text/css" />
 <link href="css/colour.css" rel="stylesheet" type="text/css" />
 </head>
 <body>
-<h3>Network connection setup</h3>
-<p>Current configured network: <div id="network"></div></p>
-<form  onsubmit="networkSelect()">
-Networks: 
-<select id="networks">
-<option value="nets" class="smooth">Networks...</option>
- <input type="button" onclick="networkSelect()" value="Set">
-</select>
-</form>
-<div class="msg" id="scnstat">
-	<strong>Scanning!</strong>
-	Still scanning for WIFI networks.
-</div>
-<script src="js/atomic.min.js"></script>
-<script>
-var pending = false;
+	<h3>Network connection setup</h3>
+	<p>Current configured network:
+	<div id="network"></div>
+	</p>
+	<form onsubmit="networkSelect()" action="">
+		Networks: <select id="networks">
+			<option value="nets" class="smooth">Networks...</option>
+		</select> <input type="button" onclick="networkSelect()" value="Set">
+	</form>
+	<div class="msg" id="scnstat">
+		<strong>Scanning!</strong> Still scanning for WIFI networks.
+	</div>
+	<script src="js/atomic.min.js" type="text/javascript"></script>
+	<script type="text/javascript">
+		var pending = false;
 
-function populateNetworks(networks)
-{
-	var netSelect = document.getElementById("networks");
-	
-	netSelect.options.length = 0;
-	
-	if (networks.length === 0)
-	{
-		netSelect.options[netSelect.options.length] = new Option("Scanning...", "", false, false);
-		return;
-	}
-	for (var i = 0; i < networks.length; i++)
-	{
-		netSelect.options[netSelect.options.length] = new Option(networks[i], networks[i], false, false);
-		var scnstat = document.getElementById("scnstat");
-		scnstat.className += " great";
-		scnstat.innerHTML = "<strong>Done!</strong> WIFI networks have been scanned.";
-		clearInterval(nameTimer);
-	}
-}
-	
-function getNetworks()
-{
-	if (!pending)
-	{
-		pending = true;
-		atomic.get('/rest/net/networks')
-		.success(function (data, xhr) 
-		{
-			populateNetworks(data);
-			pending = false;
-		})
-		.error(function (data, xhr) 
-		{
-			populateNetworks(new Array("Error..."));
-			pending = false;
+		function populateNetworks(networks) {
+			var netSelect = document.getElementById("networks");
+
+			netSelect.options.length = 0;
+
+			if (networks.length === 0) {
+				netSelect.options[netSelect.options.length] = new Option(
+						"Scanning...", "", false, false);
+				return;
+			}
+			for (var i = 0; i < networks.length; i++) {
+				netSelect.options[netSelect.options.length] = new Option(
+						networks[i], networks[i], false, false);
+				var scnstat = document.getElementById("scnstat");
+				scnstat.className += " great";
+				scnstat.innerHTML = "<strong>Done!</strong> WIFI networks have been scanned.";
+				clearInterval(nameTimer);
+			}
+		}
+
+		function getNetworks() {
+			if (!pending) {
+				pending = true;
+				atomic.get('/rest/net/networks').success(function(data, xhr) {
+					populateNetworks(data);
+					pending = false;
+				}).error(function(data, xhr) {
+					populateNetworks(new Array("Error..."));
+					pending = false;
+				});
+			}
+		}
+
+		function networkSelect() {
+			var networkName = document.getElementById("networks").value;
+			var network = document.getElementById("network");
+
+			atomic.put('/rest/net/network',
+					"{ \"network\" : \"" + networkName + "\" }").success(
+					function(data, xhr) {
+						network.innerHTML = networkName;
+						setTimeout(function() {
+							window.location.assign("/passwd.html");
+						}, 1000);
+					}).error(function(data, xhr) {
+				network.innerHTML = "Could not set network name.";
+			});
+		}
+
+		var network = document.getElementById("network");
+
+		atomic.get('/rest/net/network').success(function(data, xhr) {
+			network.innerHTML = data.network;
+		}).error(function(data, xhr) {
+			network.innerHTML = "Error: Could not get default network name.";
 		});
-	}
-}
 
-function networkSelect()
-{
-    var networkName = document.getElementById("networks").value;
-    var network = document.getElementById("network");
-    
-    atomic.put('/rest/net/network', "{ \"network\" : \"" + networkName + "\" }")
-	.success(function (data, xhr) 
-	{
-		network.innerHTML = networkName;
-		setTimeout(function()
-		{
-			window.location.assign("/passwd.html");
-		}, 1000);
-	})
-	.error(function (data, xhr) 
-	{
-		network.innerHTML = "Could not set network name.";
-	});
-}
-
-var network = document.getElementById("network");
-
-atomic.get('/rest/net/network')
-.success(function (data, xhr) 
-{
-	network.innerHTML = data.network;
-})
-.error(function (data, xhr) 
-{
-	network.innerHTML = "Error: Could not get default network name.";
-});
-	
-var nameTimer = setInterval(getNetworks, 2000);
-</script>
+		var nameTimer = setInterval(getNetworks, 2000);
+	</script>
 </body>
-</html>
+<html></html>
