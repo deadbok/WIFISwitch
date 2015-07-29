@@ -1,3 +1,10 @@
+2015-07-28 Martin Grønholdt
+
+* fs: Reworked most HTML and CSS to use only my customisations and normalize.
+* fs/css/custom.css: Added with CSS customisations.
+* fs/js/atomic.min.js: Added content type parameter.
+
+
 2015-07-27 Martin Grønholdt
 
 * fs/*.html: Added HTML tag.

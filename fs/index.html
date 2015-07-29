@@ -2,77 +2,52 @@
 <html lang="en">
 <head>
 <title>WIFI Switch.</title>
-<link href="css/pure-min.css" rel="stylesheet" type="text/css" />
-<link href="css/pure-typography-min.css" rel="stylesheet" type="text/css" />
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-	.button-off {
-		color: white;
-		background: rgb(28, 28, 28);
-	}
-
-	.button-on {
-		background: rgb(250, 60, 60);
-	}
-	
-	.inverted {
-		color: rgb(220, 200, 200);
-		background: rgb(28, 28, 28);
-	}
-</style>
-
+<link href="css/normalize.css" rel="stylesheet" type="text/css" />
+<link href="css/custom.css" rel="stylesheet" type="text/css" />
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
 </head>
 <body>
-<div class="header">
-	<div class="pure-menu pure-menu-horizontal pure-menu-scrollable pure-menu-fixed inverted">
-		<a href="index.html" class="pure-menu-heading pure-menu-link">WIFISwitch</a>
-		<ul class="pure-menu-list">
-			<li class="pure-menu-item"><a href="about.html" class="pure-menu-link">About</a></li>
-		</ul>
-	</div>
+<div class="header inverted">
+	<ul class="menu">
+		<li class="menu"><a href="index.html" class="menu-link">WIFISwitch</a></li>
+		<li class="menu"><a href="about.html" class="menu-link">About</a></li>
+	</ul>
 </div>
-<input id="switch" type="checkbox" class="hidden">
-<div class="content" style="padding-top:60px;">
-	<div class="pure-g">
-		<div class="pure-u-1-5"></div>
-		<div class="pure-u-3-5" style="background-color:black;"><button class="button-off pure-button" id="button" onclick="buttonSwitch()"></button></div>
-		<div class="pure-u-1-5"></div>
-	</div>
-</div>
+<div class="button" id="button" onclick="buttonSwitch()"></div>
 <div class="footer inverted">
-	<small class="text-center">Copyright 2015 Martin Bo Kristensen Grønholdt</small>
+	<small><span class="copyright">&copy; Copyright 2015 Martin Bo Kristensen Gr&oslash;nholdt.</span><a href="LICENSE" class="license inverted">Read license.</a></small>
 </div>
-<script src="/js/atomic.min.js"></script>
-<script>
+<script src="/js/atomic.min.js" type="text/javascript"></script>
+<script type="text/javascript">
 var button = document.getElementById("button");
-var checkbox = document.getElementById("switch");
+var state = false;
 
 function buttonSwitch()
 {
-	checkbox.checked = !checkbox.checked;
-	console.log(checkbox.checked);
+	state = !state;
+	console.log(state);
 
-	var request = "{\"state\":" + Number(checkbox.checked).toString() + "}";
+	var request = "{\"state\":" + Number(state).toString() + "}";
     console.log(request);
-    atomic.put('/rest/gpios/5', request)
+    atomic.put('/rest/gpios/5', request, 'application/json')
 	.success(function (data, xhr) 
 	{
 	})
 	.error(function (data, xhr) 
 	{
 	});
-	atomic.get('/rest/gpios/5')
+	atomic.get('/rest/gpios/5', 'application/json')
 	.success(function (data, xhr) 
 	{
 		if (data.state)
 		{
-			checkbox.checked = true;
-			button.className = "button-on pure-button"
+			state = true;
+			button.className = "button-on button"
 		}
 		else
 		{
-			checkbox.checked = false;
-			button.className = "button-off pure-button"
+			state = false;
+			button.className = "button-off button"
 		}
 	})
 	.error(function (data, xhr) 
@@ -80,23 +55,24 @@ function buttonSwitch()
 	});
 }
 
-atomic.get('/rest/gpios/5')
+atomic.get('/rest/gpios/5', 'application/json')
 .success(function (data, xhr) 
 {
 	if (data.state)
 	{
-		checkbox.checked = true;
-		button.className = "button-on pure-button"
+		state = true;
+		button.className = "button-on button"
 	}
 	else
 	{
-		checkbox.checked = false;
-		button.className = "button-off pure-button"
+		state = false;
+		button.className = "button-off button"
 	}
 })
 .error(function (data, xhr) 
 {
 });
 </script>
+<noscript>Sorry I need JavaScript!</noscript>
 </body>
 </html>

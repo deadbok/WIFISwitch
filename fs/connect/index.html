@@ -2,21 +2,34 @@
 <html lang="en">
 <head>
 <title>Network connection setup.</title>
-<link href="css/min.css" rel="stylesheet" type="text/css" />
-<link href="css/colour.css" rel="stylesheet" type="text/css" />
+<link href="css/normalize.css" rel="stylesheet" type="text/css" />
+<link href="css/custom.css" rel="stylesheet" type="text/css" />
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
 </head>
 <body>
-	<h3>Network connection setup</h3>
-	<p>Current configured network:
-	<div id="network"></div>
-	</p>
-	<form onsubmit="networkSelect()" action="">
-		Networks: <select id="networks">
-			<option value="nets" class="smooth">Networks...</option>
-		</select> <input type="button" onclick="networkSelect()" value="Set">
-	</form>
-	<div class="msg" id="scnstat">
-		<strong>Scanning!</strong> Still scanning for WIFI networks.
+	<div class="header inverted">
+		<ul class="menu">
+			<li class="menu">WIFISwitch</li>
+		</ul>
+	</div>
+	<div class="main">
+		<h3>Network connection setup</h3>
+		<p>Current configured network:
+		<div id="network"></div>
+		</p>
+		<form onsubmit="networkSelect()" action="">
+			Networks: 
+			<select id="networks">
+				<option value="nets" class="smooth">Networks...</option>
+			</select>
+			<input type="button" onclick="networkSelect()" value="Set">
+		</form>
+		<div class="message" id="scnstat">
+			<strong>Scanning!</strong> Still scanning for WIFI networks.
+		</div>
+	</div>
+	<div class="footer inverted">
+		<small><span class="copyright">&copy; Copyright 2015 Martin Bo Kristensen Gr&oslash;nholdt.</span><a href="LICENSE" class="license inverted">Read license.</a></small>
 	</div>
 	<script src="js/atomic.min.js" type="text/javascript"></script>
 	<script type="text/javascript">
@@ -51,6 +64,8 @@
 				}).error(function(data, xhr) {
 					populateNetworks(new Array("Error..."));
 					pending = false;
+				½scnstat.className += " warning";
+				scnstat.innerHTML = "<strong>Error</strong> scanning WIFI network names.";
 				});
 			}
 		}

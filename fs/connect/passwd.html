@@ -2,20 +2,31 @@
 <html lang="en">
 <head>
 <title>Network connection password setup.</title>
-<link href="css/min.css" rel="stylesheet" type="text/css" />
-<link href="css/colour.css" rel="stylesheet" type="text/css" />
+<link href="css/normalize.css" rel="stylesheet" type="text/css" />
+<link href="css/custom.css" rel="stylesheet" type="text/css" />
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
 </head>
 <body>
-<h3>Network connection password setup</h3>
-<form onsubmit="setPasswd()">
-Password:<br />
-<input type="password" id="passwd" maxlength="64">
-<input type="button" onclick="setPasswd()" value="Set">
-</form>
-<div class="msg" id="state">
-	<strong>Info!</strong>
-	System will restart.
-</div>
+	<div class="header inverted">
+		<ul class="menu">
+			<li class="menu">WIFISwitch</li>
+		</ul>
+	</div>
+	<div class="main">
+		<h3>Network connection password setup</h3>
+		<form onsubmit="setPasswd()">
+		Password:<br />
+		<input type="password" id="passwd" maxlength="64">
+		<input type="button" onclick="setPasswd()" value="Set">
+		</form>
+		<div class="message" id="state">
+			<strong>Info!</strong>
+			System will restart.
+		</div>
+	</div>
+	<div class="footer inverted">
+		<small><span class="copyright">&copy; Copyright 2015 Martin Bo Kristensen Gr&oslash;nholdt.</span><a href="LICENSE" class="license inverted">Read license.</a></small>
+	</div>		
 <script src="js/atomic.min.js"></script>
 <script>
 function setPasswd()
