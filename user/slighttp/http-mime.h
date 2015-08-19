@@ -44,6 +44,7 @@ enum http_mime_enum
 	MIME_JPG,
 	MIME_JPEG,
 	MIME_PNG,
+	MIME_ICO,
 	HTTP_N_MIME_TYPES
 };
 

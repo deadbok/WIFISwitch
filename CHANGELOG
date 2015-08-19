@@ -1,3 +1,6 @@
+2015-07-29 Martin Grønholdt
+
+* slighttp/http-mime.*: Added ICO.
 2015-07-28 Martin Grønholdt
 
 * fs: Reworked most HTML and CSS to use only my customisations and normalize.
