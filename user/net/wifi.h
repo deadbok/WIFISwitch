@@ -23,7 +23,22 @@
 #ifndef WIFI_CONNECT_H
 #define WIFI_CONNECT_H
 
-extern void wifi_connect(void (*connect_cb)(unsigned char wifi_mode));
+/**
+ * @brief No connection status.
+ */
+#define WIFI_MODE_NO_CONNECTION 0
+/**
+ * @brief Connected to the configured AP.
+ */
+#define WIFI_MODE_CLIENT 1
+/**
+ * @brief In configuration mode acting as client and AP.
+ */
+#define WIFI_MODE_CONFIG 2
+
+extern bool wifi_init(char *hostname, 
+					  void (*connect_cb)(unsigned char wifi_mode),
+					  void (*disconnect_cb)());
 extern bool wifi_check_connection(void);
 
 #endif

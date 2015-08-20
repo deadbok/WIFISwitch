@@ -264,6 +264,7 @@ struct  http_response_handler
 extern char *http_fs_doc_root;
 
 extern bool init_http(char *path, struct http_response_handler *handlers, unsigned short n_handlers);
+extern bool http_get_status(void);
 extern struct http_response_handler *http_get_handlers(struct http_request *request);
 extern size_t http_send(struct tcp_connection *connection, char *data, size_t size);
 

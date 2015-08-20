@@ -66,7 +66,7 @@
 #include "user_interface.h"
 #include "driver/uart.h"
 #include "fs/fs.h"
-#include "net/wifi_connect.h"
+#include "net/wifi.h"
 #include "slighttp/http.h"
 #include "slighttp/http-request.h"
 #include "response_handlers.h"
@@ -83,16 +83,6 @@ static void ICACHE_FLASH_ATTR status_check(void)
 {
 	struct tcp_connection *connection;
 	struct http_request *request;
-	
-	if (wifi_check_connection())
-	{
-		debug("Still connected...\n");
-	}
-	else
-	{
-		db_printf("Network connection lost, restarting...\n");
-		system_restart();
-	}
 	
 	db_mem_list();
 	
@@ -163,6 +153,22 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 }
 
 /**
+ * @brief Disconnect handler.
+ * 
+ * Simply reset the chip.
+ * @todo Stop HTTP server instead.
+ */
+ static void ICACHE_FLASH_ATTR disconnected(void)
+ {
+	if (http_get_status())
+	{
+		db_printf("Network connection lost, restarting...\n");
+		system_restart();
+	}
+ }
+ 
+
+/**
  * @brief Called when initialisation is over.
  *
  * Starts the connection task.
@@ -170,7 +176,7 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 static void ICACHE_FLASH_ATTR start_connection(void)
 {
     db_printf("Running...\n");
-    wifi_connect(connected);
+    wifi_init("wifiswitch", connected, disconnected);
 }
 
 /**
@@ -197,8 +203,9 @@ void ICACHE_FLASH_ATTR user_init(void)
 
     //Print banner
     db_printf("\nWIFISwitch version %s.\n", STRING_VERSION);
-    system_print_meminfo();
-    db_printf("Free heap %u\n\n", system_get_free_heap_size());
+    //system_print_meminfo();
+    db_printf("SDK version %s.\n", system_get_sdk_version());
+    db_printf("Free heap %u\n", system_get_free_heap_size());
 
     fs_init();
 

@@ -45,7 +45,7 @@
 /**
  * @brief Network connection time-out.
  * 
- * Seconds before the firmware stop trying to connect to the configured WIFI
+ * Seconds before the firmware stops trying to connect to the configured WIFI
  * network, and switches to network configuration mode.
  */
 #define CONNECT_DELAY_SEC 15
@@ -75,7 +75,7 @@
 /**
  * @brief Print debug info on the serial port.
  */
-//#define DEBUG
+#define DEBUG
 /**
  * @brief Print memory allocation info.
  */
@@ -87,7 +87,7 @@
 /**
  * @brief Mostly shut up output from the SDK.
  */
-//#define SDK_DEBUG
+#define SDK_DEBUG
 
 /**
  * @brief Customised print function.

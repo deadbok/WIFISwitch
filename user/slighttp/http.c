@@ -64,6 +64,12 @@
  */
 char *http_fs_doc_root;
 /**
+ * @brief Server status.
+ * 
+ * Server status: true when listening, and false when stopped.
+ */
+static bool status = false;
+/**
  * @brief Initialise the HTTP server,
  * 
  * @param path Path to search as root of the server in the file system.
@@ -92,5 +98,11 @@ bool ICACHE_FLASH_ATTR init_http(char *path, struct http_response_handler *handl
 	debug("Creating request buffer.\n");
 	init_ring(&request_buffer, sizeof(struct tcp_connection *), HTTP_REQUEST_BUFFER_SIZE);
 	
+	status = true;
 	return(true);
+}
+
+bool ICACHE_FLASH_ATTR http_get_status(void)
+{
+	return(status);
 }

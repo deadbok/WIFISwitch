@@ -1,6 +1,28 @@
+2015-08-20 Martin Grønholdt
+
+* net/wifi_connect.*: Renamed wifi.*
+* user_main.c: Added disconnected.
+* slighttpd/http.*: Added http_get_status.
+
+
+2015-08-19 Martin Grønholdt
+
+* user_main.c (user_init): Do not disable auto connect.
+						 : Changes for keeping up with the wifi code.
+* net/wifi_connect.c: Added wifi_handle_event.
+					  Added wifi_init.
+					  (wifi_connect): Renamed to wifi_connect_default.
+					  (wifi_connect_default) Returns bool for status.
+* net/wifi_connect.h: Added wifi_init- 
+					  (wifi_connect): Removed.
+* fs/connect/index.html: Bad characters had invaded the file.
+
+
 2015-07-29 Martin Grønholdt
 
 * slighttp/http-mime.*: Added ICO.
+
+
 2015-07-28 Martin Grønholdt
 
 * fs: Reworked most HTML and CSS to use only my customisations and normalize.
