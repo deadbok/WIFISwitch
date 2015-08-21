@@ -168,7 +168,7 @@ size_t ICACHE_FLASH_ATTR http_send(struct tcp_connection *connection, char *data
     size_t buffer_free;
     
     debug("Buffering %d bytes of TCP data (%p using %p),\n", size, data, connection);
-	request = connection->free;
+	request = connection->user;
 	
 	buffer_free = HTTP_SEND_BUFFER_SIZE - (request->response.send_buffer_pos - request->response.send_buffer);
 	if (buffer_free < size)
@@ -190,7 +190,7 @@ size_t ICACHE_FLASH_ATTR http_send(struct tcp_connection *connection, char *data
  */
  static bool send_buffer(struct tcp_connection *connection)
  {
-	 struct http_request *request = connection->free;
+	 struct http_request *request = connection->user;
 	 size_t buffer_use;
 	 
 	 debug("Sending buffer %p using connection %p.\n", request->response.send_buffer, connection);
@@ -249,7 +249,7 @@ void fall_through_status_handler(struct tcp_connection *connection, unsigned sho
  */
 void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 {
-	struct http_request *request = connection->free;
+	struct http_request *request = connection->user;
 	size_t size;
 	
 	debug("Processing request for connection %p.\n", connection);
@@ -339,7 +339,7 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 										  {
 											  request->response.handlers->destroy(request);
 										  }
-										  http_free_request(connection);
+										  http_free_request(request);
 										  tcp_free(connection);
 										  		
 										  //Remove from response buffer.

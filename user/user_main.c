@@ -114,12 +114,12 @@ static void ICACHE_FLASH_ATTR status_check(void)
 			else
 			{
 				debug("Closing connection %p (%p) state unknown (%d).\n", connection, connection->conn, connection->conn->state);
-				request = connection->free;
+				request = connection->user;
 				if (request->response.handlers)
 				{
 				  request->response.handlers->destroy(request);
 				}
-				http_free_request(connection);
+				http_free_request(request);
 				tcp_free(connection);
 			}
 			connection = connection->next;

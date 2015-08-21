@@ -1,8 +1,23 @@
+2015-08-21 Martin Grønholdt
+
+* net/wifi.c (create_softap): Start from default configuration.
+* slighttp/http-request.* (http_free_request): Parameter type changed to struct http_request).
+
+
 2015-08-20 Martin Grønholdt
 
+* net/wifi.c (wifi_config_mode): Do a disconnect.
+* tools/dl_list.h: Better docs.
+* net/tcp.c (listening_connection): Renamed listening_connections.
+			(tcp_cb_connection): Removed.
+* net/tcp.h (tcp_connection.free): Renamed to user.
+			(tcp_connection): Added call backs.
+			(TCP_MAX_CONNECTIONS): Removed.
+			(TCP_SEND_BUFFER_SIZE): Removed.
+			(tcp_callback_funcs): Added.
 * net/wifi_connect.*: Renamed wifi.*
 * user_main.c: Added disconnected.
-* slighttpd/http.*: Added http_get_status.
+* slighttp/http.*: Added http_get_status.
 
 
 2015-08-19 Martin Grønholdt

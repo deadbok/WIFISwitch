@@ -127,10 +127,15 @@ static bool ICACHE_FLASH_ATTR create_softap(char *ssid, char *passwd, unsigned c
     //Set station + AP mode. Station mode is needed for scanning available networks.
     if (!wifi_set_opmode(STATIONAP_MODE))
     {
-        error("Cannot set soft AP mode.");
+        error("Cannot set soft AP mode.\n");
         return(false);
     }
-
+    if (!wifi_softap_get_config(&ap_config))
+    {
+        error("Cannot set get default AP mode configuration.\n");
+        return(false);
+	}
+	
     //Populate the struct, needed to configure the AP.
     os_strcpy((char *)ap_config.ssid, ssid);
     os_strcpy((char *)ap_config.password, passwd);
@@ -170,6 +175,11 @@ static bool ICACHE_FLASH_ATTR wifi_config_mode(void)
     unsigned char           ret;
 
     db_printf("Starting in Wifi configuration mode.\n");
+    
+    /* Disconnect to try and prevent the SDK from trying to reconnect to
+     * the configured AP when in config mode.
+     */
+     wifi_disconnect();
 
     //Get MAC address.
     ret = wifi_get_macaddr(SOFTAP_IF, mac);

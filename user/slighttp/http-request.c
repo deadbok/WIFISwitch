@@ -43,7 +43,7 @@
  */
 static size_t ICACHE_FLASH_ATTR http_get_request_type(struct tcp_connection *connection)
 {
-    struct http_request *request = connection->free;
+    struct http_request *request = connection->user;
     size_t offset = 0;
 
     offset = 4;
@@ -272,7 +272,7 @@ static char ICACHE_FLASH_ATTR *http_parse_headers(struct http_request *request,
  */
 bool ICACHE_FLASH_ATTR http_parse_request(struct tcp_connection *connection)
 {
-    struct http_request *request = connection->free;
+    struct http_request *request = connection->user;
     char *request_entry, *next_entry;
 	size_t size = http_get_request_type(connection);
 	
@@ -334,16 +334,11 @@ bool ICACHE_FLASH_ATTR http_parse_request(struct tcp_connection *connection)
  * 
  * @param request Pointer to the request to free.
  */
-void ICACHE_FLASH_ATTR http_free_request(struct tcp_connection *connection)
+void ICACHE_FLASH_ATTR http_free_request(struct http_request *request)
 {
-	struct http_request *request = NULL;
 	unsigned short i;
 	
 	debug("Freeing request data at %p.\n", request);
-	if (connection->free)
-	{
-		request = connection->free;
-	}
 	if (request)
 	{
 		if (request->uri)
@@ -369,6 +364,5 @@ void ICACHE_FLASH_ATTR http_free_request(struct tcp_connection *connection)
 			db_free(request->message);
 		}
 		db_free(request);
-		connection->free = NULL;
 	}
 }

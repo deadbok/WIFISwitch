@@ -1,6 +1,6 @@
 /** @file tcp.h
  *
- * @brief TCP server routines for the ESP8266.
+ * @brief TCP routines for the ESP8266.
  *
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -29,21 +29,14 @@
 #include "espconn.h"
 #include "tools/dl_list.h"
 
-/**
- * @brief Maximum number of TCP connections supported.
- */
-#define TCP_MAX_CONNECTIONS 10
-
-/**
- * @brief Bytes in a send buffer.
- */
-#define TCP_SEND_BUFFER_SIZE 1024
+//Forward declarations.
+struct tcp_connection;
 
 /**
  * @brief Data used by the callback functions.
  * 
  * Data passed from espconn to the current callback. *Members that are 
- * unused are zeroed.
+ * unused should be zeroed.*
  */
 struct tcp_callback_data
 {
@@ -72,8 +65,6 @@ struct tcp_callback_data
     err_t            err;
 };
 
-struct tcp_connection;
-
 /**
  * @brief Define a type for the callback functions.
  * 
@@ -81,6 +72,44 @@ struct tcp_connection;
  * the TCP connection data of the connection, that initialised the callback. 
  */
 typedef void (*tcp_callback)(struct tcp_connection *);
+
+/**
+ * @brief Callback functions for handling TCP events.
+ * 
+ * Callback functions for TCP event handling. All callbacks are passed a pointer
+ * to the `struct tcp_connection` structure, associated with the event.
+ */
+struct tcp_callback_funcs
+{
+    /**
+     * @brief Callback when a connection is made.
+     */
+    tcp_callback connect_callback;
+    /**
+     * @brief Callback on a reconnect.
+     * 
+     * According to the SDK documentation, this should be considered an error
+     * callback. If an error happens somewhere in the espconn code this is 
+     * called.
+     */
+    tcp_callback reconnect_callback;
+    /**
+     * @brief Callback when disconnected.
+     */
+    tcp_callback disconnect_callback;
+    /**
+     * @brief Callback when a write has been done.
+     */
+	tcp_callback write_finish_fn;
+    /**
+     * @brief Callback when something has been received.
+     */
+    tcp_callback recv_callback;
+    /**
+     * @brief Callback when something has been sent.
+     */
+    tcp_callback sent_callback;
+};
 
 /**
  * @brief Structure to keep track of TCP connections.
@@ -99,6 +128,12 @@ struct tcp_connection
      */
     struct tcp_callback_data callback_data;
     /**
+     * @brief Pointers to callback functions for handling connection states.
+     * 
+     * This is NULL on all but the listening connections.
+     */
+    struct tcp_callback_funcs *callbacks;
+    /**
      * @brief Are the connection sending data.
      */
     bool sending;
@@ -109,7 +144,7 @@ struct tcp_connection
     /**
      * @brief A pointer for the user, never touched.
      */
-    void *free;
+    void *user;
     /**
      * @brief Pointers for the prev and next entry in the list.
      */
@@ -119,7 +154,7 @@ struct tcp_connection
 extern const char *state_names[];
 
 extern void tcp_free(struct tcp_connection *connection);
-extern bool tcp_listen(int port, tcp_callback connect_cb, 
+extern bool tcp_listen(unsigned int port, tcp_callback connect_cb, 
                                 tcp_callback reconnect_cb, 
                                 tcp_callback disconnect_cb, 
                                 tcp_callback write_finish_cb, 
@@ -128,7 +163,7 @@ extern bool tcp_listen(int port, tcp_callback connect_cb,
 extern bool tcp_send(struct tcp_connection *connection, char *data, size_t size);
 extern void tcp_disconnect(struct tcp_connection *connection);
 extern bool init_tcp(void);
-extern void tcp_stop(void);
+extern bool tcp_stop(unsigned int port);
 extern struct tcp_connection *tcp_get_connections(void);
 
 #endif

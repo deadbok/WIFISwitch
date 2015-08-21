@@ -61,7 +61,7 @@ void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
     debug(" Allocated memory for request data: %p.\n", request);
     //Reset send buffer position.
     request->response.send_buffer_pos = request->response.send_buffer;
-    connection->free = request;
+    connection->user = request;
     request->connection = connection;
     request->response.status_code = 200;
 }
@@ -90,13 +90,27 @@ void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
  */
 void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
 {
-	struct http_request *request = connection->free;
+	struct http_request *request = connection->user;
 	
     debug("HTTP disconnect (%p).\n", connection);
-    connection->closing = true;
-	request->response.state = HTTP_STATE_DONE;
-	//Call one last time to clean up.
-	http_process_response(connection);
+    if (connection)
+    {
+		connection->closing = true;
+		if (connection->user) 
+		{
+			request->response.state = HTTP_STATE_DONE;
+			//Call one last time to clean up.
+			http_process_response(connection);
+		}
+		else
+		{
+			warn("Empty request.\n");
+		}
+	}
+	else
+	{
+		warn("Empty connection.\n");
+	}
 }
 
 /**
@@ -120,7 +134,7 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 {
 	void *buffer_ptr;
 	
-	struct http_request *request = connection->free;
+	struct http_request *request = connection->user;
 	
     debug("HTTP received (%p).\n", connection);
     if (connection->callback_data.data == NULL)
@@ -164,7 +178,7 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 
 void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
 {
-	struct http_request *request = connection->free;
+	struct http_request *request = connection->user;
 	//void *buffer_ptr;
 		
 	debug("HTTP send (%p).\n", connection);

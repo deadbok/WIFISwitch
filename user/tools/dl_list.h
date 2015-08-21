@@ -3,7 +3,6 @@
  * @brief Doubly-linked list helpers.
  * 
  * Macros to make handling of doubly-linked lists easier.
- * **Every macro should be expected to modify its parameters.**
  *
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -27,12 +26,6 @@
 #ifndef DL_LIST_H
 #define DL_LIST_H
 
-/* Wrapping stuf in do...while(0), makes it possible to invoke the macro like a
- * function call ending with semicolon (;).
- * Idea from here: [https://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html
- * Didn't use it, but it still clever ;-).
- */
-
 /**
  * @brief Insert pointers for a doubly-linked list.
  * 
@@ -43,12 +36,25 @@
                                 TYPE *prev
 
 /**
- * @brief Go to the end node.
+ * @brief Go to the last node.
+ * 
+ * *Address of NODE is modified.*
+ * 
+ * @param NODE Pointer to a linked list. 
+ * @return NODE will point at the last node.
  */
 #define DL_LIST_END(NODE)   while(NODE->next != NULL)\
                                 NODE = NODE->next
 /**
  * @brief Unlink a node from the list.
+ * 
+ * If LIST is pointing at the same address as node, LIST will be
+ * advanced to the next node in the list.
+ * 
+ * *Address of LIST might be modified. Links in LIST are modified.*
+ * 
+ * @param NODE Node to unlink.
+ * @param LIST List to unlink node from.
  */
 #define DL_LIST_UNLINK(NODE, LIST)  if (LIST == NODE)\
                                         LIST = NODE->next;\
@@ -59,8 +65,14 @@
 /**
  * @brief Insert a node into a list.
  * 
- * Insert a @p NODE into the list, between @p PREV and @p NEXT. **Fails if 
- * @p NODE is `NULL`.**
+ * The macro does not check if PREV and NEXT has sane addresses, except
+ * for NULL. The macro will also fail if NODE is NULL.
+ * 
+ * *Links in both NODE, PREV, and NEXT are modified.*
+ * 
+ * @param NODE Node to insert.
+ * @param PREV Node that should come before NODE in the modified list.
+ * @param NEXT Node that should come after NODE in the modified list.
  */
 #define DL_LIST_INSERT(NODE, PREV, NEXT)    if (NEXT != NULL)\
                                                NEXT->prev = NODE;\
@@ -70,8 +82,14 @@
                                             NODE->prev = PREV
 /**
  * @brief Add a node to the end of the list.
+ *
+ * The macro will fail if NODE or LIST is NULL.
  * 
- * Insert @p NODE at the end of @p LIST. **Fails if any parameter is `NULL`.**
+ * *Address of LIST might be modified. Links in LIST and NODE
+ * are modified.*
+ * 
+ * @param NODE Node to add.
+ * @param LIST List to add the node to.
  */
 #define DL_LIST_ADD_END(NODE, LIST) while(LIST->next != NULL)\
                                     {\
