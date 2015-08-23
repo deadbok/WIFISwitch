@@ -253,11 +253,6 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 	size_t size;
 	
 	debug("Processing request for connection %p.\n", connection);
-/*	if (connection->sending)
-	{
-		debug("Still sending.\n");
-		return;
-	}*/
 	//Since request was zalloced, request->type will be zero until parsed.
 	if (request)
 	{
@@ -327,44 +322,37 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 				case HTTP_STATE_ASSEMBLED: debug(" Waiting for message dispatch.\n");
 										   http_print_clf_status(request); 
 										   break;
-				case HTTP_STATE_DONE: //if (!connection->sending)
-									  //{
-										  debug("Closing connection %p.\n", connection);
-										  connection->sending = false;
-										  //Set by call back if the SDK has already closed the connection
-										  if (!connection->closing)
-										  {
-											  tcp_disconnect(connection);
-										  }
-										  if (request->response.handlers)
-										  {
-											  request->response.handlers->destroy(request);
-										  }
-										  http_free_request(request);
-										  connection->user = NULL;
-										  		
-										  //Remove from response buffer.
-										  http_response_mutex--;
+			case HTTP_STATE_DONE: 	  debug("Closing connection %p.\n", connection);
+									  tcp_disconnect(connection);
+
+									  if (request->response.handlers)
+									  {
+										  request->response.handlers->destroy(request);
+									  }
+									  http_free_request(request);
+									  connection->user = NULL;
+											
+									  //Remove from response buffer.
+									  http_response_mutex--;
+									  if (connection_ptr)
+									  {
+										  debug(" Freeing response buffer pointer.\n");
+										  db_free(connection_ptr);
+										  connection_ptr = NULL;
+									  }
+									  //Answer buffered request.
+									  debug(" Response handler mutex %d.\n", http_response_mutex);
+									  debug(" %d buffered Requests.\n", request_buffer.count); 
+									  if ((!http_response_mutex) && (request_buffer.count > 0))
+									  {
+										  debug(" Handling request from buffer.\n");
+										  connection_ptr = ring_pop_front(&request_buffer);
 										  if (connection_ptr)
 										  {
-											  debug(" Freeing response buffer pointer.\n");
-											  db_free(connection_ptr);
-											  connection_ptr = NULL;
+											  http_response_mutex++;
+											  http_process_response(*((struct tcp_connection **)connection_ptr));
 										  }
-										  //Answer buffered request.
-										  debug(" Response handler mutex %d.\n", http_response_mutex);
-										  debug(" %d buffered Requests.\n", request_buffer.count); 
-										  if ((!http_response_mutex) && (request_buffer.count > 0))
-										  {
-											  debug(" Handling request from buffer.\n");
-											  connection_ptr = ring_pop_front(&request_buffer);
-											  if (connection_ptr)
-											  {
-												  http_response_mutex++;
-												  http_process_response(*((struct tcp_connection **)connection_ptr));
-											  }
-										  }
-									  //}
+									  }
 									  break;
 				case HTTP_STATE_ERROR: warn("HTTP response status: %d.\n", request->response.status_code);
 									   fall_through_status_handler(connection, request->response.status_code);

@@ -76,8 +76,6 @@ void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
     debug("HTTP reconnect (%p).\n", connection);
     
     http_process_response(connection);
-    
-    //tcp_disconnect(connection);
 }
 
 /**
@@ -167,14 +165,14 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 	//A bad idea to parse later since the data apparently may be gone.
 	http_parse_request(connection);
 	
-/*    debug(" Response handler mutex %d.\n", http_response_mutex);
+    debug(" Response handler mutex %d.\n", http_response_mutex);
     if ((!http_response_mutex) && (request_buffer.count < 1))
     {
-*/  
+  
 		http_response_mutex++;
 		//No request waiting just process.
 		http_process_response(connection);
-/*
+
 	}
 	else
 	{
@@ -189,7 +187,6 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 			error("Dumping request, no free buffers.\n");
 		}
 	}
-*/
     debug(" Request %p done.\n", request);
 }
 

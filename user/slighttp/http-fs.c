@@ -166,6 +166,7 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 	char str_size[16];
 	unsigned char i;
 	size_t ext_size;
+	char *ext;
 	unsigned short ret = 0;
 	
 	//If the send buffer is over 200 bytes, this should never fill it.
@@ -195,8 +196,9 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 								 for (i = 0; i < HTTP_N_MIME_TYPES; i++)
 								 {
 									 ext_size = os_strlen(http_mime_types[i].ext);
+									 ext  = context->filename + os_strlen(context->filename) - ext_size;
 									 if (os_strncmp(http_mime_types[i].ext, 
-									                context->filename + os_strlen(context->filename) - ext_size,
+									                ext,
 									                ext_size) == 0)
 									 {
 										 break;
@@ -204,8 +206,8 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 								 }
 								 if (i >= HTTP_N_MIME_TYPES)
 								 {
-									 warn(" Did not find a usable MIME type, using text.\n");
-									 ret += http_send_header(request->connection, "Content-Type", http_mime_types[MIME_TXT].type);
+									 warn(" Did not find a usable MIME type, using application/octet-stream.\n");
+									 ret += http_send_header(request->connection, "Content-Type", "application/octet-stream");
 								 }
 								 else
 								 {

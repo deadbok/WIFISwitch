@@ -82,7 +82,6 @@ os_timer_t status_timer;
 static void ICACHE_FLASH_ATTR status_check(void)
 {
 	struct tcp_connection *connection;
-	struct http_request *request;
 	unsigned int connections = 0;
 	
 	db_mem_list();
@@ -94,18 +93,6 @@ static void ICACHE_FLASH_ATTR status_check(void)
 	}
 	else
 	{
-		/* Call response handler on first connection, it might be hanging with 
-		 * no data. Only one connection per run, to not take up to much time.
-		 */
-		//if (connection->conn->state < ESPCONN_CLOSE)
-		//{
-			////Make sure no one is working on this.
-			//if (!((struct http_request *)connection->free)->response.level)
-			//{
-				//debug("Calling response handler for connection %p (%p).\n", connection, connection->conn);
-				//http_process_response(connection);
-			//}
-		//}
 		while (connection)
 		{
 			connections++;
@@ -119,13 +106,6 @@ static void ICACHE_FLASH_ATTR status_check(void)
 			else
 			{
 				debug("Connection %p (%p) state unknown (%d).\n", connection, connection->conn, connection->conn->state);
-				/*request = connection->user;
-				if (request->response.handlers)
-				{
-				  request->response.handlers->destroy(request);
-				}
-				http_free_request(request);
-				tcp_free(connection); */
 				debug(" Remote address " IPSTR ":%d.\n", 
 					  IP2STR(connection->remote_ip),
 					  connection->remote_port);

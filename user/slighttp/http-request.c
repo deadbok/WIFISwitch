@@ -70,11 +70,6 @@ static size_t ICACHE_FLASH_ATTR http_get_request_type(struct tcp_connection *con
 			debug("HEAD request.\n");
 			request->type = HTTP_HEAD;
 		}
-		else if(os_strncmp(connection->callback_data.data, "CONECT ", offset) == 0)
-		{
-			debug("CONNECT request.\n");
-			request->type = HTTP_CONNECT;
-		}
 		else
 		{
 			offset++;
@@ -93,9 +88,18 @@ static size_t ICACHE_FLASH_ATTR http_get_request_type(struct tcp_connection *con
 				}
 				else
 				{
-					error("Unknown request: %s\n", connection->callback_data.data);
-					request->response.status_code = 501;
-					return(0);
+					offset++;
+					if(os_strncmp(connection->callback_data.data, "CONNECT ", offset) == 0)
+					{
+						debug("CONNECT request.\n");
+						request->type = HTTP_CONNECT;
+					}
+					else
+					{
+						error("Unknown request: %s\n", connection->callback_data.data);
+						request->response.status_code = 501;
+						return(0);
+					}
 				}
 			}
 		}

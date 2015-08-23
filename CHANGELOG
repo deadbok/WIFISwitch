@@ -1,3 +1,13 @@
+2015-08-24 Martin Grønholdt
+
+* net/tcp.*: Removed reconnect call back from API.
+
+
+2015-08-23 Martin Grønholdt
+
+* slighttp/http-request.c (http_get_request_type): Fixed a bug in CONNECT handling.
+
+
 2015-08-21 Martin Grønholdt
 
 * net/tcp.h (tcp_connection): Added local and remote address, to keep them when the SDK deallocates.

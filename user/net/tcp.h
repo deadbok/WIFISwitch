@@ -86,14 +86,6 @@ struct tcp_callback_funcs
      */
     tcp_callback connect_callback;
     /**
-     * @brief Callback on a reconnect.
-     * 
-     * According to the SDK documentation, this should be considered an error
-     * callback. If an error happens somewhere in the espconn code this is 
-     * called.
-     */
-    tcp_callback reconnect_callback;
-    /**
      * @brief Callback when disconnected.
      */
     tcp_callback disconnect_callback;
@@ -139,8 +131,6 @@ struct tcp_connection
      * @brief Remote port.
      */
     unsigned int local_port;
-	
-
     /**
      * @brief Pointer to the data meant for the current callback.
      */
@@ -172,8 +162,7 @@ struct tcp_connection
 extern const char *state_names[];
 
 extern void tcp_free(struct tcp_connection *connection);
-extern bool tcp_listen(unsigned int port, tcp_callback connect_cb, 
-                                tcp_callback reconnect_cb, 
+extern bool tcp_listen(unsigned int port, tcp_callback connect_cb,  
                                 tcp_callback disconnect_cb, 
                                 tcp_callback write_finish_cb, 
                                 tcp_callback recv_cb, 

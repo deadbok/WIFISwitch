@@ -293,7 +293,9 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
 /**
  * @brief Internal error handler.
  * 
- * Called whenever an error has occurred.
+ * Called whenever an error has occurred. This is like the disconnect
+ * call in that all sorts of stuff, could have happened to the espconn
+ * struct, so this handled as a disconnect.
  * 
  * @param arg Pointer to an espconn connection structure.
  * @param err Error code.
@@ -535,10 +537,12 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
  * @param sent_cb Callback when something has been sent.
  * @return `true` on success.
  */
-bool ICACHE_FLASH_ATTR tcp_listen(unsigned int port, tcp_callback connect_cb, 
-                                tcp_callback reconnect_cb, tcp_callback disconnect_cb,
-                                tcp_callback write_finish_cb, tcp_callback recv_cb,
-                                tcp_callback sent_cb)
+bool ICACHE_FLASH_ATTR tcp_listen(unsigned int port,
+								  tcp_callback connect_cb, 
+								  tcp_callback disconnect_cb,
+								  tcp_callback write_finish_cb,
+								  tcp_callback recv_cb,
+								  tcp_callback sent_cb)
 {
     int ret;
     struct espconn *conn;
@@ -603,7 +607,6 @@ bool ICACHE_FLASH_ATTR tcp_listen(unsigned int port, tcp_callback connect_cb,
 
 	//Setup user callbacks.
 	callbacks->connect_callback = connect_cb;
-	callbacks->reconnect_callback = reconnect_cb;
 	callbacks->disconnect_callback = disconnect_cb;
 	callbacks->write_finish_fn = write_finish_cb;
 	callbacks->recv_callback = recv_cb;
