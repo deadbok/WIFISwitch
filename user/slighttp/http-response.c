@@ -253,11 +253,11 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 	size_t size;
 	
 	debug("Processing request for connection %p.\n", connection);
-	if (connection->sending)
+/*	if (connection->sending)
 	{
 		debug("Still sending.\n");
 		return;
-	}
+	}*/
 	//Since request was zalloced, request->type will be zero until parsed.
 	if (request)
 	{
@@ -327,9 +327,10 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 				case HTTP_STATE_ASSEMBLED: debug(" Waiting for message dispatch.\n");
 										   http_print_clf_status(request); 
 										   break;
-				case HTTP_STATE_DONE: if (!connection->sending)
-									  {
+				case HTTP_STATE_DONE: //if (!connection->sending)
+									  //{
 										  debug("Closing connection %p.\n", connection);
+										  connection->sending = false;
 										  //Set by call back if the SDK has already closed the connection
 										  if (!connection->closing)
 										  {
@@ -340,7 +341,7 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 											  request->response.handlers->destroy(request);
 										  }
 										  http_free_request(request);
-										  tcp_free(connection);
+										  connection->user = NULL;
 										  		
 										  //Remove from response buffer.
 										  http_response_mutex--;
@@ -363,7 +364,7 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 												  http_process_response(*((struct tcp_connection **)connection_ptr));
 											  }
 										  }
-									  }
+									  //}
 									  break;
 				case HTTP_STATE_ERROR: warn("HTTP response status: %d.\n", request->response.status_code);
 									   fall_through_status_handler(connection, request->response.status_code);

@@ -98,7 +98,7 @@ void ICACHE_FLASH_ATTR http_print_clf_status(struct http_request *request)
 {
     char *unknown = "-";
     
-	db_printf(IPSTR, IP2STR(request->connection->conn->proto.tcp->remote_ip));
+	db_printf(IPSTR, IP2STR(request->connection->remote_ip));
 	db_printf(" %s %s %s", unknown, unknown, unknown);
 	db_printf(" \"");
 	switch(request->type)

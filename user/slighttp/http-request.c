@@ -343,10 +343,12 @@ void ICACHE_FLASH_ATTR http_free_request(struct http_request *request)
 	{
 		if (request->uri)
 		{
+			debug("Deallocating request URI %s.\n", request->uri);
 			db_free(request->uri);
 		}
 		if (request->version)
 		{
+			debug("Deallocating request version %s.\n", request->version);
 			db_free(request->version);
 		}
 		if (request->headers)
@@ -354,15 +356,20 @@ void ICACHE_FLASH_ATTR http_free_request(struct http_request *request)
 			debug(" Freeing %d headers.\n", request->n_headers);
 			for (i = 0; i < request->n_headers; i++)
 			{
+				debug("%d, ", i);
 				db_free(request->headers[i].name);
 				db_free(request->headers[i].value);
 			}
+			debug(" done.\n");
+			debug("Deallocating header struct array.\n");
 			db_free(request->headers);
 		}
 		if (request->message)
 		{
+			debug("Deallocating request message.\n");
 			db_free(request->message);
 		}
+		debug("Deallocating request.\n");
 		db_free(request);
 	}
 }

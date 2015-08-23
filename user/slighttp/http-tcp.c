@@ -93,18 +93,32 @@ void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
 	struct http_request *request = connection->user;
 	
     debug("HTTP disconnect (%p).\n", connection);
+    
     if (connection)
     {
-		connection->closing = true;
-		if (connection->user) 
+		if (!connection->closing)
 		{
-			request->response.state = HTTP_STATE_DONE;
-			//Call one last time to clean up.
-			http_process_response(connection);
+			connection->closing = true;
+			
+			if (connection->user)
+			{
+				//Call clean up if not yet done.
+				if (request->response.state != HTTP_STATE_DONE)
+				{
+					request->response.state = HTTP_STATE_DONE;
+					//Call one last time to clean up.
+					http_process_response(connection);
+				}
+				debug("Clean up done.\n");
+			}
+			else
+			{
+				debug("Empty request.\n");
+			}
 		}
 		else
 		{
-			warn("Empty request.\n");
+			debug(" Connection is already closing.\n");
 		}
 	}
 	else
@@ -150,15 +164,17 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 		warn("Empty request received.<n");
 	}
 
-	//A bad idea to parser latter since the data apparently may be gone.
+	//A bad idea to parse later since the data apparently may be gone.
 	http_parse_request(connection);
 	
-    debug(" Response handler mutex %d.\n", http_response_mutex);
+/*    debug(" Response handler mutex %d.\n", http_response_mutex);
     if ((!http_response_mutex) && (request_buffer.count < 1))
-    {  
+    {
+*/  
 		http_response_mutex++;
 		//No request waiting just process.
 		http_process_response(connection);
+/*
 	}
 	else
 	{
@@ -173,6 +189,7 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 			error("Dumping request, no free buffers.\n");
 		}
 	}
+*/
     debug(" Request %p done.\n", request);
 }
 

@@ -99,7 +99,6 @@ void ICACHE_FLASH_ATTR *ring_pop_front(struct ring_buffer *rb)
 		debug(" Buffer is empty.\n");
 		return(NULL);
 	}
-	rb->count--;
 
 	//Handle wrap around.
 	new_head = rb->head + rb->item_size;
@@ -110,7 +109,9 @@ void ICACHE_FLASH_ATTR *ring_pop_front(struct ring_buffer *rb)
 		new_head = rb->data;
 	}
 
-	debug(" Got item: %p.\n", rb->head);
+	debug(" Got %d of %d items: %p.\n", rb->count, rb->capacity, rb->head);
+	rb->count--;
+	
 	ret = db_malloc(rb->item_size, "ret ring_pop_front");
 	os_memcpy(ret, rb->head, rb->item_size);
 	debug(" Returning copy at %p.\n", ret);

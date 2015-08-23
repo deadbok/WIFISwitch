@@ -288,8 +288,10 @@ void ICACHE_FLASH_ATTR http_fs_destroy(struct http_request *request)
 	{
 		if (((struct http_fs_context *)request->response.context)->filename)
 		{
+			debug("Deallocating file name %s.\n", ((struct http_fs_context *)request->response.context)->filename);
 			db_free(((struct http_fs_context *)request->response.context)->filename);
 		}
+		debug("Deallocating request handler context.\n");
 		db_free(request->response.context);
 		request->response.context = NULL;
 	}

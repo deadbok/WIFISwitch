@@ -83,6 +83,7 @@ static void ICACHE_FLASH_ATTR status_check(void)
 {
 	struct tcp_connection *connection;
 	struct http_request *request;
+	unsigned int connections = 0;
 	
 	db_mem_list();
 	
@@ -107,22 +108,38 @@ static void ICACHE_FLASH_ATTR status_check(void)
 		//}
 		while (connection)
 		{
+			connections++;
 			if (connection->conn->state <= ESPCONN_CLOSE)
 			{
 				debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
+				debug(" Remote address " IPSTR ":%d.\n", 
+					  IP2STR(connection->remote_ip),
+					  connection->remote_port);
 			}
 			else
 			{
-				debug("Closing connection %p (%p) state unknown (%d).\n", connection, connection->conn, connection->conn->state);
-				request = connection->user;
+				debug("Connection %p (%p) state unknown (%d).\n", connection, connection->conn, connection->conn->state);
+				/*request = connection->user;
 				if (request->response.handlers)
 				{
 				  request->response.handlers->destroy(request);
 				}
 				http_free_request(request);
-				tcp_free(connection);
+				tcp_free(connection); */
+				debug(" Remote address " IPSTR ":%d.\n", 
+					  IP2STR(connection->remote_ip),
+					  connection->remote_port);
+
 			}
 			connection = connection->next;
+		}
+		if (connections == 1)
+		{
+			debug("1 connection.\n");
+		}
+		else
+		{
+			debug("%d connections.\n", connections);
 		}
 	}
 }
@@ -192,7 +209,7 @@ void ICACHE_FLASH_ATTR user_init(void)
     wifi_station_set_reconnect_policy(false);
 
     // Set baud rate of debug port
-    uart_div_modify(0,UART_CLK_FREQ / 115200);
+    uart_div_modify(0,UART_CLK_FREQ / BAUD_RATE);
     //uart_init(115200, 115200);
 
 #ifndef SDK_DEBUG

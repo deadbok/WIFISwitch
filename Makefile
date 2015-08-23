@@ -36,6 +36,9 @@ ESPTOOL		?= python2 $(XTENSA_TOOLS_ROOT)/esptool.py
 ESPPORT		?= /dev/ttyUSB0
 ESPSPEED	?= 230400
 
+# Baud rate of the firmware console
+FIRMWARE_CON_SPEED = 230400
+
 # name for the target project
 TARGET		= wifiswitch
 
@@ -166,7 +169,7 @@ clean:
 debug: $(LOG_DIR)
 #Remove the old log
 	> ./debug.log
-	minicom -D $(ESPPORT) -o -b 115200 -C ./debug.log
+	minicom -D $(ESPPORT) -o -b $(FIRMWARE_CON_SPEED) -C ./debug.log
 #Make a copy of the new log before with a saner name.
 	cp ./debug.log $(LOG_DIR)/debug-$(shell date +%Y-%m-%d-%H-%M-%S).log
 

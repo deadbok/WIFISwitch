@@ -1,5 +1,7 @@
 2015-08-21 Martin Grønholdt
 
+* net/tcp.h (tcp_connection): Added local and remote address, to keep them when the SDK deallocates.
+* user_config.h: Added BAUD_RATE.
 * net/wifi.c (create_softap): Start from default configuration.
 * slighttp/http-request.* (http_free_request): Parameter type changed to struct http_request).
 

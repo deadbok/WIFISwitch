@@ -65,6 +65,11 @@
  */
 #define REST_GPIO_ENABLED 0x30
 
+/**
+ * @brief Baud rate of the serial console.
+ */
+#define BAUD_RATE 230400
+
 /* Enable any of the following to have different levels of debug output on the
  * serial port. 
  */
@@ -79,7 +84,7 @@
 /**
  * @brief Print memory allocation info.
  */
-//#define DEBUG_MEM
+#define DEBUG_MEM
 /**
  * @brief List memory allocations.
  */
@@ -87,7 +92,7 @@
 /**
  * @brief Mostly shut up output from the SDK.
  */
-#define SDK_DEBUG
+//#define SDK_DEBUG
 
 /**
  * @brief Customised print function.

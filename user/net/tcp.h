@@ -124,6 +124,24 @@ struct tcp_connection
      */
     struct espconn *conn;
     /**
+     * @brief Remote IP.
+     */
+    uint8 remote_ip[4];
+    /**
+     * @brief Remote port.
+     */
+	unsigned int remote_port;
+    /**
+     * @brief Remote IP.
+     */
+	uint8 local_ip[4];
+    /**
+     * @brief Remote port.
+     */
+    unsigned int local_port;
+	
+
+    /**
      * @brief Pointer to the data meant for the current callback.
      */
     struct tcp_callback_data callback_data;
