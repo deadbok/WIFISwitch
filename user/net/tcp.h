@@ -124,11 +124,11 @@ struct tcp_connection
      */
 	unsigned int remote_port;
     /**
-     * @brief Remote IP.
+     * @brief Local IP.
      */
 	uint8 local_ip[4];
     /**
-     * @brief Remote port.
+     * @brief Local port.
      */
     unsigned int local_port;
     /**
@@ -142,11 +142,11 @@ struct tcp_connection
      */
     struct tcp_callback_funcs *callbacks;
     /**
-     * @brief Are the connection sending data.
+     * @brief Is the connection sending data.
      */
     bool sending;
     /**
-     * @brief Are the connection closing.
+     * @brief Is the connection closing.
      */
     bool closing;
     /**
@@ -161,6 +161,7 @@ struct tcp_connection
 
 extern const char *state_names[];
 
+extern void tcp_print_connection_status(void);
 extern void tcp_free(struct tcp_connection *connection);
 extern bool tcp_listen(unsigned int port, tcp_callback connect_cb,  
                                 tcp_callback disconnect_cb, 

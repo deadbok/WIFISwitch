@@ -309,7 +309,13 @@ bool ICACHE_FLASH_ATTR http_parse_request(struct tcp_connection *connection)
      
     HTTP_SKIP_SPACES(next_entry);
     request_entry = next_entry;
-    //Skip 'HTTP/' and save version.
+    //Check 'HTTP/' and save version.
+    if (os_memcmp(request_entry, "HTTP/", 5) != 0)
+    {
+        error("Could not parse HTTP request version (%s).\n", request_entry);
+        return(false);
+    }
+    
     request_entry += 5;
     //Find the CR after the version, and end the string.
     next_entry = strchrs(next_entry, "\r\n");

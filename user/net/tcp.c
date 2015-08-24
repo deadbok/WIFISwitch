@@ -233,6 +233,58 @@ static void ICACHE_FLASH_ATTR print_status(const int status)
     }
 }
 
+
+/**
+ * @brief Print the status of all connections in the list.
+ */
+void ICACHE_FLASH_ATTR tcp_print_connection_status(void)
+{
+	struct tcp_connection *connection = tcp_connections;
+	unsigned int connections = 0;
+	
+	if (!connection)
+	{
+		debug("No TCP connections.\n");
+	}
+	else
+	{
+		while (connection)
+		{
+			connections++;
+			if (connection->conn->state <= ESPCONN_CLOSE)
+			{
+				debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
+				debug(" Remote address " IPSTR ":%d.\n", 
+					  IP2STR(connection->remote_ip),
+					  connection->remote_port);
+			}
+			else
+			{
+				debug("Connection %p (%p) state unknown (%d).\n", connection, connection->conn, connection->conn->state);
+				debug(" Remote address " IPSTR ":%d.\n", 
+					  IP2STR(connection->remote_ip),
+					  connection->remote_port);
+
+			}
+			if (connection->conn->state < ESPCONN_CLOSE)
+			{
+				debug(" SDK remote address " IPSTR ":%d.\n", 
+					  IP2STR(connection->conn->proto.tcp->remote_ip),
+					  connection->conn->proto.tcp->remote_port);
+			}
+			connection = connection->next;
+		}
+		if (connections == 1)
+		{
+			debug("1 connection.\n");
+		}
+		else
+		{
+			debug("%d connections.\n", connections);
+		}
+	}
+}
+
 /**
  * @brief Internal callback for when a new connection has been made.
  * 
@@ -245,6 +297,7 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
     struct tcp_connection *listening_connection;
     
     debug("TCP connected (%p).\n", conn);
+    tcp_print_connection_status();
     
     listening_connection = find_listening_connection(conn->proto.tcp->local_port);
     
@@ -308,6 +361,7 @@ static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err)
             
     debug("TCP reconnected (%p).\n", conn);
     print_status(err);
+    tcp_print_connection_status();
     
     connection = find_connection(conn, false);
     listening_connection = find_listening_connection(conn->proto.tcp->local_port);
@@ -358,6 +412,7 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
     struct tcp_connection *listening_connection;
             
     debug("TCP disconnected (%p).\n", arg);
+    tcp_print_connection_status();
     
     connection = find_connection(conn, false);
     listening_connection = find_listening_connection(conn->proto.tcp->local_port);
@@ -402,6 +457,7 @@ static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg)
     struct tcp_connection *listening_connection;
     
     debug("TCP write done (%p).\n", arg);
+    tcp_print_connection_status();
     
     connection = find_connection(conn, false);
     listening_connection = find_listening_connection(conn->proto.tcp->local_port);
@@ -445,6 +501,7 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short 
     
     debug("TCP received (%p).\n", arg);
     debug("%s\n", data);
+    tcp_print_connection_status();
     
     connection = find_connection(conn, false);
     listening_connection = find_listening_connection(conn->proto.tcp->local_port);
@@ -489,6 +546,7 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
     struct tcp_connection *listening_connection;
     
     debug("TCP sent (%p).\n", conn);
+    tcp_print_connection_status();
     
     connection = find_connection(conn, false);
     listening_connection = find_listening_connection(conn->proto.tcp->local_port);
@@ -551,6 +609,7 @@ bool ICACHE_FLASH_ATTR tcp_listen(unsigned int port,
 	struct tcp_connection *listening_connection = NULL;
     
     debug("Adding TCP listener on port %d.\n", port);
+    tcp_print_connection_status();
     //Check that nobody else is listening on the port.
     if (connections != NULL)
     {
@@ -740,7 +799,7 @@ bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, s
 	if (connection->conn)
 	{
 		connection->sending = true;
-		return(espconn_sent(connection->conn, (unsigned char*)data, size));
+		return(espconn_send(connection->conn, (unsigned char*)data, size));
 	}
 	warn(" Connection is empty.\n");
 	return(false);

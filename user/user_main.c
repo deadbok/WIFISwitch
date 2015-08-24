@@ -81,47 +81,8 @@ os_timer_t status_timer;
  */
 static void ICACHE_FLASH_ATTR status_check(void)
 {
-	struct tcp_connection *connection;
-	unsigned int connections = 0;
-	
 	db_mem_list();
-	
-	connection = tcp_get_connections();
-	if (!connection)
-	{
-		debug("No TCP connections.\n");
-	}
-	else
-	{
-		while (connection)
-		{
-			connections++;
-			if (connection->conn->state <= ESPCONN_CLOSE)
-			{
-				debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
-				debug(" Remote address " IPSTR ":%d.\n", 
-					  IP2STR(connection->remote_ip),
-					  connection->remote_port);
-			}
-			else
-			{
-				debug("Connection %p (%p) state unknown (%d).\n", connection, connection->conn, connection->conn->state);
-				debug(" Remote address " IPSTR ":%d.\n", 
-					  IP2STR(connection->remote_ip),
-					  connection->remote_port);
-
-			}
-			connection = connection->next;
-		}
-		if (connections == 1)
-		{
-			debug("1 connection.\n");
-		}
-		else
-		{
-			debug("%d connections.\n", connections);
-		}
-	}
+	tcp_print_connection_status();
 }
 
 /**

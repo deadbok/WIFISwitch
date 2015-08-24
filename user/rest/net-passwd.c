@@ -36,6 +36,11 @@
 #include "slighttp/http-mime.h"
 #include "slighttp/http-response.h"
 
+
+/**
+ * @brief Keep track of actual password changes.
+ */
+static bool passwd_changed = false;
 /**
  * @brief Tell if we will handle a certain URI.
  * 
@@ -70,6 +75,7 @@ size_t ICACHE_FLASH_ATTR rest_net_passwd_put_handler(struct http_request *reques
 	    
     debug("In network password PUT REST handler (%s).\n", uri);
     
+    passwd_changed = false;
 	if (request->response.state == HTTP_STATE_STATUS)
 	{
 		request->response.status_code = 204;
@@ -105,6 +111,7 @@ size_t ICACHE_FLASH_ATTR rest_net_passwd_put_handler(struct http_request *reques
 				   
 					os_memcpy(&sc.password, passwd, 64);
 					wifi_station_set_config(&sc);
+					passwd_changed = true;
 				}
 			}
 		}
@@ -128,7 +135,10 @@ void ICACHE_FLASH_ATTR rest_net_passwd_destroy(struct http_request *request)
 	{
 		db_free(request->response.context);
 	}
-	//Restart to apply new WIFI configuration.
-	debug(" System restart.\n");
-	system_restart();
+	if (passwd_changed)
+	{
+		//Restart to apply new WIFI configuration.
+		debug(" System restart.\n");
+		system_restart();
+	}
 }

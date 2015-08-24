@@ -1,6 +1,9 @@
 2015-08-24 Martin Grønholdt
 
+* net-passwd.c: Only reset the chip when the password has changed.
+* slighttp/http-request.c (http_parse_request): Check for "HTTP/" before version.
 * net/tcp.*: Removed reconnect call back from API.
+		   : Added tcp_print_connection_status.
 
 
 2015-08-23 Martin Grønholdt
