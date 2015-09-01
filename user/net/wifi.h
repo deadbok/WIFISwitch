@@ -1,4 +1,4 @@
-/* wifi_connect.h
+/* wifi.h
  *
  * Routines for connecting th ESP8266 to a WIFI network.
  *

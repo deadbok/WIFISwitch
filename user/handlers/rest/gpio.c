@@ -41,24 +41,56 @@
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
 #include "slighttp/http-response.h"
+#include "slighttp/http-handler.h"
 #include "tools/strxtra.h"
 #include "user_config.h"
 
 #ifndef REST_GPIO_ENABLED
 #warning "No GPIO's has been enabled for acces via the REST interface."
-#define REST_GPIO_ENABLED = 0
+#define REST_GPIO_ENABLED 0
 #endif
 
-struct rest_net_names_context
+//GPIO access.
+extern bool rest_gpio_test(struct http_request *request);
+extern void rest_gpio_header(struct http_request *request, char *header_line);
+extern signed int rest_gpio_head_handler(struct http_request *request);
+extern signed int rest_gpio_get_handler(struct http_request *request);
+extern signed int rest_gpio_put_handler(struct http_request *request);
+extern void rest_gpio_destroy(struct http_request *request);
+
+/**
+ * @brief Struct used to register the handler.
+ */
+struct http_response_handler http_rest_gpio_handler =
+{
+	rest_gpio_test,
+	rest_gpio_header,
+	{
+		NULL,
+		rest_gpio_get_handler,
+		rest_gpio_head_handler,
+		NULL,
+		rest_gpio_put_handler,
+		NULL,
+		NULL,
+		NULL
+	}, 
+	rest_gpio_destroy
+};
+
+/**
+ * @brief context, that is stored with the request.
+ */
+struct rest_gpio_context
 {
 	/**
 	 * @brief The response.
 	 */
 	char *response;
 	/**
-	 * @brief The number of bytes to send.
+	 * @brief True if current response state is done.
 	 */
-	size_t size;
+	bool done;
 };
 
 /**
@@ -97,12 +129,25 @@ bool ICACHE_FLASH_ATTR rest_gpio_test(struct http_request *request)
 			current_gpio = -1;
 			ret = true;
 		}
+		request->response.context = db_zalloc(sizeof(struct rest_gpio_context),
+									   "request->response.context create_pin_response");
     }
     if (!ret)
     {
-		debug("Rest handler GPIO will not handle request,\n"); 
+		debug("Rest handler GPIO will not handle request.\n"); 
 	}
     return(ret);       
+}
+
+
+/**
+ * @brief Handle headers.
+ * 
+ * @param request The request to handle.
+ */
+void ICACHE_FLASH_ATTR rest_gpio_header(struct http_request *request, char *header_line)
+{
+	debug("HTTP REST GPIO header handler.\n");
 }
 
 /**
@@ -161,10 +206,11 @@ static char ICACHE_FLASH_ATTR *json_create_int_array(long *values, size_t entrie
  * 
  * @param request Request that got us here.
  */
-static size_t create_enabled_response(struct http_request *request)
+static signed int create_enabled_response(struct http_request *request)
 {
 	unsigned char n_gpios = 0;
 	long gpios[16]  = { 0 };
+	struct rest_gpio_context *context = request->response.context;
 	
 	debug("Creating JSON array of enabled GPIO's.\n");
 	//Run through all GPIO's
@@ -176,9 +222,9 @@ static size_t create_enabled_response(struct http_request *request)
 			gpios[n_gpios++] = i;
 		}
 	}
-	request->response.context = json_create_int_array(gpios, n_gpios);
+	context->response = json_create_int_array(gpios, n_gpios);
 	
-	return(os_strlen(request->response.context));
+	return(os_strlen(context->response));
 }
 
 /**
@@ -186,9 +232,10 @@ static size_t create_enabled_response(struct http_request *request)
  * 
  * @param request Request that got us here.
  */
-static size_t create_pin_response(struct http_request *request)
+static signed int create_pin_response(struct http_request *request)
 {
 	unsigned char state;
+	struct rest_gpio_context *context = request->response.context;
 	
 	debug("Getting state of GPIO%d.\n", current_gpio);
 	
@@ -196,17 +243,17 @@ static size_t create_pin_response(struct http_request *request)
 	
 	debug(" GPIO state: %d.\n", state);
 	
-	request->response.context = db_malloc(sizeof(char) * 12, "request->response.context create_pin_response");
-	
+	context->response = db_malloc(sizeof(char) * 12,
+										  "request->response.context->response create_pin_response");
 	if (state)
 	{
-		os_memcpy(request->response.context, "{\"state\":1}", 11);
+		os_memcpy(context->response, "{\"state\":1}", 11);
 	}
 	else
 	{
-		os_memcpy(request->response.context, "{\"state\":0}", 11);
+		os_memcpy(context->response, "{\"state\":0}", 11);
 	}
-	((char *)request->response.context)[11] = '\0';
+	context->response[11] = '\0';
 	return(11);
 }
 
@@ -216,54 +263,73 @@ static size_t create_pin_response(struct http_request *request)
  * @param request Request that got us here.
  * @return Return unused.
  */
-size_t ICACHE_FLASH_ATTR rest_gpio_head_handler(struct http_request *request)
+signed int ICACHE_FLASH_ATTR rest_gpio_head_handler(struct http_request *request)
 {
 	char str_size[16];
 	size_t size;
-	size_t ret = 0;
+	signed int ret = 0;
+	struct rest_gpio_context *context = request->response.context;
 	
 	//If the send buffer is over 200 bytes, this should never fill it.
 	debug("REST GPIO HEAD handler.\n");
+	if (context->done)
+	{
+		debug(" State done.\n");
+	}
 	switch(request->response.state)
 	{
-		case HTTP_STATE_STATUS:  ret = http_send_status_line(request->connection, request->response.status_code);
-								 //Onwards
-								 request->response.state = HTTP_STATE_HEADERS;
-								 break;
-		case HTTP_STATE_HEADERS: //Always send connections close and server info.
-								 ret = http_send_header(request->connection, 
-												  "Connection",
-												  "close");
-								 ret += http_send_header(request->connection,
-												  "Server",
-												  HTTP_SERVER_NAME);
-								 //Get data size and create response.
-								 if (current_gpio < 0)
-								 {
-									size = create_enabled_response(request);
-								 }
-								 else
-								 {
-									 size = create_pin_response(request);
-								 }
-								 os_sprintf(str_size, "%d", size);
-								 //Send message length.
-								 ret += http_send_header(request->connection, 
-												  "Content-Length",
-												  str_size);
-								 ret += http_send_header(request->connection, "Content-Type", http_mime_types[MIME_JSON].type);	
-								 //Send end of headers.
-								 ret += http_send(request->connection, "\r\n", 2);
-								 //Stop if only HEAD was requested.
-								 if (request->type == HTTP_HEAD)
-								 {
-									 request->response.state = HTTP_STATE_ASSEMBLED;
-								 }
-								 else
-								 {
-									 request->response.state = HTTP_STATE_MESSAGE;
-								 }
-								 break;
+		case HTTP_STATE_STATUS:  
+			//Go on if we're done.
+			if (context->done)
+			{
+				context->done = false;
+				request->response.state++;
+				return(0);
+			}
+			ret = http_send_status_line(request->connection, request->response.status_code);
+			//Onwards
+			context->done = true;
+			break;
+		case HTTP_STATE_HEADERS: 
+			//Go on if we're done.
+			if (context->done)
+			{
+				context->done = false;
+				//Stop if only HEAD was requested.
+				if (request->type == HTTP_HEAD)
+				{
+					request->response.state = HTTP_STATE_ASSEMBLED;
+				}
+				else
+				{
+					request->response.state = HTTP_STATE_MESSAGE;
+				}				
+				return(0);
+			}
+			//Always send connections close and server info.
+			ret = http_send_header(request->connection, "Connection",
+								   "close");
+			ret += http_send_header(request->connection, "Server",
+									HTTP_SERVER_NAME);
+			//Get data size and create response.
+			if (current_gpio < 0)
+			{
+				size = create_enabled_response(request);
+			}
+			else
+			{
+				size = create_pin_response(request);
+			}
+			os_sprintf(str_size, "%d", size);
+			//Send message length.
+			ret += http_send_header(request->connection, 
+									"Content-Length", str_size);
+			ret += http_send_header(request->connection, "Content-Type",
+									http_mime_types[MIME_JSON].type);	
+			//Send end of headers.
+			ret += http_send(request->connection, "\r\n", 2);
+			context->done = true;
+			break;
 	}
     return(ret);
 }
@@ -274,14 +340,18 @@ size_t ICACHE_FLASH_ATTR rest_gpio_head_handler(struct http_request *request)
  * @param request Data for the request that got us here.
  * @return Size of the return massage.
  */
-size_t ICACHE_FLASH_ATTR rest_gpio_get_handler(struct http_request *request)
+signed int ICACHE_FLASH_ATTR rest_gpio_get_handler(struct http_request *request)
 {
 	size_t msg_size = 0;
 	char *uri = request->uri;
-	size_t ret = 0;
+	signed int ret = 0;
+	struct rest_gpio_context *context = request->response.context;
 	    
     debug("In GPIO GET REST handler (%s).\n", uri);
-	
+    if (context->done)
+	{
+		debug(" State done.\n");
+	}
 	//Don't duplicate, just call the head handler.
 	if (request->response.state < HTTP_STATE_MESSAGE)
 	{
@@ -289,14 +359,21 @@ size_t ICACHE_FLASH_ATTR rest_gpio_get_handler(struct http_request *request)
 	}
 	else
 	{
-		msg_size = os_strlen(request->response.context);
-		debug(" Response: %s.\n", (char *)request->response.context);
-		ret = http_send(request->connection, request->response.context, msg_size);
+		//Go on if we're done.
+		if (context->done)
+		{
+			context->done = false;
+			request->response.state++;
+			return(0);
+		}
+		msg_size = os_strlen(context->response);
+		debug(" Response: %s.\n", context->response);
+		ret = http_send(request->connection, context->response, msg_size);
 		request->response.state = HTTP_STATE_ASSEMBLED;
 		
-		debug(" Response size: %d.\n", msg_size);
-		request->response.message_size = msg_size;
-		return(msg_size);
+		debug(" Response size: %d.\n", ret);
+		request->response.message_size = ret;
+		context->done = true;
 	}
 	return(ret);
 }
@@ -307,18 +384,29 @@ size_t ICACHE_FLASH_ATTR rest_gpio_get_handler(struct http_request *request)
  * @param request Data for the request that got us here.
  * @return The HTML.
  */
-size_t ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
+signed int ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
 {
 	struct jsonparse_state json_state;
 	char *uri = request->uri;
 	int type;
-	size_t ret = 0;
+	signed int ret = 0;
 	unsigned int gpio_state;
+	struct rest_gpio_context *context = request->response.context;
 	    
     debug("In GPIO PUT REST handler (%s).\n", uri);
-    
+    if (context->done)
+	{
+		debug(" State done.\n");
+	}
 	if (request->response.state == HTTP_STATE_STATUS)
 	{
+		//Go on if we're done.
+		if (context->done)
+		{
+			context->done = false;
+			request->response.state++;
+			return(0);
+		}
 		//Handle trying to PUT to /rest/gpios
 		if (current_gpio < 0)
 		{
@@ -330,10 +418,17 @@ size_t ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
 			request->response.status_code = 204;
 			ret = http_send_status_line(request->connection, request->response.status_code);
 		}
-		request->response.state = HTTP_STATE_HEADERS;
+		context->done = true;
 	}
 	else if (request->response.state == HTTP_STATE_HEADERS)
 	{
+		//Go on if we're done.
+		if (context->done)
+		{
+			context->done = false;
+			request->response.state++;
+			return(0);
+		}
 		if (current_gpio < 0)
 		{
 			ret += http_send_header(request->connection, "Allow", "GET");
@@ -346,15 +441,23 @@ size_t ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
 		}
 		//Send end of headers.
 		ret += http_send(request->connection, "\r\n", 2);
-		request->response.state = HTTP_STATE_MESSAGE;	
+		context->done = true;	
 	}
 	else if (request->response.state == HTTP_STATE_MESSAGE)
 	{
+		//Go on if we're done.
+		if (context->done)
+		{
+			context->done = false;
+			request->response.state++;
+			return(0);
+		}
 		//Handle trying to PUT to /rest/gpios
 		if (current_gpio < 0)
 		{
 			ret += http_send(request->connection, "<!DOCTYPE html><head><title>Method Not Allowed.</title></head><body><h1>405 Method Not Allowed.</h1><br />I won't PUT up with this.</body></html>", 145);
 			request->response.message_size = 145;
+			context->done = true;
 		}
 		else
 		{
@@ -376,11 +479,10 @@ size_t ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
 					}
 				}
 			}
-			request->response.message_size = 0;		
+			request->response.state++;
+			ret = 0;
 		}
-		request->response.state = HTTP_STATE_ASSEMBLED;
-		//We're not sending so we call this our selves.
-		http_process_response(request->connection);	
+		request->response.message_size = ret;
 	}
 	return(ret);
 }
@@ -391,11 +493,19 @@ size_t ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
  */
 void ICACHE_FLASH_ATTR rest_gpio_destroy(struct http_request *request)
 {
+	struct rest_gpio_context *context = request->response.context;
+	
 	debug("Freeing GPIO REST handler data.\n");
 	
-	if (request->response.context)
+	if (context)
 	{
-		db_free(request->response.context);
+		if (context->response)
+		{
+			debug(" Freeing response.\n");
+			db_free(context->response);
+		}
+		debug(" Freeing context.\n");
+		db_free(context);
 		request->response.context = NULL;
 	}
 }

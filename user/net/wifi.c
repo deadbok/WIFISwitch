@@ -1,5 +1,5 @@
 /**
- * @file wifi_connect.c
+ * @file wifi.c
  *
  * @brief Routines for connecting th ESP8266 to a WIFI network.
  *

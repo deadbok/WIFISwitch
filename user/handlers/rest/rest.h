@@ -1,10 +1,11 @@
-/**
- * @file int_flash.h
+/** @file rest.h
  *
- * @brief Routines for accessing the internal flash.
+ * @brief REST interface call backs.
  *
+ * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
+ * @license
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -20,35 +21,32 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */ 
- 
-#ifndef INT_FLASH_H
-#define INT_FLASH_H
+#ifndef REST_H
+#define REST_H
+
+#include "slighttp/http-handler.h"
 
 /**
- * @brief Address of the zip file.
+ * @brief REST handler for the default network name.
  */
-#define FS_ADDR 0x14000
+extern struct http_response_handler http_rest_network_handler;
 
-//Interesting places.
-/*extern void *_text_start;
-extern void *_text_end;
-extern void *_lit4_start;
-extern void *_lit4_end;
-extern void *_irom0_text_start;
-extern void *_irom0_text_end;
+/**
+ * @brief REST handler for the scanning for available networks.
+ */
+extern struct http_response_handler http_rest_net_names_handler;
 
-union flash_data_u
-{
-	unsigned int u32;
-	unsigned short u16[2];
-	unsigned char u8[4];
-};*/
+/**
+ * @brief REST handler for setting the password for the default network.
+ */
+extern struct http_response_handler http_rest_passwd_handler;
 
-//Flash access functions.
-extern size_t flash_size(void);
-extern void flash_dump(unsigned int src_addr, size_t size);
-extern void flash_dump_mem(unsigned int src_addr, size_t size);
-extern bool aflash_read(const void *data, unsigned int read_addr, size_t size);
+/**
+ * @brief REST handler for GPIO toggling.
+ */
+extern struct http_response_handler http_rest_gpio_handler;
 
+//General REST function.
+extern bool rest_init(void);
 
 #endif

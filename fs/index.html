@@ -22,20 +22,8 @@
 var button = document.getElementById("button");
 var state = false;
 
-function buttonSwitch()
+function getState()
 {
-	state = !state;
-	console.log(state);
-
-	var request = "{\"state\":" + Number(state).toString() + "}";
-    console.log(request);
-    atomic.put('/rest/gpios/5', request, 'application/json')
-	.success(function (data, xhr) 
-	{
-	})
-	.error(function (data, xhr) 
-	{
-	});
 	atomic.get('/rest/gpios/5', 'application/json')
 	.success(function (data, xhr) 
 	{
@@ -53,6 +41,23 @@ function buttonSwitch()
 	.error(function (data, xhr) 
 	{
 	});
+}
+
+function buttonSwitch()
+{
+	state = !state;
+
+	var request = "{\"state\":" + Number(state).toString() + "}";
+    atomic.put('/rest/gpios/5', request, 'application/json')
+	.success(function (data, xhr) 
+	{
+		getState();
+	})
+	.error(function (data, xhr) 
+	{
+		getState();
+	});
+
 }
 
 atomic.get('/rest/gpios/5', 'application/json')

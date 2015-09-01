@@ -48,7 +48,7 @@
  * Seconds before the firmware stops trying to connect to the configured WIFI
  * network, and switches to network configuration mode.
  */
-#define CONNECT_DELAY_SEC 15
+#define CONNECT_DELAY_SEC 10
 
 /**
  * @brief Password for the configuration AP.
@@ -80,7 +80,7 @@
 /**
  * @brief Print debug info on the serial port.
  */
-#define DEBUG
+//#define DEBUG
 /**
  * @brief Print memory allocation info.
  */

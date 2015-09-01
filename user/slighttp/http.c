@@ -56,13 +56,10 @@
 #include "net/tcp.h"
 #include "http-common.h"
 #include "http-tcp.h"
+#include "http-handler.h"
 #include "http.h"
 #include "tools/ring.h"
 
-/**
- * @brief Where to serve files from, in the file system.
- */
-char *http_fs_doc_root;
 /**
  * @brief Server status.
  * 
@@ -77,19 +74,15 @@ static bool status = false;
  * @param n_builtin_uris Number of URI handlers.
  * @return `true`on success.
  */
-bool ICACHE_FLASH_ATTR init_http(char *path, struct http_response_handler *handlers, unsigned short n_handlers)
+bool ICACHE_FLASH_ATTR init_http(unsigned int port)
 {
-    n_response_handlers = n_handlers;
-    response_handlers = handlers;
-    
-    http_fs_doc_root = path;
-    
+	debug("Initialising HTTP server on port %d.\n", port);
     //Initialise TCP and listen on port 80.
     if (!init_tcp())
     {
 		return(false);
 	}
-	if (!tcp_listen(80, tcp_connect_cb, tcp_disconnect_cb, 
+	if (!tcp_listen(port, tcp_connect_cb, tcp_disconnect_cb, 
 				   tcp_write_finish_cb, tcp_recv_cb, tcp_sent_cb))
 	{
 		return(false);

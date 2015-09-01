@@ -78,19 +78,6 @@
                                         }\
                                     } while(0)
 
-/**
- * @brief Built in pages.
- * 
- * Built in pages that are served when every other method of getting the resource
- * has failed.
- */
-struct http_response_handler *response_handlers;
-/**
- * @brief Number of built in pages.
- */
-unsigned short n_response_handlers;
-
-extern char *get_header_value(struct http_request *request, char *name);
 extern void http_print_clf_status(struct http_request *request);
 
 #endif //HTTP_COMMON_H

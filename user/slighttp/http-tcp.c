@@ -149,21 +149,29 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 	struct http_request *request = connection->user;
 	
     debug("HTTP received (%p).\n", connection);
-    if (connection->callback_data.data == NULL)
+    if ((connection->callback_data.data == NULL) ||
+		(os_strlen(connection->callback_data.data) == 0) ||
+		(connection->callback_data.length == 0))
     {
 		request->response.status_code = 400;
 	}
-	if (os_strlen(connection->callback_data.data) == 0)
-    {
-		request->response.status_code = 400;
-    }
     if (request->response.status_code == 400)
     {
 		warn("Empty request received.<n");
 	}
 
 	//A bad idea to parse later since the data apparently may be gone.
-	http_parse_request(connection);
+	if (!http_parse_request(connection, connection->callback_data.length))
+	{
+		warn("Parsing failed.\n");
+		if (request->response.status_code < 399)
+		{
+			//Set internal error status.
+			request->response.status_code = 404;
+			//Use internal error handler.
+			request->response.state = HTTP_STATE_ERROR;
+		}
+	}
 	
     debug(" Response handler mutex %d.\n", http_response_mutex);
     if ((!http_response_mutex) && (request_buffer.count < 1))
@@ -172,7 +180,6 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 		http_response_mutex++;
 		//No request waiting just process.
 		http_process_response(connection);
-
 	}
 	else
 	{

@@ -35,8 +35,35 @@
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
 #include "slighttp/http-response.h"
+#include "handlers/fs/http-fs.h"
 
+bool http_fs_test(struct http_request *request);
+void http_fs_header(struct http_request *request, char *header_line);
+signed int http_fs_head_handler(struct http_request *request);
+signed int http_fs_get_handler(struct http_request *request);
+void http_fs_destroy(struct http_request *request);
 
+/**
+ * @brief Struct used to register the handler.
+ */
+struct http_response_handler http_fs_handler =
+{
+	http_fs_test,
+	http_fs_header,
+	{
+		NULL,
+		http_fs_get_handler,
+		http_fs_head_handler,
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		NULL
+	}, 
+	http_fs_destroy
+};
+
+static char *http_fs_root = NULL;
 /**
  * @brief Structure to keep track of our progress.
  */
@@ -61,12 +88,61 @@ struct http_fs_context
 };
 
 /**
+ * @brief Initialise the file system handler.
+ * 
+ * @param root Directory to use as root for serving files.
+ * @return True on success.
+ */
+bool ICACHE_FLASH_ATTR http_fs_init(char *root)
+{
+	debug("Initialising file system support using %s.\n", root);
+	if (!root)
+	{
+		error("Root is empty.\n");
+		return(false);
+	}
+	if (http_fs_root )
+	{
+		error("Root already set.\n");
+		return(false);
+	}
+	http_fs_root = db_malloc(sizeof(char) * os_strlen(root) + 1, "http_fs_root http_fs_init");
+	os_memcpy(http_fs_root, root, os_strlen(root) + 1);
+	
+	return(true);
+}
+
+/**
  * @brief Tell if we will handle a certain URI.
  * 
  * @param request The request to handle.
  * @return True if we can handle the URI.
  */
 bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
+{
+	//Handle anything, but might return 404.
+    return(true); 
+}
+
+/**
+ * @brief Handle headers.
+ * 
+ * @param request The request to handle.
+ */
+void ICACHE_FLASH_ATTR http_fs_header(struct http_request *request, char *header_line)
+{
+	debug("HTTP FS header handler.\n");
+}
+
+/**
+ * @brief Open a file for a request.
+ * 
+ * Populates the context.
+ * 
+ * @param request The request.
+ * @return True on success.
+ */
+ bool ICACHE_FLASH_ATTR http_fs_open_file(struct http_request *request)
 {
 	char *uri = request->uri;
 	char *fs_uri = NULL;
@@ -76,12 +152,14 @@ bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
 	size_t index_size = 10;
 	struct http_fs_context *context;
 	
+	debug("HTTP FS handler looking for %s.\n", uri);
 	//Check if we've already done this.
 	if (!request->response.context)
 	{
 		//Return an error page, if status says so.
 		if (request->response.status_code > 399)
 		{
+			debug(" Error status %d.\n", request->response.status_code);
 			uri = db_malloc(sizeof(char) * 10, "uri http_fs_test");
 			uri[0] = '/';
 			itoa(request->response.status_code, uri + 1, 10);
@@ -99,9 +177,9 @@ bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
 		}
 
 		//Check if we have a document root path.
-		if (http_fs_doc_root)
+		if (http_fs_root)
 		{
-			root_size = os_strlen(http_fs_doc_root);
+			root_size = os_strlen(http_fs_root);
 		}
 		
 		//Get size and mem.
@@ -110,8 +188,8 @@ bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
 		
 		if (root_size)
 		{
-			debug(" Adding root %s.\n", http_fs_doc_root);
-			os_memcpy(fs_uri, http_fs_doc_root, root_size);
+			debug(" Adding root %s.\n", http_fs_root);
+			os_memcpy(fs_uri, http_fs_root, root_size);
 		}
 		
 		os_memcpy(fs_uri + root_size, uri, uri_size);
@@ -151,7 +229,7 @@ bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
 	//Free data since no one should need them.
 	http_fs_destroy(request);
 	debug("No file system handler found.\n");
-    return(false);  
+    return(false);
 }
 
 /**
@@ -160,7 +238,7 @@ bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
  * @param request Request that got us here.
  * @return Return unused.
  */
-size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
+signed int ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 {
 	struct http_fs_context *context = request->response.context;
 	char str_size[16];
@@ -168,63 +246,106 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
 	size_t ext_size;
 	char *ext;
 	unsigned short ret = 0;
+	static bool done = false;
 	
 	//If the send buffer is over 200 bytes, this should never fill it.
-	debug("File system HEAD handler handling %s.\n", context->filename);
-	
+	debug("File system HEAD handler.\n");
+	if (done)
+	{
+		debug(" State done.\n");
+	}
+		
 	switch(request->response.state)
 	{
-		case HTTP_STATE_STATUS:  ret = http_send_status_line(request->connection, request->response.status_code);
-								 //Onwards
-								 request->response.state = HTTP_STATE_HEADERS;
-								 break;
-		case HTTP_STATE_HEADERS: //Always send connections close and server info.
-								 ret = http_send_header(request->connection, 
-												  "Connection",
-											      "close");
-								 ret += http_send_header(request->connection,
-												  "Server",
-												  HTTP_SERVER_NAME);
-								 //Get data size.
-								 context->total_size = fs_size(context->file);
-								 os_sprintf(str_size, "%d", context->total_size);
-								 //Send message length.
-								 ret += http_send_header(request->connection, 
-												  "Content-Length",
-											      str_size);
-								 //Find the MIME-type
-								 for (i = 0; i < HTTP_N_MIME_TYPES; i++)
-								 {
-									 ext_size = os_strlen(http_mime_types[i].ext);
-									 ext  = context->filename + os_strlen(context->filename) - ext_size;
-									 if (os_strncmp(http_mime_types[i].ext, 
-									                ext,
-									                ext_size) == 0)
-									 {
-										 break;
-									 }
-								 }
-								 if (i >= HTTP_N_MIME_TYPES)
-								 {
-									 warn(" Did not find a usable MIME type, using application/octet-stream.\n");
-									 ret += http_send_header(request->connection, "Content-Type", "application/octet-stream");
-								 }
-								 else
-								 {
-									 ret += http_send_header(request->connection, "Content-Type", http_mime_types[i].type);
-								 }
-								 //Send end of headers.
-								 ret += http_send(request->connection, "\r\n", 2);
-								 //Stop if only HEAD was requested.
-								 if (request->type == HTTP_HEAD)
-								 {
-									 request->response.state = HTTP_STATE_ASSEMBLED;
-								 }
-								 else
-								 {
-									 request->response.state = HTTP_STATE_MESSAGE;
-								 }
-								 break;
+		case HTTP_STATE_STATUS:
+			//Go on if we're done.
+			if (done)
+			{
+				done = false;
+				ret = 0;
+				request->response.state++;
+				break;
+			}
+			if (!http_fs_open_file(request))
+			{
+				/*If this is an error URI, there is
+				*no reason to go looking for it again. */
+				if (request->response.status_code < 399)
+				{
+					request->response.status_code = 404;
+					debug("File not found, trying for 404 page.\n");
+					if (!http_fs_open_file(request))
+					{
+						//No error page, drop the ball.
+						request->response.state = HTTP_STATE_ERROR;
+						return(0);
+					}
+				}
+				else
+				{
+					//No error page, drop the ball.
+					request->response.state = HTTP_STATE_ERROR;
+					return(0);
+				}
+			}
+			ret = http_send_status_line(request->connection, request->response.status_code);
+			//Onwards
+			done = true;
+			break;
+		case HTTP_STATE_HEADERS: 
+			//Go on if we're done.
+			if (done)
+			{
+				//Stop if only HEAD was requested.
+				if (request->type == HTTP_HEAD)
+				{
+					request->response.state = HTTP_STATE_ASSEMBLED;
+				}
+				else
+				{
+					request->response.state = HTTP_STATE_MESSAGE;
+				}
+				done = false;
+				ret = 0;
+				break;
+			}
+			//Always send connections close and server info.
+			ret = http_send_header(request->connection, "Connection",
+								   "close");
+			ret += http_send_header(request->connection, "Server",
+									HTTP_SERVER_NAME);
+			//Get data size.
+			context->total_size = fs_size(context->file);
+			os_sprintf(str_size, "%d", context->total_size);
+			//Send message length.
+			ret += http_send_header(request->connection, 
+									"Content-Length",
+									str_size);
+			//Find the MIME-type
+			for (i = 0; i < HTTP_N_MIME_TYPES; i++)
+			{
+				ext_size = os_strlen(http_mime_types[i].ext);
+				ext  = context->filename + os_strlen(context->filename) - ext_size;
+				if (os_strncmp(http_mime_types[i].ext, 
+							   ext,
+							   ext_size) == 0)
+				{
+					break;
+				}
+			}
+			if (i >= HTTP_N_MIME_TYPES)
+			{
+				warn(" Did not find a usable MIME type, using application/octet-stream.\n");
+				ret += http_send_header(request->connection, "Content-Type", "application/octet-stream");
+			}
+			else
+			{
+				ret += http_send_header(request->connection, "Content-Type", http_mime_types[i].type);
+			}
+			//Send end of headers.
+			ret += http_send(request->connection, "\r\n", 2);
+			done = true;
+			break;
 	}
     return(ret);
 }
@@ -235,14 +356,19 @@ size_t ICACHE_FLASH_ATTR http_fs_head_handler(struct http_request *request)
  * @param request Request that got us here.
  * @return Return the size of the response message in bytes.
  */
-size_t ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
+signed int ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
 {
 	struct http_fs_context *context = request->response.context;
 	char buffer[HTTP_FILE_CHUNK_SIZE];
 	size_t data_left;
 	size_t ret = 0;
+	static bool done = false;
 	
-	debug("File system GET handler handling %s.\n", context->filename);
+	debug("File system GET handler.\n");
+	if (done)
+	{
+		debug(" State done.\n");
+	}
 	
 	//Don't duplicate, just call the head handler.
 	if (request->response.state < HTTP_STATE_MESSAGE)
@@ -253,6 +379,13 @@ size_t ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
 	{
 		if (request->response.state == HTTP_STATE_MESSAGE)
 		{
+			//Go on if we're done.
+			if (done)
+			{
+				done = false;
+				request->response.state++;
+				return(0);
+			}
 			data_left = context->total_size - context->transferred;
 			//Read a chunk of data and send it.
 			if (data_left > HTTP_FILE_CHUNK_SIZE)
@@ -270,7 +403,7 @@ size_t ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
 				context->transferred += data_left;
 				//We're done sending the message.
 				fs_close(context->file);
-				request->response.state = HTTP_STATE_ASSEMBLED;
+				done = true;
 			}
 			request->response.message_size += ret;
 		}

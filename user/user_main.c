@@ -37,8 +37,8 @@
  * =============
  *
  * The ESP8266 SDK is a strange beast, it seems a mix of procedural and event
- * driven. The WIFI functions do not use call backs, while the TCP functions
- * do.
+ * driven. The WIFI functions do not use call backs (fixed in a later SDK
+ * version), while the TCP functions do.
  *
  * After trying to force a procedural scheme on it all, and chasing the same
  * shortcoming into a corner, I finally realised that, I was working against
@@ -54,7 +54,7 @@
  * up with one more response to send. Stuff will get lost, and things will not
  * behave as expected.
  *
- * The SDK staes that you can not send another TCP packet, before the call back
+ * The SDK states that you can not send another TCP packet, before the call back
  * has signalled that the current one is done. All function sending TCP must
  * therefore be able to split the send data, over consecutive calls. 
  */
@@ -68,8 +68,9 @@
 #include "fs/fs.h"
 #include "net/wifi.h"
 #include "slighttp/http.h"
-#include "slighttp/http-request.h"
-#include "response_handlers.h"
+#include "slighttp/http-handler.h"
+#include "handlers/fs//http-fs.h"
+#include "handlers/rest/rest.h"
 
 /**
  * @brief Timer for handling events.
@@ -99,12 +100,30 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 	if (mode < 2)
 	{
 		//Start web server with default pages.
-		init_http("/", response_handlers, N_RESPONSE_HANDLERS);
+		init_http(80);		
+		db_printf("Adding network names REST handler.\n");
+		http_add_handler("/rest/net/networks", &http_rest_net_names_handler);
+		db_printf("Adding default network REST handler.\n");
+		http_add_handler("/rest/net/network", &http_rest_network_handler);
+		db_printf("Adding gpio REST handler.\n");
+		http_add_handler("/rest/gpios/*", &http_rest_gpio_handler);
+		http_fs_init("/");
+		db_printf("Adding file system handler.\n");
+		http_add_handler("/*", &http_fs_handler);
 	}
 	else
 	{
 		//Start in network configuration mode.
-		init_http("/connect/", response_handlers, N_RESPONSE_HANDLERS);
+		init_http(80);
+		db_printf("Adding network password REST handler.\n");
+		http_add_handler("/rest/net/password", &http_rest_passwd_handler);
+		db_printf("Adding network names REST handler.\n");
+		http_add_handler("/rest/net/networks", &http_rest_net_names_handler);
+		db_printf("Adding default network REST handler.\n");
+		http_add_handler("/rest/net/network", &http_rest_network_handler);
+		http_fs_init("/connect/");
+		db_printf("Adding file system handler.\n");
+		http_add_handler("/*", &http_fs_handler);
 	}
 	//Arm the timer, run every #CHECK_TIME  ms.
 	os_timer_arm(&status_timer, CHECK_TIME, 1);
@@ -125,7 +144,6 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 	}
  }
  
-
 /**
  * @brief Called when initialisation is over.
  *

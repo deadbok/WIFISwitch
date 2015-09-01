@@ -43,7 +43,8 @@ FIRMWARE_CON_SPEED = 230400
 TARGET		= wifiswitch
 
 # which modules (subdirectories) of the project to include in compiling
-MODULES			= user user/fs user/net user/slighttp user/tools user/rest user/driver
+MODULES			= user user/fs user/net user/slighttp user/tools
+MODULES			+= user/driver user/handlers/fs user/handlers/rest
 EXTRA_INCDIR    = include
 
 # Directory to use when creating the file system image.
@@ -122,7 +123,7 @@ vpath %.h $(SRC_DIR)
 
 define compile-objects
 $1/%.o: %.c
-	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS) -MD -c $$< -o $$@
+	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS) -MD -Wa,-ahls=$(basename $$@).lst -c $$< -o $$@
 endef
 
 .PHONY: all checkdirs flash flashblank clean debug debugflash docs flashfs
@@ -137,7 +138,7 @@ $(FW_BASE)/%.bin: $(TARGET_OUT) | $(FW_BASE)
 	$(ESPTOOL) elf2image -o $(FW_BASE)/ $(TARGET_OUT)
 
 $(TARGET_OUT): $(APP_AR)
-	$(LD) -L$(SDK_LIBDIR) $(LD_SCRIPT) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group -o $@
+	$(LD) -L$(SDK_LIBDIR) $(LD_SCRIPT) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group,-Map,$(basename $@).map -o $@
 
 $(APP_AR): $(OBJ)
 	$(AR) cru $@ $^

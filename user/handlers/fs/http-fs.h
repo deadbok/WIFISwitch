@@ -1,10 +1,11 @@
-/**
- * @file int_flash.h
+/** @file http-fs.h
  *
- * @brief Routines for accessing the internal flash.
+ * @brief Handler structure for registering the file system as handler.
  *
+ * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
+ * @license
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -20,35 +21,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */ 
- 
-#ifndef INT_FLASH_H
-#define INT_FLASH_H
+#ifndef HTTP_FS_H
+#define HTTP_FS_H
 
-/**
- * @brief Address of the zip file.
- */
-#define FS_ADDR 0x14000
+#include "slighttp/http-handler.h"
 
-//Interesting places.
-/*extern void *_text_start;
-extern void *_text_end;
-extern void *_lit4_start;
-extern void *_lit4_end;
-extern void *_irom0_text_start;
-extern void *_irom0_text_end;
+extern struct http_response_handler http_fs_handler;
 
-union flash_data_u
-{
-	unsigned int u32;
-	unsigned short u16[2];
-	unsigned char u8[4];
-};*/
-
-//Flash access functions.
-extern size_t flash_size(void);
-extern void flash_dump(unsigned int src_addr, size_t size);
-extern void flash_dump_mem(unsigned int src_addr, size_t size);
-extern bool aflash_read(const void *data, unsigned int read_addr, size_t size);
-
+extern bool http_fs_init(char *root);
 
 #endif

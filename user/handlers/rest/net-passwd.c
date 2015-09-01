@@ -35,7 +35,35 @@
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
 #include "slighttp/http-response.h"
+#include "slighttp/http-handler.h"
 
+
+//Set password for current network.
+extern bool rest_net_passwd_test(struct http_request *request);
+extern void rest_net_passwd_header(struct http_request *request, char *header_line);
+extern signed int rest_net_passwd_put_handler(struct http_request *rquest);
+extern void rest_net_passwd_destroy(struct http_request *request);
+
+
+/**
+ * @brief Struct used to register the handler.
+ */
+struct http_response_handler http_rest_passwd_handler =
+{
+	rest_net_passwd_test,
+	rest_net_passwd_header,
+	{
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		rest_net_passwd_put_handler,
+		NULL,
+		NULL,
+		NULL
+	}, 
+	rest_net_passwd_destroy
+};
 
 /**
  * @brief Keep track of actual password changes.
@@ -59,12 +87,22 @@ bool ICACHE_FLASH_ATTR rest_net_passwd_test(struct http_request *request)
 }
 
 /**
+ * @brief Handle headers.
+ * 
+ * @param request The request to handle.
+ */
+void ICACHE_FLASH_ATTR rest_net_passwd_header(struct http_request *request, char *header_line)
+{
+	debug("HTTP REST network password handler.\n");
+}
+
+/**
  * @brief Set the network password for the WIFI connection.
  * 
  * @param request Data for the request that got us here.
  * @return The HTML.
  */
-size_t ICACHE_FLASH_ATTR rest_net_passwd_put_handler(struct http_request *request)
+signed int ICACHE_FLASH_ATTR rest_net_passwd_put_handler(struct http_request *request)
 {
 	struct jsonparse_state state;
 	char *uri = request->uri;
@@ -72,25 +110,47 @@ size_t ICACHE_FLASH_ATTR rest_net_passwd_put_handler(struct http_request *reques
 	int type;
 	struct station_config sc;
 	size_t ret = 0;
+	static bool done = false;
 	    
     debug("In network password PUT REST handler (%s).\n", uri);
     
     passwd_changed = false;
 	if (request->response.state == HTTP_STATE_STATUS)
 	{
+		//Go on if we're done.
+		if (done)
+		{
+			done = false;
+			request->response.state++;
+			return(0);
+		}
 		request->response.status_code = 204;
 		ret = http_send_status_line(request->connection, request->response.status_code);
-		request->response.state = HTTP_STATE_HEADERS;
+		done = true;
 	}
 	else if (request->response.state == HTTP_STATE_HEADERS)
 	{
+		//Go on if we're done.
+		if (done)
+		{
+			done = false;
+			request->response.state++;
+			return(0);
+		}
 		ret = http_send_header(request->connection, "Connection", "close");
 		ret += http_send_header(request->connection, "Server", HTTP_SERVER_NAME);
 		ret += http_send(request->connection, "\r\n", 2);		
-				request->response.state = HTTP_STATE_MESSAGE;
+		done = true;
 	}
 	else if (request->response.state == HTTP_STATE_MESSAGE)
 	{
+		//Go on if we're done.
+		if (done)
+		{
+			done = false;
+			request->response.state++;
+			return(0);
+		}
 		jsonparse_setup(&state, request->message, os_strlen(request->message));
 		while ((type = jsonparse_next(&state)) != 0)
 		{
@@ -116,9 +176,7 @@ size_t ICACHE_FLASH_ATTR rest_net_passwd_put_handler(struct http_request *reques
 			}
 		}
 		request->response.message_size = 0;
-		request->response.state = HTTP_STATE_ASSEMBLED;
-		//We're not sending so we call this our selves.
-		http_process_response(request->connection);
+		done = true;
 	}
 	return(ret);
 }

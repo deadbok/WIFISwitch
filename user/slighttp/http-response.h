@@ -57,6 +57,11 @@
  */
 #define HTTP_STATUS_405 HTTP_STATUS_LINE("405", "Method Not Allowed")
 /**
+ * @brief HTTP 500 Internal server error..
+ */
+#define HTTP_STATUS_500 HTTP_STATUS_LINE("500", "Internal Server Error")
+
+/**
  * @brief HTTP 501 Not implemented response.
  */
 #define HTTP_STATUS_501 HTTP_STATUS_LINE("501", "Not Implemented")
@@ -78,6 +83,11 @@
 #define HTTP_405_HTML               "<!DOCTYPE html><head><title>Method Not Allowed.</title></head><body><h1>405 Method Not Allowed</h1><br />You cannot do that to this URL.</body></html>"                                    
 #define HTTP_405_HTML_LENGTH		150
 /**
+ * @brief HTTP 500 response HTML.
+ */
+#define HTTP_500_HTML               "<!DOCTYPE html><head><title>Resource not found.</title></head><body><h1>500 Internal Server Error</h1><br />I'm not feeling well..</body></html>"
+#define HTTP_500_HTML_LENGTH		144
+/**
  * @brief HTTP 501 response HTML.
  */
 #define HTTP_501_HTML               "<!DOCTYPE html><head><title>Resource not found.</title></head><body><h1>501 Not Implemented</h1><br />Don't know what to say.</body></html>"
@@ -88,6 +98,5 @@ extern unsigned char http_send_status_line(struct tcp_connection *connection,
 extern unsigned short http_send_header(struct tcp_connection *connection, char *name,
 							 char *value);
 extern void http_process_response(struct tcp_connection *connection);
-
 
 #endif //HTTP_RESPONSE_H

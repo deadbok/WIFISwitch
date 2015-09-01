@@ -34,6 +34,34 @@
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
 #include "slighttp/http-response.h"
+#include "slighttp/http-handler.h"
+
+bool rest_network_test(struct http_request *request);
+void rest_network_header(struct http_request *request, char *header_line);
+signed int rest_network_head_handler(struct http_request *request);
+signed int rest_network_get_handler(struct http_request *request);
+signed int rest_network_put_handler(struct http_request *request);
+void rest_network_destroy(struct http_request *request);
+
+/**
+ * @brief Struct used to register the handler.
+ */
+struct http_response_handler http_rest_network_handler =
+{
+	rest_network_test,
+	rest_network_header,
+	{
+		NULL,
+		rest_network_get_handler,
+		rest_network_head_handler,
+		NULL,
+		rest_network_put_handler,
+		NULL,
+		NULL,
+		NULL
+	}, 
+	rest_network_destroy
+};
 
 /**
  * @brief Tell if we will handle a certain URI.
@@ -48,8 +76,18 @@ bool ICACHE_FLASH_ATTR rest_network_test(struct http_request *request)
 		debug("Rest handler network found: %s.\n", request->uri);
         return(true);
     }
-    debug("Rest handler network will not request,\n"); 
+    debug("Rest handler network will not handle request.\n"); 
     return(false);       
+}
+
+/**
+ * @brief Handle headers.
+ * 
+ * @param request The request to handle.
+ */
+void ICACHE_FLASH_ATTR rest_network_header(struct http_request *request, char *header_line)
+{
+	debug("HTTP REST network header handler.\n");
 }
 
 /**
@@ -58,7 +96,7 @@ bool ICACHE_FLASH_ATTR rest_network_test(struct http_request *request)
  * @param request Request to respond to..
  * @return Size of the response.
  */
-static size_t create_response(struct http_request *request)
+static signed int create_response(struct http_request *request)
 {
 	struct station_config wifi_config;
 	char *response;
@@ -97,47 +135,69 @@ static size_t create_response(struct http_request *request)
  * @param request Request that got us here.
  * @return Return unused.
  */
-size_t ICACHE_FLASH_ATTR rest_network_head_handler(struct http_request *request)
+signed int ICACHE_FLASH_ATTR rest_network_head_handler(struct http_request *request)
 {
 	char str_size[16];
-	size_t size;
+	size_t size = 0;
 	size_t ret = 0;
+	static bool done = false;
 	
 	//If the send buffer is over 200 bytes, this should never fill it.
 	debug("REST network HEAD handler.\n");
-	size = create_response(request);
+	if (done)
+	{
+		debug(" State done.\n");
+	}
 	switch(request->response.state)
 	{
-		case HTTP_STATE_STATUS:  ret = http_send_status_line(request->connection, request->response.status_code);
-								 //Onwards
-								 request->response.state = HTTP_STATE_HEADERS;
-								 break;
-		case HTTP_STATE_HEADERS: //Always send connections close and server info.
-								 ret = http_send_header(request->connection, 
-												  "Connection",
-											      "close");
-								 ret += http_send_header(request->connection,
-												  "Server",
-												  HTTP_SERVER_NAME);
-								 //Get data size.
-								 os_sprintf(str_size, "%d", size);
-								 //Send message length.
-								 ret += http_send_header(request->connection, 
-												  "Content-Length",
-											      str_size);
-								 ret += http_send_header(request->connection, "Content-Type", http_mime_types[MIME_JSON].type);	
-								 //Send end of headers.
-								 ret += http_send(request->connection, "\r\n", 2);
-								 //Stop if only HEAD was requested.
-								 if (request->type == HTTP_HEAD)
-								 {
-									 request->response.state = HTTP_STATE_ASSEMBLED;
-								 }
-								 else
-								 {
-									 request->response.state = HTTP_STATE_MESSAGE;
-								 }
-								 break;
+		case HTTP_STATE_STATUS:
+			//Go on if we're done.
+			if (done)
+			{
+				done = false;
+				ret = 0;
+				request->response.state++;
+				break;
+			}
+			size = create_response(request);
+			ret = http_send_status_line(request->connection, request->response.status_code);
+			//Onwards
+			done = true;
+			break;
+		case HTTP_STATE_HEADERS: 
+			//Go on if we're done.
+			if (done)
+			{
+				if (request->type == HTTP_HEAD)
+				{
+					request->response.state = HTTP_STATE_ASSEMBLED;
+				}
+				else
+				{
+					request->response.state = HTTP_STATE_MESSAGE;
+				}
+				done = false;
+				ret = 0;
+				break;
+			}		
+			//Always send connections close and server info.
+			ret = http_send_header(request->connection,  "Connection",
+								   "close");
+			ret += http_send_header(request->connection, "Server",
+									HTTP_SERVER_NAME);
+			//Get data size.
+			os_sprintf(str_size, "%d", size);
+			//Send message length.
+			ret += http_send_header(request->connection, 
+									"Content-Length",
+									str_size);
+			ret += http_send_header(request->connection, "Content-Type",
+									http_mime_types[MIME_JSON].type);	
+			//Send end of headers.
+			ret += http_send(request->connection, "\r\n", 2);
+			//Stop if only HEAD was requested.
+			done = true;
+			break;
 	}
     return(ret);
 }
@@ -148,13 +208,18 @@ size_t ICACHE_FLASH_ATTR rest_network_head_handler(struct http_request *request)
  * @param request Data for the request that got us here.
  * @return Size of the return massage.
  */
-size_t ICACHE_FLASH_ATTR rest_network_get_handler(struct http_request *request)
+signed int ICACHE_FLASH_ATTR rest_network_get_handler(struct http_request *request)
 {
 	size_t msg_size = 0;
 	char *uri = request->uri;
 	size_t ret = 0;
+	static bool done = false;
 	    
-    debug("In network name GET REST handler (%s).\n", uri);
+    debug("In network default name GET REST handler (%s).\n", uri);
+    if (done)
+	{
+		debug(" State done.\n");
+	}
 	
 	//Don't duplicate, just call the head handler.
 	if (request->response.state < HTTP_STATE_MESSAGE)
@@ -163,6 +228,13 @@ size_t ICACHE_FLASH_ATTR rest_network_get_handler(struct http_request *request)
 	}
 	else
 	{
+		//Go on if we're done.
+		if (done)
+		{
+			done = false;
+			request->response.state++;
+			return(0);
+		}
 		msg_size = os_strlen(request->response.context);
 		debug(" Response: %s.\n", (char *)request->response.context);
 		ret = http_send(request->connection, request->response.context, msg_size);
@@ -170,7 +242,7 @@ size_t ICACHE_FLASH_ATTR rest_network_get_handler(struct http_request *request)
 		
 		debug(" Response size: %d.\n", msg_size);
 		request->response.message_size = msg_size;
-		return(msg_size);
+		done = true;
 	}
 	return(ret);
 }
@@ -181,7 +253,7 @@ size_t ICACHE_FLASH_ATTR rest_network_get_handler(struct http_request *request)
  * @param request Data for the request that got us here.
  * @return The HTML.
  */
-size_t ICACHE_FLASH_ATTR rest_network_put_handler(struct http_request *request)
+signed int ICACHE_FLASH_ATTR rest_network_put_handler(struct http_request *request)
 {
 	struct jsonparse_state state;
 	char *uri = request->uri;
@@ -189,17 +261,32 @@ size_t ICACHE_FLASH_ATTR rest_network_put_handler(struct http_request *request)
 	int type;
 	struct station_config sc;
 	size_t ret = 0;
+	static bool done = false;
 	    
     debug("In network name PUT REST handler (%s).\n", uri);
     
 	if (request->response.state == HTTP_STATE_STATUS)
 	{
+		//Go on if we're done.
+		if (done)
+		{
+			done = false;
+			request->response.state++;
+			return(0);
+		}
 		request->response.status_code = 204;
 		ret = http_send_status_line(request->connection, request->response.status_code);
-		request->response.state = HTTP_STATE_HEADERS;
+		done = true;
 	}
 	else if (request->response.state == HTTP_STATE_HEADERS)
 	{
+		//Go on if we're done.
+		if (done)
+		{
+			done = false;
+			request->response.state++;
+			return(0);
+		}
 		//Always send connections close and server info.
 		ret = http_send_header(request->connection, 
 					  "Connection",
@@ -208,10 +295,17 @@ size_t ICACHE_FLASH_ATTR rest_network_put_handler(struct http_request *request)
 					  "Server",
 					  HTTP_SERVER_NAME);
 		ret += http_send(request->connection, "\r\n", 2);		
-		request->response.state = HTTP_STATE_MESSAGE;
+		done = true;
 	}
 	else if (request->response.state == HTTP_STATE_MESSAGE)
 	{
+		//Go on if we're done.
+		if (done)
+		{
+			done = false;
+			request->response.state++;
+			return(0);
+		}
 		debug(" Network selected: %s.\n", request->message);
 		
 		jsonparse_setup(&state, request->message, os_strlen(request->message));
@@ -237,9 +331,7 @@ size_t ICACHE_FLASH_ATTR rest_network_put_handler(struct http_request *request)
 			}
 		}
 		request->response.message_size = 0;
-		request->response.state = HTTP_STATE_ASSEMBLED;
-		//We're not sending so we call this our selves.
-		http_process_response(request->connection);
+		done = true;
 	}
 	return(ret);
 }

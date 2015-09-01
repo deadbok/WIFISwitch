@@ -1,5 +1,53 @@
+2015-09-01 Martin Grønholdt
+
+* fs/index.html: Check status after PUT request has returned.
+
+
+2015-08-29 Martin Grønholdt
+
+* handlers/rest/*: Reworked for the new handler code.
+* slighttp/http-tcp.c (tcp_recv_cb): Keep processing response until done.
+* slighttp/http-handler.c (http_add_handler): Fixed URI allocation size.
+						  (http_get_handler): Added strict search.
+
+
+2015-08-28 Martin Grønholdt
+
+
+* Makefile: Added handlers directory to MODULES.
+* handlers/rest/network.c: Reworked for the new handler code.
+* rest/*: Moved to handlers/rest.
+* slighttp/http-fs.*: Moved to handler/fs.
+* slighttp/http-response.c (http_process_response): Eliminated some stuff.
+* drivers/uart.c: Formatted some of the code and removed some unused variable.
+
+
+2015-08-27 Martin Grønholdt
+
+* slighttp/http-response.h: Added 500 status.
+* slighttp/http.h: Removed struct http_header.
+* slighttp/http-request.c (http_free_request): Removed header dealloc code.
+
+
+2015-08-26 Martin Grønholdt
+
+* slighttp/http-common.*: Removed header functions.
+* slighttp/http-common.h: Removed handler stuff.
+* slighttp/http-request.c: Changed for new callback functions.
+						  (http_parse_request): Added length as parameter.
+* slighttp/http-reqeust.h (http_parse_request): Added length as parameter. 
+* slighttp/http.*: init_http takes port as argument.
+
+
 2015-08-24 Martin Grønholdt
 
+* slighttp/http-response (http_get_handlers): Moved to http-handler.c
+* slighttp/http-fs.h: New file. File system handler struct.
+* slighttp/http-handler.*: New files.
+						 : http_add_handler added.
+						 : http_remove_handler added.
+						 : http_get_handler added.
+* slighttp/http.h: Moved general handler stuff to http-handler.h.
 * net-passwd.c: Only reset the chip when the password has changed.
 * slighttp/http-request.c (http_parse_request): Check for "HTTP/" before version.
 * net/tcp.*: Removed reconnect call back from API.

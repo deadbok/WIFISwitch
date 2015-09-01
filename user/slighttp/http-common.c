@@ -34,54 +34,6 @@
 #include "http-common.h"
 
 /**
- * @brief Test if a header is set to a certain value.
- * 
- * @param request HTTP request to check.
- * @param name Name of the header. *Must be lower case.*
- * @param value Value to test for. *Case sensitive.*
- * @return `true`if found, `false` otherwise.
- */
-bool ICACHE_FLASH_ATTR is_header_value(struct http_request *request, char *name, char *value)
-{
-    unsigned short i;
-    char *current_name;
-    char *current_value;
-    
-    for (i = 0; i < request->n_headers; i++)
-    {
-        current_name = request->headers[i].name;
-        current_value = request->headers[i].value;
-        if ((os_strcmp(current_name, name) == 0) && 
-            (os_strcmp(current_value, value) == 0))
-        {
-            return(true);
-        }
-    }
-    return(false);
-}
-
-/**
- * @brief Get the value of a header by name.
- * 
- * @param request HTTP request to look for the header in.
- * @param name Name of the header.
- * @return NULL if not found. The value if found.
- */
-char ICACHE_FLASH_ATTR *get_header_value(struct http_request *request, char *name)
-{
-	unsigned short i;
-	
-	for (i = 0; i < request->n_headers; i++)
-	{
-        if (os_strcmp(request->headers[i].name, name) == 0)
-        {
-            return(request->headers[i].value);
-        }
-    }
-    return(NULL);
-}		
-
-/**
  * @brief Print a Common Log Format message to the console.
  * 
  * Log access to the web server to console in a standardized text file format:

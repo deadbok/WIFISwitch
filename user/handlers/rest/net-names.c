@@ -33,9 +33,37 @@
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
 #include "slighttp/http-response.h"
+#include "slighttp/http-handler.h"
+
+bool rest_net_names_test(struct http_request *request);
+void rest_net_names_header(struct http_request *request, char *header_line);
+signed int rest_net_names_head_handler(struct http_request *request);
+signed int rest_net_names_get_handler(struct http_request *request);
+void rest_net_names_destroy(struct http_request *request);
+
+/**
+ * @brief Struct used to register the handler.
+ */
+struct http_response_handler http_rest_net_names_handler =
+{
+	rest_net_names_test,
+	rest_net_names_header,
+	{
+		NULL,
+		rest_net_names_get_handler,
+		rest_net_names_head_handler,
+		NULL,
+		NULL,
+		NULL,
+		NULL,
+		NULL
+	}, 
+	rest_net_names_destroy
+};
 
 static char **ap_ssids;
 static unsigned short n_aps;
+//Stores the request while waiting for the callback.
 static struct http_request *waiting_request = NULL;
 static bool error = false;
 
@@ -58,6 +86,7 @@ static char ICACHE_FLASH_ATTR *json_create_string_array(char **values, size_t en
 	size_t *lengths = db_malloc(sizeof(size_t) * entries, "lengths json_create_string_array");
 	char *ret, *ptr;
 	
+	//Get the length of the JSON array.
 	//'['
 	total_length++;
 	for (i = 0; i < entries; i++)
@@ -79,6 +108,7 @@ static char ICACHE_FLASH_ATTR *json_create_string_array(char **values, size_t en
 	ret = (char *)db_malloc(total_length, "res json_create_string_array");
 	ptr = ret;
 	
+	//Build the actual JSON array as a string.
 	*ptr++ = '[';
 	for (i = 0; i < entries; i++)
 	{
@@ -117,7 +147,19 @@ bool ICACHE_FLASH_ATTR rest_net_names_test(struct http_request *request)
 }
 
 /**
+ * @brief Handle headers.
+ * 
+ * @param request The request to handle.
+ */
+void ICACHE_FLASH_ATTR rest_net_names_header(struct http_request *request, char *header_line)
+{
+	debug("HTTP REST network names header handler.\n");
+}
+
+/**
  * @brief Callback for when the ESP8266 is done finding access points.
+ * 
+ * This send off the headers, restarting the send cycle
  * 
  * @param arg Pointer to a ESP8266 scaninfo struct, with an AP list.
  * @param status ESP8266 enum STATUS, telling how the scan went.
@@ -184,48 +226,60 @@ static void scan_done_cb(void *arg, STATUS status)
 	}
 	request = waiting_request;
 	waiting_request = NULL;
-	http_process_response(request->connection);
-}
-
-static void create_response(struct http_request *request)
-{
-	unsigned short i;
-	
-	if (!waiting_request)
+	if (request->connection)
 	{
-		debug("Creating network names REST response.\n");
-		if (n_aps && ap_ssids)
+		if (!error)
 		{
 			((struct rest_net_names_context *)request->response.context)->response = json_create_string_array(ap_ssids, n_aps);
 			((struct rest_net_names_context *)request->response.context)->size = os_strlen(((struct rest_net_names_context *)request->response.context)->response);
-
-			http_process_response(request->connection);
-			
-			//Free old data if there is any.
-			for (i = 0; i < n_aps; i++)
-			{
-				db_free(ap_ssids[i]);
-			}
-			db_free(ap_ssids);
-			ap_ssids = NULL;
-			n_aps = 0;
 		}
 		else
 		{
-			//Get set if there is an error in the callback.
-			error = false;
-			//Prevent more scans until the call back has done it job.
-			waiting_request = request;
-			debug(" Starting scan.\n");
-			if (wifi_station_scan(NULL, &scan_done_cb) && (!error))
-			{
-				debug(" Scanning for AP's.\n");
-			}
-			else
-			{
-				error(" Could not scan AP's.\n");
-			}				
+			((struct rest_net_names_context *)request->response.context)->response = "[\"error\"]";
+			((struct rest_net_names_context *)request->response.context)->size = os_strlen(((struct rest_net_names_context *)request->response.context)->response);
 		}
+
+
+		//We'll be sending headers next.
+		request->response.state = HTTP_STATE_HEADERS;
+		http_process_response(request->connection);
+		
+		//Free old data if there is any.
+		for (i = 0; i < n_aps; i++)
+		{
+			db_free(ap_ssids[i]);
+		}
+		db_free(ap_ssids);
+		ap_ssids = NULL;
+		n_aps = 0;
+	}
+	else
+	{
+		error(" No connection for sending network names.\n");
+	}
+}
+
+/**
+ * @brief Start scanning for WIFI network names.
+ * 
+ * @param request The request that brought us here.
+ */
+static void scan_net_names(struct http_request *request)
+{
+	debug("Start network names scan.\n");
+
+	//Get set if there is an error in the callback.
+	error = false;
+	//Prevent more scans until the call back has done it job.
+	waiting_request = request;
+	debug(" Starting scan.\n");
+	if (wifi_station_scan(NULL, &scan_done_cb))
+	{
+		debug(" Scanning for AP's.\n");
+	}
+	else
+	{
+		error(" Could not scan AP's.\n");
 	}
 }
 
@@ -235,58 +289,80 @@ static void create_response(struct http_request *request)
  * @param request Request that got us here.
  * @return Return unused.
  */
-size_t ICACHE_FLASH_ATTR rest_net_names_head_handler(struct http_request *request)
+signed int ICACHE_FLASH_ATTR rest_net_names_head_handler(struct http_request *request)
 {
 	char str_size[16];
 	size_t ret = 0;
+	static bool done = false;
 	
 	//If the send buffer is over 200 bytes, this should never fill it.
 	debug("REST network names HEAD handler.\n");
-	if (!request->response.context)
-    {
-		request->response.context = db_zalloc(sizeof(struct rest_net_names_context), "request->response.context rest_names_get_handler");
+	if (done)
+	{
+		debug(" State done.\n");
 	}
 	switch(request->response.state)
 	{
-		case HTTP_STATE_STATUS:  //Start scanning until a response is ready.
-								 if (!((struct rest_net_names_context *)request->response.context)->response)
-								 {
-									 create_response(request);
-								 }
-								 else
-								 {
-									 //Start sending the response.									 
-									 ret = http_send_status_line(request->connection, request->response.status_code);
-									 //Onwards
-									 request->response.state = HTTP_STATE_HEADERS;
-								 }
-								 break;
-		case HTTP_STATE_HEADERS: //Always send connections close and server info.
-								 ret = http_send_header(request->connection, 
-												  "Connection",
-											      "close");
-								 ret += http_send_header(request->connection,
-												  "Server",
-												  HTTP_SERVER_NAME);
-								 //Get data size.
-								 os_sprintf(str_size, "%d", ((struct rest_net_names_context *)request->response.context)->size);
-								 //Send message length.
-								 ret += http_send_header(request->connection, 
-												  "Content-Length",
-											      str_size);
-								 ret += http_send_header(request->connection, "Content-Type", http_mime_types[MIME_JSON].type);	
-								 //Send end of headers.
-								 ret += http_send(request->connection, "\r\n", 2);
-								 //Stop if only HEAD was requested.
-								 if (request->type == HTTP_HEAD)
-								 {
-									 request->response.state = HTTP_STATE_ASSEMBLED;
-								 }
-								 else
-								 {
-									 request->response.state = HTTP_STATE_MESSAGE;
-								 }
-								 break;
+		case HTTP_STATE_STATUS:
+			//Go on if we're done.
+			if (done)
+			{
+				done = false;
+				ret = -1;
+				break;
+			}
+			//Only do stuff if we're not already waiting. 
+			if (!waiting_request)
+			{
+				//Get some mem if we need it.
+				if (!request->response.context)
+				{
+					request->response.context = db_zalloc(sizeof(struct rest_net_names_context), "request->response.context scan_done_cb");
+				}
+				//Start scanning.
+				if (!((struct rest_net_names_context *)request->response.context)->response)
+				{
+					scan_net_names(request);
+				}
+				ret = http_send_status_line(request->connection, request->response.status_code);
+			}
+			//Onwards
+			done = true;
+			break;
+		case HTTP_STATE_HEADERS:
+			if (done)
+			{
+				if (request->type == HTTP_HEAD)
+				{
+					//Stop if only HEAD was requested.
+					request->response.state = HTTP_STATE_ASSEMBLED;
+				}
+				else
+				{
+					request->response.state = HTTP_STATE_MESSAGE;
+				}
+				done = false;
+				ret = 0;
+				break;
+			}
+			//Always send connections close and server info.
+			ret = http_send_header(request->connection, "Connection",
+								   "close");
+			ret += http_send_header(request->connection, "Server",
+									HTTP_SERVER_NAME);
+			//Get data size.
+			os_sprintf(str_size, "%d", ((struct rest_net_names_context *)request->response.context)->size);
+			//Send message length.
+			ret += http_send_header(request->connection, 
+									"Content-Length",
+									str_size);
+			ret += http_send_header(request->connection,
+									"Content-Type",
+									http_mime_types[MIME_JSON].type);	
+			//Send end of headers.
+			ret += http_send(request->connection, "\r\n", 2);
+			done = true;
+			break;
 	}
     return(ret);
 }
@@ -298,12 +374,17 @@ size_t ICACHE_FLASH_ATTR rest_net_names_head_handler(struct http_request *reques
  * @param request Data for the request that got us here.
  * @return The JSON.
  */
-size_t ICACHE_FLASH_ATTR rest_net_names_get_handler(struct http_request *request)
+signed int ICACHE_FLASH_ATTR rest_net_names_get_handler(struct http_request *request)
 {
 	char *uri = request->uri;
 	size_t ret;
+	static bool done = false;
 	    
-    debug("In network names REST handler (%s).\n", uri);
+    debug("In network names REST GET handler (%s).\n", uri);
+    if (done)
+	{
+		debug(" State done.\n");
+	}
 
 	//Don't duplicate, just call the head handler.
 	if (request->response.state < HTTP_STATE_MESSAGE)
@@ -312,6 +393,13 @@ size_t ICACHE_FLASH_ATTR rest_net_names_get_handler(struct http_request *request
 	}
 	else
 	{
+		//Go on if we're done.
+		if (done)
+		{
+			done = false;
+			request->response.state++;
+			return(0);
+		}
 		debug(" Response: %s.\n", ((struct rest_net_names_context *)request->response.context)->response);
 		ret = http_send(request->connection, 
 				 ((struct rest_net_names_context *)request->response.context)->response,
@@ -319,7 +407,8 @@ size_t ICACHE_FLASH_ATTR rest_net_names_get_handler(struct http_request *request
 		request->response.state = HTTP_STATE_ASSEMBLED;
 		
 		request->response.message_size = ((struct rest_net_names_context *)request->response.context)->size;
-		debug(" Response size: %l.\n", request->response.message_size);
+		debug(" Response size: %lu\n", request->response.message_size);
+		done = true;
 	}
 	return(ret);
 }

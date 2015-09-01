@@ -25,6 +25,8 @@
 #define RESPONSE_HANDLERS_H
 
 #include "slighttp/http.h"
+#include "slighttp/http-handler.h"
+#include "slighttp/http-fs.h"
 #include "rest/rest.h"
 
 /**
@@ -37,20 +39,7 @@
  */
 static struct http_response_handler response_handlers[N_RESPONSE_HANDLERS] =
 {
-	{
-		http_fs_test,
-		{
-			NULL,
-			http_fs_get_handler,
-			http_fs_head_handler,
-			NULL,
-			NULL,
-			NULL,
-			NULL,
-			NULL
-		}, 
-		http_fs_destroy
-	},
+	http_fs_handler,
 	{
 		rest_network_test,
 		{
