@@ -129,6 +129,7 @@ FS_FILE_H ICACHE_FLASH_ATTR fs_open(char *filename)
     }
     
     file_hdr = zip_find_file_header(filename);
+    debug("%p\n", file_hdr);
     if (!file_hdr)
     {
         debug("Could not open %s.\n", filename);

@@ -1,5 +1,13 @@
 2015-09-01 Martin Grønholdt
 
+* slighttp/http-tcp.c (tcp_disconnect_cb): Fixed maybe using NULL pointer.
+* fs/int_flash.h: Removed FS_ADDR.
+			    : Added fs_addr.
+* fs/int_flash.c (aflash_read): Use fs_addr. 
+* fs/zip.c (init_zip): Automaticly find file system offset in flash.
+* slighttp/http.h: Upped version to 0.0.6.
+* user_config.h: Upped version to 0.0.4.
+* handlers/rest/net-names.c (scan_done_cb): Only deallocate old scan data once.
 * fs/index.html: Check status after PUT request has returned.
 
 

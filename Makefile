@@ -113,6 +113,8 @@ FW_FILE_1		:= $(addprefix $(FW_BASE)/,$(FW_FILE_1_ADDR).bin)
 FW_FILE_2		:= $(addprefix $(FW_BASE)/,$(FW_FILE_2_ADDR).bin)
 FW_FS			:= $(FW_BASE)/fs.zip
 
+FS_SIZE = $(shell printf '%d\n' $$($(GET_FILESIZE) $(FW_FS) ))
+
 #File system image flash location
 FS_START_OFFSET = $(shell printf '0x%X\n' $$(( ($$($(GET_FILESIZE) $(FW_FILE_1)) + 16384 + 36864) & (0xFFFFC000) )) )
 FS_END = 0x2E000
@@ -132,6 +134,7 @@ all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2) $(FW_FS)
 	@./mem_usage.sh $(TARGET_OUT) 81920
 	$(ECHO) File system start offset: $(FS_START_OFFSET)
 	$(ECHO) File system end offset: $(FS_END)
+	$(ECHO) File system size: $(FS_SIZE)
 	$(ECHO) File system maximum size: $(FS_MAX_SIZE)
 	
 $(FW_BASE)/%.bin: $(TARGET_OUT) | $(FW_BASE)

@@ -88,7 +88,7 @@ void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
  */
 void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
 {
-	struct http_request *request = connection->user;
+	struct http_request *request;
 	
     debug("HTTP disconnect (%p).\n", connection);
     
@@ -100,6 +100,7 @@ void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
 			
 			if (connection->user)
 			{
+				request = connection->user;
 				//Call clean up if not yet done.
 				if (request->response.state != HTTP_STATE_DONE)
 				{

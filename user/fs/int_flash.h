@@ -25,9 +25,9 @@
 #define INT_FLASH_H
 
 /**
- * @brief Address of the zip file.
+ *  @brief Highest address of the file system.
  */
-#define FS_ADDR 0x14000
+#define MAX_FS_ADDR 0x2E000
 
 //Interesting places.
 /*extern void *_text_start;
@@ -43,6 +43,8 @@ union flash_data_u
 	unsigned short u16[2];
 	unsigned char u8[4];
 };*/
+
+extern size_t fs_addr;
 
 //Flash access functions.
 extern size_t flash_size(void);

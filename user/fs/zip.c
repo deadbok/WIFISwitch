@@ -138,6 +138,7 @@ static struct zip_file_hdr ICACHE_FLASH_ATTR *zip_load_header(unsigned int addre
     file_hdr->filename[file_hdr->filename_len] = '\0';
     debug(" File name: %s.\n", file_hdr->filename);
     
+    debug(" Header loaded at %p.\n", file_hdr);
     return(file_hdr);
 }
 
@@ -181,6 +182,7 @@ struct zip_file_hdr *zip_find_file_header(char *path)
 					return(NULL);
 				}
 				file_hdr->data_pos = zip_flut[offset].data_offset;
+				debug(" Returning file header at %p.\n", file_hdr);
 				return(file_hdr);
 			}
 			offset++;
@@ -217,6 +219,7 @@ struct zip_file_hdr *zip_find_file_header(char *path)
 				//We found a match .
 				debug("Found.\n");
 				file_hdr->data_pos = offset;
+				debug(" Returning file header at %p.\n", file_hdr);
 				return(file_hdr);
 			}
 			
@@ -310,7 +313,23 @@ void ICACHE_FLASH_ATTR init_zip(void)
     unsigned short files = 0;
 
     debug("Initialising ZIP support.\n");
-
+	debug(" Searching for file system.\n");
+	while (fs_addr < MAX_FS_ADDR)
+	{
+		debug(" Trying 0x%x.\n", fs_addr);
+		file_hdr = zip_load_header(0);
+		if (file_hdr)
+		{
+			break;
+		}
+		fs_addr += 0x1000;
+	}
+	if (fs_addr == MAX_FS_ADDR)
+	{
+		error(" Could not find file system.\n");
+		return;
+	}
+	debug(" Found file system at 0x%x.\n", fs_addr); 
 	debug(" Counting files.\n");
 	file_hdr = zip_load_header(0);
     //Run while there are more headers.

@@ -210,18 +210,6 @@ static void scan_done_cb(void *arg, STATUS status)
 	else
 	{
 		error(" Scanning AP's.\n");
-
-		if (n_aps && ap_ssids)
-		{
-			//Free old data if there is any.
-			for (i = 0; i < n_aps; i++)
-			{
-				db_free(ap_ssids[i]);
-			}
-			db_free(ap_ssids);
-			ap_ssids = NULL;
-			n_aps = 0;
-		}
 		error = true;
 	}
 	request = waiting_request;
@@ -238,20 +226,21 @@ static void scan_done_cb(void *arg, STATUS status)
 			((struct rest_net_names_context *)request->response.context)->response = "[\"error\"]";
 			((struct rest_net_names_context *)request->response.context)->size = os_strlen(((struct rest_net_names_context *)request->response.context)->response);
 		}
-
+		if (n_aps && ap_ssids)
+		{
+			//Free old data if there is any.
+			for (i = 0; i < n_aps; i++)
+			{
+				db_free(ap_ssids[i]);
+			}
+			db_free(ap_ssids);
+			ap_ssids = NULL;
+			n_aps = 0;
+		}
 
 		//We'll be sending headers next.
 		request->response.state = HTTP_STATE_HEADERS;
 		http_process_response(request->connection);
-		
-		//Free old data if there is any.
-		for (i = 0; i < n_aps; i++)
-		{
-			db_free(ap_ssids[i]);
-		}
-		db_free(ap_ssids);
-		ap_ssids = NULL;
-		n_aps = 0;
 	}
 	else
 	{

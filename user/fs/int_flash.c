@@ -38,6 +38,11 @@
 //Flash: W25Q32BV
 
 /**
+ * @brief Offset in the flash where the file system starts.
+ */
+size_t fs_addr = 0;
+
+/**
  * @brief Return the flash chip's size, in bytes.
  * 
  * From "draco" on http://www.esp8266.com/viewtopic.php?f=13&t=2506
@@ -157,7 +162,7 @@ static size_t ICACHE_FLASH_ATTR amemcpy(unsigned char *d, unsigned char *s, size
  */
 bool ICACHE_FLASH_ATTR aflash_read(const void *data, unsigned int read_addr, size_t size)
 {
-    unsigned int addr = 0x40200000 + FS_ADDR + read_addr;
+    unsigned int addr = 0x40200000 + fs_addr + read_addr;
     size_t ret;
 	
 	ret = amemcpy((unsigned char *)data, (unsigned char *)addr, size);
