@@ -39,8 +39,12 @@
 
 /**
  * @brief Offset in the flash where the file system starts.
+ * 
+ * Offset into the flash, where the file system starts. The initial
+ * value, is where the initialisation routine starts scanning for the
+ * file system.
  */
-size_t fs_addr = 0;
+size_t fs_addr = 0x10000;
 
 /**
  * @brief Return the flash chip's size, in bytes.

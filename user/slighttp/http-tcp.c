@@ -161,7 +161,7 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 		warn("Empty request received.<n");
 	}
 
-	//A bad idea to parse later since the data apparently may be gone.
+	//A bad idea to parse later since the data may be gone.
 	if (!http_parse_request(connection, connection->callback_data.length))
 	{
 		warn("Parsing failed.\n");
@@ -175,9 +175,12 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 	}
 	
     debug(" Response handler mutex %d.\n", http_response_mutex);
-    if ((!http_response_mutex) && (request_buffer.count < 1))
+    if ((http_response_mutex < 1) && (request_buffer.count < 1))
     {
-  
+		if (http_response_mutex < 0)
+		{
+			warn("Response mutex: %d.\n", http_response_mutex);
+		}
 		http_response_mutex++;
 		//No request waiting just process.
 		http_process_response(connection);

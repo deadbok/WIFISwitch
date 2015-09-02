@@ -1,3 +1,11 @@
+2015-09-02 Martin Grønholdt
+
+* slighttp/http.h: Set buffers to 1440 bytes.
+* slighttp/http-tcp.c (tcp_disconnect_cb): Fixed bug where everything was not deallocated.
+* slighttp/http_response.c (http_process_response): Only send on buffer full or done.
+* handlers/fs/http-fs.c (http_fs_get_handler): Dynamic chunk size when reading file.
+
+
 2015-09-01 Martin Grønholdt
 
 * slighttp/http-tcp.c (tcp_disconnect_cb): Fixed maybe using NULL pointer.

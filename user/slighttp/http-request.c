@@ -268,7 +268,7 @@ bool ICACHE_FLASH_ATTR http_parse_request(struct tcp_connection *connection, uns
     if (size)
     {
 
-		request->message = db_malloc(sizeof(char) * (size + 1), "request->message http_parse_headers");
+		request->message = db_malloc(sizeof(char) * (size + 1), "request->message http_parse_request");
 		memcpy(request->message, next_entry, size);
 		request->message[size] = '\0';
 		debug("%s\n", request->message);

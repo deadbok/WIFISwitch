@@ -41,11 +41,11 @@
 /**
  * @brief The largest block to read from a file, at a time.
  */
-#define HTTP_FILE_CHUNK_SIZE  512
+#define HTTP_FILE_CHUNK_SIZE  1440
 /**
  * @brief Size of send buffer.
  */
-#define HTTP_SEND_BUFFER_SIZE 1024
+#define HTTP_SEND_BUFFER_SIZE 1440
 /**
  * @brief Number of request that can be buffered.
  */

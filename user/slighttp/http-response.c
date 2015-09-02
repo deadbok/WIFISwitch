@@ -241,100 +241,116 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 		//Increase recursion level.
 		request->response.level++;
 		debug(" -> Recursion level: %d.\n", request->response.level);
-		if (request->type != HTTP_NONE)
+		debug(" Request type %d,\n", request->type);
+		//Get started
+		if (request->response.state == HTTP_STATE_NONE)
 		{
-			debug(" Request type %d,\n", request->type);
-			//Get started
-			if (request->response.state == HTTP_STATE_NONE)
-			{
-				debug(" New response.\n");
-				//Find someone to respond.
-				request->response.state = HTTP_STATE_STATUS;
-			}
-			switch (request->response.state)
-			{
-				case HTTP_STATE_STATUS: 
-				case HTTP_STATE_HEADERS: 
-				case HTTP_STATE_MESSAGE: 
-					//Send response, until there is no more to send
-					if (request->response.handlers->method_cb[request->type -1])
+			debug(" New response.\n");
+			//Find someone to respond.
+			request->response.state = HTTP_STATE_STATUS;
+		}
+		switch (request->response.state)
+		{
+			case HTTP_STATE_STATUS: 
+			case HTTP_STATE_HEADERS: 
+			case HTTP_STATE_MESSAGE: 
+				//Send response, until there is no more to send
+				if (request->response.handlers->method_cb[request->type -1])
+				{
+					debug(" Calling response handler %p.\n",
+						  request->response.handlers->method_cb[request->type - 1]);
+						  size = request->response.handlers->method_cb[request->type - 1](request);
+					if (size > 0)
 					{
-						debug(" Calling response handler %p.\n",
-							  request->response.handlers->method_cb[request->type - 1]);
-							  size = request->response.handlers->method_cb[request->type - 1](request);
-						if (size > 0)
+						debug(" Response %d bytes.\n", size); 
+						if (HTTP_SEND_BUFFER_SIZE <= (request->response.send_buffer_pos - request->response.send_buffer))
 						{
-							debug(" Response %d bytes.\n", size); 
-							//There was a response. 
+							debug(" Sending buffer contents.\n");
 							send_buffer(connection);
 						}
-						else if (size == 0)
+						else
 						{
 							http_process_response(connection);
 						}
 					}
-					else
+					else if (size == 0)
 					{
-						warn(" No handler, sending error status.\n");
-						request->response.status_code = 501;
-						request->response.state = HTTP_STATE_ERROR;
-						http_process_response(connection);						
+						if (HTTP_SEND_BUFFER_SIZE <= (request->response.send_buffer_pos - request->response.send_buffer))
+						{
+							debug(" Sending buffer contents.\n");
+							send_buffer(connection);
+						}
+						http_process_response(connection);
 					}
-					break;
-				case HTTP_STATE_ASSEMBLED: 
-					/* Here we simply whate for the TCP sent callback to
-					 * change the state, when the last data have been
-					 * sent. */
-					debug(" Waiting for message dispatch.\n");
-					http_print_clf_status(request); 
-					break;
-				case HTTP_STATE_DONE:
-					debug("Closing connection %p.\n", connection);
-					tcp_disconnect(connection);
+				}
+				else
+				{
+					warn(" No handler, sending error status.\n");
+					request->response.status_code = 501;
+					request->response.state = HTTP_STATE_ERROR;
+					http_process_response(connection);						
+				}
+				break;
+			case HTTP_STATE_ASSEMBLED:
+				if (request->response.send_buffer_pos > request->response.send_buffer)
+				{
+					debug(" Sending buffer contents.\n");
+					send_buffer(connection);
+				}
+				/* Here we simply whate for the TCP sent callback to
+				 * change the state, when the last data have been
+				 * sent. */
+				debug(" Waiting for message dispatch.\n");
+				http_print_clf_status(request); 
+				break;
+			case HTTP_STATE_DONE:
+				debug("Closing connection %p.\n", connection);
+				tcp_disconnect(connection);
 
-					if (request->response.handlers)
-					{
-						request->response.handlers->destroy_cb(request);
-					}
-					http_free_request(request);
-					connection->user = NULL;
-						
-					//Remove from response buffer.
+				if (request->response.handlers)
+				{
+					request->response.handlers->destroy_cb(request);
+				}
+				http_free_request(request);
+				connection->user = NULL;
+					
+				//Remove from response buffer.
+				debug(" Response buffer pointer %p.\n", connection_ptr);
+				if (connection_ptr)
+				{
+					debug(" Freeing response buffer pointer.\n");
+					db_free(connection_ptr);
+					connection_ptr = NULL;
+					
+				}
+				if (request->type != HTTP_NONE)
+				{
+					//Requeest has been parsed, decrease mutex.
 					http_response_mutex--;
+				}
+				//Answer buffered request.
+				debug(" Response handler mutex %d.\n", http_response_mutex);
+				debug(" %d buffered Requests.\n", request_buffer.count); 
+				if ((!http_response_mutex) && (request_buffer.count > 0))
+				{
+					debug(" Handling request from buffer.\n");
+					connection_ptr = ring_pop_front(&request_buffer);
 					if (connection_ptr)
 					{
-						debug(" Freeing response buffer pointer.\n");
-						db_free(connection_ptr);
-						connection_ptr = NULL;
+						http_response_mutex++;
+						http_process_response(*((struct tcp_connection **)connection_ptr));
 					}
-					//Answer buffered request.
-					debug(" Response handler mutex %d.\n", http_response_mutex);
-					debug(" %d buffered Requests.\n", request_buffer.count); 
-					if ((!http_response_mutex) && (request_buffer.count > 0))
-					{
-						debug(" Handling request from buffer.\n");
-						connection_ptr = ring_pop_front(&request_buffer);
-						if (connection_ptr)
-						{
-							http_response_mutex++;
-							http_process_response(*((struct tcp_connection **)connection_ptr));
-						}
-					}
-					break;
-				case HTTP_STATE_ERROR:
-					warn("HTTP response status: %d.\n", request->response.status_code);
-					fall_through_status_handler(connection, request->response.status_code);
-					send_buffer(connection);
-					request->response.state = HTTP_STATE_ASSEMBLED;
-					http_process_response(connection);
-					break;
-				default: 
-					warn("Unknown HTTP response state %d.\n", request->response.state);
-			}
-		}
-		else
-		{
-			warn("Status is none, doing nothin'.\n");
+				}
+				break;
+			case HTTP_STATE_ERROR:
+				warn("HTTP response status: %d.\n", request->response.status_code);
+				fall_through_status_handler(connection, request->response.status_code);
+				send_buffer(connection);
+				request->response.state = HTTP_STATE_ASSEMBLED;
+				http_process_response(connection);
+				break;
+			default: 
+				warn("Unknown HTTP response state %d.\n", request->response.state);
 		}
 		//Decrease recursion level.
 		request->response.level--;

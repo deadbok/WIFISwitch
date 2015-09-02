@@ -361,7 +361,9 @@ signed int ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
 	struct http_fs_context *context = request->response.context;
 	char buffer[HTTP_FILE_CHUNK_SIZE];
 	size_t data_left;
+	size_t bytes = 0;
 	size_t ret = 0;
+	size_t buffer_free;
 	static bool done = false;
 	
 	debug("File system GET handler.\n");
@@ -387,25 +389,45 @@ signed int ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
 				return(0);
 			}
 			data_left = context->total_size - context->transferred;
+			buffer_free = HTTP_SEND_BUFFER_SIZE - (request->response.send_buffer_pos - request->response.send_buffer);
 			//Read a chunk of data and send it.
 			if (data_left > HTTP_FILE_CHUNK_SIZE)
 			{
 				//There is still more than HTTP_FILE_CHUNK_SIZE to read.
-				fs_read(buffer, HTTP_FILE_CHUNK_SIZE, sizeof(char), context->file);
-				ret = http_send(request->connection, buffer, HTTP_FILE_CHUNK_SIZE);
-				context->transferred += HTTP_FILE_CHUNK_SIZE;
+				if (buffer_free < HTTP_FILE_CHUNK_SIZE)
+				{
+					bytes = buffer_free;
+					debug(" Truncating read to match send buffer space of %d bytes.\n", bytes);
+				}
+				else
+				{
+					bytes = HTTP_FILE_CHUNK_SIZE;
+				}
 			}
 			else
 			{
 				//Last block.
-				fs_read(buffer, data_left, sizeof(char), context->file);
-				ret = http_send(request->connection, buffer, data_left);
-				context->transferred += data_left;
+				if (buffer_free < data_left)
+				{
+					bytes = buffer_free;
+					debug(" Truncating read to match send buffer space of %d bytes.\n", bytes);
+				}
+				else
+				{
+					bytes = data_left;
+				}
+			}
+			fs_read(buffer, bytes, sizeof(char), context->file);
+			ret = http_send(request->connection, buffer, bytes);
+			request->response.message_size += ret;
+			context->transferred += bytes;
+			
+			if ((context->total_size - context->transferred) == 0)
+			{
 				//We're done sending the message.
 				fs_close(context->file);
 				done = true;
 			}
-			request->response.message_size += ret;
 		}
 	}
     return(ret);

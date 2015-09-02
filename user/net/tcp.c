@@ -233,7 +233,6 @@ static void ICACHE_FLASH_ATTR print_status(const int status)
     }
 }
 
-
 /**
  * @brief Print the status of all connections in the list.
  */
