@@ -88,8 +88,7 @@ static struct tcp_connection ICACHE_FLASH_ATTR *find_connection(struct espconn *
 
 	debug(" Looking for connection for remote " IPSTR ":%d.\n", 
 		  IP2STR(conn->proto.tcp->remote_ip),
-		  conn->proto.tcp->remote_port);
-	
+		  conn->proto.tcp->remote_port);	
     while (connection != NULL)
     {
 		debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
@@ -140,7 +139,6 @@ static struct tcp_connection ICACHE_FLASH_ATTR *find_listening_connection(unsign
 	}
 
 	debug(" Looking for listening connection on port %d.\n", port);
-
     while (connection != NULL)
     {
 		debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
@@ -248,14 +246,18 @@ void ICACHE_FLASH_ATTR tcp_print_connection_status(void)
 			connections++;
 			if (connection->conn->state <= ESPCONN_CLOSE)
 			{
-				debug("TCP connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
+				debug("TCP connection %p (%p) state \"%s\".\n",
+					  connection, connection->conn,
+					  state_names[connection->conn->state]);
 				debug(" Remote address " IPSTR ":%d.\n", 
 					  IP2STR(connection->remote_ip),
 					  connection->remote_port);
 			}
 			else
 			{
-				debug("TCP connection %p (%p) state unknown (%d).\n", connection, connection->conn, connection->conn->state);
+				debug("TCP connection %p (%p) state unknown (%d).\n",
+					  connection, connection->conn,
+					  connection->conn->state);
 				debug(" Remote address " IPSTR ":%d.\n", 
 					  IP2STR(connection->remote_ip),
 					  connection->remote_port);

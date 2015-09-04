@@ -84,6 +84,7 @@ bool ICACHE_FLASH_ATTR rest_network_test(struct http_request *request)
  * @brief Handle headers.
  * 
  * @param request The request to handle.
+ * @param header_line Header line to handle.
  */
 void ICACHE_FLASH_ATTR rest_network_header(struct http_request *request, char *header_line)
 {
@@ -133,7 +134,7 @@ static signed int create_response(struct http_request *request)
  * @brief Generate the response for a HEAD request from a file.
  * 
  * @param request Request that got us here.
- * @return Return unused.
+ * @return Size of sent data.
  */
 signed int ICACHE_FLASH_ATTR rest_network_head_handler(struct http_request *request)
 {
@@ -251,7 +252,7 @@ signed int ICACHE_FLASH_ATTR rest_network_get_handler(struct http_request *reque
  * @brief Set the network name for the WIFI connection.
  * 
  * @param request Data for the request that got us here.
- * @return The HTML.
+ * @return Size of the data sent.
  */
 signed int ICACHE_FLASH_ATTR rest_network_put_handler(struct http_request *request)
 {
@@ -336,9 +337,9 @@ signed int ICACHE_FLASH_ATTR rest_network_put_handler(struct http_request *reque
 	return(ret);
 }
 /**
- * @brief Deallocate memory used for the HTML.
+ * @brief Deallocate memory used for the request context.
  * 
- * @param html A pointer to the mem to deallocate.
+ * @param html A pointer to the request with the the context to deallocate.
  */
 void ICACHE_FLASH_ATTR rest_network_destroy(struct http_request *request)
 {

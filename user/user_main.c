@@ -67,11 +67,14 @@
 #include "driver/uart.h"
 #include "fs/fs.h"
 #include "net/wifi.h"
+#include "net/udp.h"
+#include "net/tcp.h"
 #include "net/capport.h"
 #include "slighttp/http.h"
 #include "slighttp/http-handler.h"
 #include "handlers/fs//http-fs.h"
 #include "handlers/rest/rest.h"
+#include "handlers/deny/http-deny.h"
 
 /**
  * @brief Timer for handling events.
@@ -109,6 +112,8 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 		http_add_handler("/rest/net/network", &http_rest_network_handler);
 		db_printf("Adding gpio REST handler.\n");
 		http_add_handler("/rest/gpios/*", &http_rest_gpio_handler);
+		db_printf("Adding deny handler.\n");
+		http_add_handler("/connect/*", &http_deny_handler);
 		http_fs_init("/");
 		db_printf("Adding file system handler.\n");
 		http_add_handler("/*", &http_fs_handler);

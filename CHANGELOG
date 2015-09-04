@@ -1,3 +1,9 @@
+2015-09-04 Martin Grønholdt
+
+* debug.c (db_hexdump): Fixed ifdef placement error.
+* user_config.h (db_hexdump): Fixed ifdef placement error.
+* slighttp/http-response.c (http_process_response): Fixed last call error handler, and CLF logging.
+ 
 2015-09-03 Martin Grønholdt
 
 * user_main.c (status_check): Added UDP status print.

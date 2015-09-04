@@ -50,6 +50,7 @@ size_t fs_addr = 0x10000;
  * @brief Return the flash chip's size, in bytes.
  * 
  * From "draco" on http://www.esp8266.com/viewtopic.php?f=13&t=2506
+ * @return Size of flash in bytes.
  */
 size_t ICACHE_FLASH_ATTR flash_size(void)
 { 

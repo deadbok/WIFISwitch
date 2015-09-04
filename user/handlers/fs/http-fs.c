@@ -63,6 +63,9 @@ struct http_response_handler http_fs_handler =
 	http_fs_destroy
 };
 
+/**
+ * @brief Root to use when searching the fs.
+ */
 static char *http_fs_root = NULL;
 /**
  * @brief Structure to keep track of our progress.
@@ -128,6 +131,7 @@ bool ICACHE_FLASH_ATTR http_fs_test(struct http_request *request)
  * @brief Handle headers.
  * 
  * @param request The request to handle.
+ * @param header_line Header line to handle.
  */
 void ICACHE_FLASH_ATTR http_fs_header(struct http_request *request, char *header_line)
 {
@@ -420,7 +424,7 @@ signed int ICACHE_FLASH_ATTR http_fs_get_handler(struct http_request *request)
 			fs_read(buffer, bytes, sizeof(char), context->file);
 			ret = http_send(request->connection, buffer, bytes);
 			request->response.message_size += ret;
-			context->transferred += bytes;
+			context->transferred += ret;
 			
 			if ((context->total_size - context->transferred) == 0)
 			{

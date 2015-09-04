@@ -90,6 +90,7 @@ bool ICACHE_FLASH_ATTR rest_net_passwd_test(struct http_request *request)
  * @brief Handle headers.
  * 
  * @param request The request to handle.
+ * @param header_line Header line to handle.
  */
 void ICACHE_FLASH_ATTR rest_net_passwd_header(struct http_request *request, char *header_line)
 {
@@ -181,9 +182,9 @@ signed int ICACHE_FLASH_ATTR rest_net_passwd_put_handler(struct http_request *re
 	return(ret);
 }
 /**
- * @brief Deallocate memory used for the HTML.
+ * @brief Deallocate memory used for request.
  * 
- * @param html A pointer to the mem to deallocate.
+ * @param request A pointer to the request with the context to deallocate.
  */
 void ICACHE_FLASH_ATTR rest_net_passwd_destroy(struct http_request *request)
 {

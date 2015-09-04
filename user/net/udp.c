@@ -162,8 +162,9 @@ static void ICACHE_FLASH_ATTR udp_recv_cb(void *arg, char *data, unsigned short 
     struct udp_connection *connection;
     
     debug("UDP received (%p) %d bytes.\n", arg, length);
+#ifdef DEBUG
     db_hexdump(data, length);
-    udp_print_connection_status();
+#endif
     
     connection = find_listening_connection(conn->proto.udp->local_port);
     
@@ -200,7 +201,6 @@ static void ICACHE_FLASH_ATTR udp_sent_cb(void *arg)
     struct udp_connection *connection;
     
     debug("UDP sent (%p).\n", conn);
-    udp_print_connection_status();
     
     connection = find_listening_connection(conn->proto.udp->local_port);
 

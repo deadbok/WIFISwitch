@@ -80,11 +80,11 @@
 /**
  * @brief Print debug info on the serial port.
  */
-#define DEBUG
+//#define DEBUG
 /**
  * @brief Print memory allocation info.
  */
-#define DEBUG_MEM
+//#define DEBUG_MEM
 /**
  * @brief List memory allocations.
  */
@@ -93,6 +93,9 @@
  * @brief Mostly shut up output from the SDK.
  */
 //#define SDK_DEBUG
+
+
+/************************ Config values end ***************************/
 
 /**
  * @brief Customised print function.
@@ -105,6 +108,9 @@
 #else
 #define db_printf(...) 	ets_printf(__VA_ARGS__)
 #endif
+
+//Hexdump some memory.
+extern void db_hexdump(void *mem, unsigned int len);
 
 /**
  * @brief Print an error message.
@@ -138,7 +144,6 @@
 extern void *db_alloc(size_t size, bool zero, char *info);
 extern void db_dealloc(void *ptr);
 extern void db_mem_list(void);
-extern void db_hexdump(void *mem, unsigned int len);
                         
 #else
 #define db_malloc(ARG, INFO)      os_malloc(ARG)

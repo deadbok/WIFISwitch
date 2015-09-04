@@ -4,8 +4,6 @@ TODO
 File               scope                         Item
 ----               -----                         ----
 Makefile           *na*                          Decide on where the file system is loaded.                           
-http-fs.c          http_fs_head_handler          Prevent opening and closing the file, if called from the GET request.
-*na*               handlers                      Add a handler that sends 403 on URI access.                          
 *na*               REST handlers				 Add host name handler
 *na*			   Network						 Add NTP.
 *na*			   File system					 Roll my own with links and stuff.

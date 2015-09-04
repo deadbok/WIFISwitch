@@ -49,6 +49,10 @@
  */
 #define HTTP_STATUS_400 HTTP_STATUS_LINE("400", "Bad Request")
 /**
+ * @brief HTTP 403 Forbidden.
+ */
+#define HTTP_STATUS_403 HTTP_STATUS_LINE("403", "Forbidden")
+/**
  * @brief HTTP 404 not found response.
  */
 #define HTTP_STATUS_404 HTTP_STATUS_LINE("404", "Not Found")
@@ -60,7 +64,6 @@
  * @brief HTTP 500 Internal server error..
  */
 #define HTTP_STATUS_500 HTTP_STATUS_LINE("500", "Internal Server Error")
-
 /**
  * @brief HTTP 501 Not implemented response.
  */
@@ -72,6 +75,11 @@
  */
 #define HTTP_400_HTML               "<!DOCTYPE html><head><title>Bad Request.</title></head><body><h1>400 Bad Request</h1><br />Sorry I didn't quite get that.</body></html>"
 #define HTTP_400_HTML_LENGTH		135
+/**
+ * @brief HTTP 403 response HTML.
+ */
+#define HTTP_403_HTML               "<!DOCTYPE html><head><title>Forbidden.</title></head><body><h1>403 Forbidden</h1><br />No you didn't.</body></html>"                                    
+#define HTTP_403_HTML_LENGTH		115
 /**
  * @brief HTTP 404 response HTML.
  */

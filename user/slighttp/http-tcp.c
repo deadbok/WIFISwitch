@@ -168,7 +168,7 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 		if (request->response.status_code < 399)
 		{
 			//Set internal error status.
-			request->response.status_code = 404;
+			request->response.status_code = 400;
 			//Use internal error handler.
 			request->response.state = HTTP_STATE_ERROR;
 		}

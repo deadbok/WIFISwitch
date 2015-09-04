@@ -49,6 +49,10 @@ char *http_status_line_204 = HTTP_STATUS_204;
  */
 char *http_status_line_400 = HTTP_STATUS_400;
 /**
+ * @brief 403 status-line.
+ */
+char *http_status_line_403 = HTTP_STATUS_403;
+/**
  * @brief 404 status-line.
  */
 char *http_status_line_404 = HTTP_STATUS_404;
@@ -56,6 +60,10 @@ char *http_status_line_404 = HTTP_STATUS_404;
  * @brief 405 status-line.
  */
 char *http_status_line_405 = HTTP_STATUS_405;
+/**
+ * @brief 500 status-line.
+ */
+char *http_status_line_500 = HTTP_STATUS_500;
 /**
  * @brief 501 status-line.
  */
@@ -113,12 +121,18 @@ unsigned char ICACHE_FLASH_ATTR http_send_status_line(struct tcp_connection *con
 		case 400: response = http_status_line_400;
 				  size = os_strlen(http_status_line_400);
 				  break;
+		case 403: response = http_status_line_403;
+				  size = os_strlen(http_status_line_403);
+				  break;
 		case 404: response = http_status_line_404;
 				  size = os_strlen(http_status_line_404);
 				  break;
 		case 405: response = http_status_line_405;
 				  size = os_strlen(http_status_line_405);
 				  break;				  
+		case 500: response = http_status_line_500;
+				  size = os_strlen(http_status_line_500);
+				  break;
 		case 501: response = http_status_line_501;
 				  size = os_strlen(http_status_line_501);
 				  break;
@@ -195,6 +209,9 @@ void fall_through_status_handler(struct tcp_connection *connection, unsigned sho
 		case 400: size = HTTP_400_HTML_LENGTH;
 				  msg = HTTP_400_HTML;
 				  break;
+		case 403: size = HTTP_403_HTML_LENGTH;
+				  msg = HTTP_403_HTML;
+				  break;
 		case 404: size = HTTP_404_HTML_LENGTH;
 				  msg = HTTP_404_HTML;
 				  break;
@@ -259,11 +276,11 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 				{
 					debug(" Calling response handler %p.\n",
 						  request->response.handlers->method_cb[request->type - 1]);
-						  size = request->response.handlers->method_cb[request->type - 1](request);
+					size = request->response.handlers->method_cb[request->type - 1](request);
 					if (size > 0)
 					{
 						debug(" Response %d bytes.\n", size); 
-						if (HTTP_SEND_BUFFER_SIZE <= (request->response.send_buffer_pos - request->response.send_buffer))
+						if (request->response.send_buffer_pos > request->response.send_buffer)
 						{
 							debug(" Sending buffer contents.\n");
 							send_buffer(connection);
@@ -275,7 +292,7 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 					}
 					else if (size == 0)
 					{
-						if (HTTP_SEND_BUFFER_SIZE <= (request->response.send_buffer_pos - request->response.send_buffer))
+						if (request->response.send_buffer_pos > request->response.send_buffer)
 						{
 							debug(" Sending buffer contents.\n");
 							send_buffer(connection);
@@ -297,11 +314,16 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 					debug(" Sending buffer contents.\n");
 					send_buffer(connection);
 				}
-				/* Here we simply whate for the TCP sent callback to
+				/* Here we simply wait for the TCP sent callback to
 				 * change the state, when the last data have been
 				 * sent. */
-				debug(" Waiting for message dispatch.\n");
-				http_print_clf_status(request); 
+				debug(" Waiting for message dispatch on connection %p.\n", connection);
+				
+				if (request->response.send_buffer_pos == request->response.send_buffer)
+				{
+					//Done sending, print log line.
+					http_print_clf_status(request); 
+				}
 				break;
 			case HTTP_STATE_DONE:
 				debug("Closing connection %p.\n", connection);
@@ -347,7 +369,6 @@ void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
 				fall_through_status_handler(connection, request->response.status_code);
 				send_buffer(connection);
 				request->response.state = HTTP_STATE_ASSEMBLED;
-				http_process_response(connection);
 				break;
 			default: 
 				warn("Unknown HTTP response state %d.\n", request->response.state);

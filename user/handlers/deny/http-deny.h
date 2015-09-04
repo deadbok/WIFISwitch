@@ -1,8 +1,7 @@
-/**
- * @file led.h
+/** @file http-deny.h
  *
- * @brief Routines for blinking led with web control.
- * 
+ * @brief Handler structure for registering the deny handler.
+ *
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
@@ -21,13 +20,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
- */
-#ifndef LED_H
-#define LED_H
+ */ 
+#ifndef HTTP_DENY_H
+#define HTTP_DENY_H
 
-#include "c_types.h"
+#include "slighttp/http-handler.h"
 
-bool led_test(char *uri);
-char *led_html(char *uri, struct http_request *request);
+extern struct http_response_handler http_deny_handler;
 
 #endif

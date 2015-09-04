@@ -75,10 +75,10 @@ static void ICACHE_FLASH_ATTR dns_recv(struct udp_connection *connection)
 	offset = 12;   
 	//Get length of first label in in the first question.
 	length = connection->callback_data.data[offset];
-	//Get the while name in the first question.
+	//Get the name in the first question.
 	while ((length > 0) && (i < 255))
 	{
-		debug(".%d", length);
+		debug(".", length);
 		offset++;
 		os_memcpy(domain + i, connection->callback_data.data + offset, length);
 		offset += length;
@@ -108,10 +108,6 @@ static void ICACHE_FLASH_ATTR dns_recv(struct udp_connection *connection)
 		header->ANCount = swap16(1);
 		header->NSCount = 0;
 		header->ARCount = 0;
-		debug("  Question count %d.\n", swap16(header->QDCount));
-		debug("  Answer record count %d.\n", swap16(header->ANCount));
-		debug("  Authority record count %d.\n", swap16(header->NSCount));
-		debug("  Additional record count %d.\n", swap16(header->ARCount));
 		
 		//Response.
 		header->QR = 1;

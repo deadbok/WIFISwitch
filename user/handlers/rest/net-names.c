@@ -61,12 +61,26 @@ struct http_response_handler http_rest_net_names_handler =
 	rest_net_names_destroy
 };
 
+/**
+ * @brief AP names.
+ */
 static char **ap_ssids;
+/**
+ * @brief number of AP names.
+ */
 static unsigned short n_aps;
-//Stores the request while waiting for the callback.
+/**
+ * @brief Stores the request while waiting for the callback.
+ */
 static struct http_request *waiting_request = NULL;
+/**
+ * @brief Statuf of SDK call.
+ */
 static bool error = false;
 
+/**
+ * @brief Context for the network name handler.
+ */
 struct rest_net_names_context
 {
 	/**
@@ -79,6 +93,13 @@ struct rest_net_names_context
 	size_t size;
 };
 
+/**
+ * @brief Create a JSON array of strings.
+ * 
+ * @param values Array of strings.
+ * @param entries Number of strings in array.
+ * @return The JSON array.
+ */
 static char ICACHE_FLASH_ATTR *json_create_string_array(char **values, size_t entries)
 {
 	size_t i;
@@ -132,7 +153,7 @@ static char ICACHE_FLASH_ATTR *json_create_string_array(char **values, size_t en
 /**
  * @brief Tell if we will handle a certain URI.
  * 
- * @param uri The URI to test.
+ * @param request The request to test.
  * @return True if we can handle the URI.
  */
 bool ICACHE_FLASH_ATTR rest_net_names_test(struct http_request *request)
@@ -150,6 +171,7 @@ bool ICACHE_FLASH_ATTR rest_net_names_test(struct http_request *request)
  * @brief Handle headers.
  * 
  * @param request The request to handle.
+ * @param header_line Header line to handle.
  */
 void ICACHE_FLASH_ATTR rest_net_names_header(struct http_request *request, char *header_line)
 {
@@ -159,7 +181,7 @@ void ICACHE_FLASH_ATTR rest_net_names_header(struct http_request *request, char 
 /**
  * @brief Callback for when the ESP8266 is done finding access points.
  * 
- * This send off the headers, restarting the send cycle
+ * This sends off the headers, restarting the send cycle.
  * 
  * @param arg Pointer to a ESP8266 scaninfo struct, with an AP list.
  * @param status ESP8266 enum STATUS, telling how the scan went.
@@ -276,7 +298,7 @@ static void scan_net_names(struct http_request *request)
  * @brief Generate the response for a HEAD request from a file.
  * 
  * @param request Request that got us here.
- * @return Return unused.
+ * @return Size of send data.
  */
 signed int ICACHE_FLASH_ATTR rest_net_names_head_handler(struct http_request *request)
 {
@@ -357,11 +379,10 @@ signed int ICACHE_FLASH_ATTR rest_net_names_head_handler(struct http_request *re
 }
 
 /**
- * @brief Generate a JSON array of available access points.
+ * @brief Handle GET requests.
  * 
- * @param uri The URI to answer.
- * @param request Data for the request that got us here.
- * @return The JSON.
+ * @param request The GET request.
+ * @return The size of the send data.
  */
 signed int ICACHE_FLASH_ATTR rest_net_names_get_handler(struct http_request *request)
 {
@@ -403,9 +424,9 @@ signed int ICACHE_FLASH_ATTR rest_net_names_get_handler(struct http_request *req
 }
 
 /**
- * @brief Deallocate memory used for the response.
+ * @brief Deallocate memory used for the request.
  * 
- * @param response A pointer to the mem to deallocate.
+ * @param request A pointer to the request with the context to deallocate.
  */
 void ICACHE_FLASH_ATTR rest_net_names_destroy(struct http_request *request)
 {

@@ -47,6 +47,9 @@
 
 #ifndef REST_GPIO_ENABLED
 #warning "No GPIO's has been enabled for acces via the REST interface."
+/**
+ * @brief Bit mask of which GPIO pins the REST interface can control.
+ */
 #define REST_GPIO_ENABLED 0
 #endif
 
@@ -144,6 +147,7 @@ bool ICACHE_FLASH_ATTR rest_gpio_test(struct http_request *request)
  * @brief Handle headers.
  * 
  * @param request The request to handle.
+ * @param header_line Header line to handle.
  */
 void ICACHE_FLASH_ATTR rest_gpio_header(struct http_request *request, char *header_line)
 {
@@ -153,8 +157,8 @@ void ICACHE_FLASH_ATTR rest_gpio_header(struct http_request *request, char *head
 /**
  * @brief Create a JSON array of integers.
  * 
- * @param Pointer to an array of long ints.
- * @param Number of entries in the array.
+ * @param values Pointer to an array of long ints.
+ * @param entries Number of entries in the array.
  * @return Pointer to the JSON array.
  */
 static char ICACHE_FLASH_ATTR *json_create_int_array(long *values, size_t entries)
@@ -205,6 +209,7 @@ static char ICACHE_FLASH_ATTR *json_create_int_array(long *values, size_t entrie
  * @brief Create a JSON array containing all usable GPIO's.
  * 
  * @param request Request that got us here.
+ * @return Size of response.
  */
 static signed int create_enabled_response(struct http_request *request)
 {
@@ -231,6 +236,7 @@ static signed int create_enabled_response(struct http_request *request)
  * @brief Create a JSON response with the state of a specific GPIO.
  * 
  * @param request Request that got us here.
+ * @return Size of response.
  */
 static signed int create_pin_response(struct http_request *request)
 {
@@ -382,7 +388,7 @@ signed int ICACHE_FLASH_ATTR rest_gpio_get_handler(struct http_request *request)
  * @brief Set the gpio name for the WIFI connection.
  * 
  * @param request Data for the request that got us here.
- * @return The HTML.
+ * @return Size of message.
  */
 signed int ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
 {
@@ -456,7 +462,7 @@ signed int ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
 		if (current_gpio < 0)
 		{
 			ret += http_send(request->connection, "<!DOCTYPE html><head><title>Method Not Allowed.</title></head><body><h1>405 Method Not Allowed.</h1><br />I won't PUT up with this.</body></html>", 145);
-			request->response.message_size = 145;
+			ret = 145;
 			context->done = true;
 		}
 		else
@@ -486,10 +492,11 @@ signed int ICACHE_FLASH_ATTR rest_gpio_put_handler(struct http_request *request)
 	}
 	return(ret);
 }
+
 /**
  * @brief Deallocate memory used for the HTML.
  * 
- * @param html A pointer to the mem to deallocate.
+ * @param request A pointer to the request with the context to deallocate.
  */
 void ICACHE_FLASH_ATTR rest_gpio_destroy(struct http_request *request)
 {
