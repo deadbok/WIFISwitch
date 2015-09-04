@@ -138,6 +138,7 @@
 extern void *db_alloc(size_t size, bool zero, char *info);
 extern void db_dealloc(void *ptr);
 extern void db_mem_list(void);
+extern void db_hexdump(void *mem, unsigned int len);
                         
 #else
 #define db_malloc(ARG, INFO)      os_malloc(ARG)

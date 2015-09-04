@@ -30,6 +30,7 @@
 #include "c_types.h"
 #include "osapi.h"
 #include "mem.h"
+#include <ctype.h>
 
 
 /**
@@ -159,6 +160,62 @@ void ICACHE_FLASH_ATTR db_mem_list(void)
 				  dbg_mem_alloc_infos[i].size,
 				  dbg_mem_alloc_infos[i].info);
 		i++;
+	}
+}
+
+/**
+ * @brief Dump some mem as hex in a nice way.
+ * 
+ * Lifted from: [http://grapsus.net/blog/post/Hexadecimal-dump-in-C](http://grapsus.net/blog/post/Hexadecimal-dump-in-C).
+ * 
+ * @param mem Pointer to the memory to dump.
+ * @param len Length of memory block to dump.
+ */
+void db_hexdump(void *mem, unsigned int len)
+{
+	unsigned char cols = 8;
+	unsigned int i, j;
+	unsigned int ch;
+
+	for(i = 0; i < len + ((len % cols) ? (cols - len % cols) : 0); i++)
+	{
+		/* print offset */
+		if(i % cols == 0)
+		{
+			db_printf("0x%06x: ", i);
+		}
+
+		/* print hex data */
+		if(i < len)
+		{
+			db_printf("%02x ", 0xFF & ((char*)mem)[i]);
+		}
+		else /* end of block, just aligning for ASCII dump */
+		{
+			db_printf("   ");
+		}
+		
+		/* print ASCII dump */
+		if(i % cols == (cols - 1))
+		{
+			for(j = i - (cols - 1); j <= i; j++)
+			{
+				ch = ((char*)mem)[j];
+				if(j >= len) /* end of block, not really printing */
+				{
+					db_printf(" ");
+				}
+				else if(isprint(ch)) /* printable char */
+				{
+					db_printf("%c", (char)(0xFF & ch));        
+				}
+				else /* other char */
+				{
+					db_printf(".");
+				}
+			}
+			db_printf("\n");
+		}
 	}
 }
 

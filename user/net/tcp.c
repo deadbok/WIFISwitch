@@ -6,10 +6,6 @@
  * Abstract the espconn interface and manage multiply connection.
  * 
  * Notes:
- *  - From glancing at the AT code, I have concluded that the member `reverse`
- *    in `struct espconn`, is there for the user. This has proven to be almost
- *    true, actually the only time it fails, it fails in a way that is really 
- *    neat, but I dare not abuse.
  *  - I have no idea how many connections are possible.
  *  - It seems espconn works on top of lwip, and that it might be better to talk 
  *    to lwip itself.
@@ -252,14 +248,14 @@ void ICACHE_FLASH_ATTR tcp_print_connection_status(void)
 			connections++;
 			if (connection->conn->state <= ESPCONN_CLOSE)
 			{
-				debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
+				debug("TCP connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
 				debug(" Remote address " IPSTR ":%d.\n", 
 					  IP2STR(connection->remote_ip),
 					  connection->remote_port);
 			}
 			else
 			{
-				debug("Connection %p (%p) state unknown (%d).\n", connection, connection->conn, connection->conn->state);
+				debug("TCP connection %p (%p) state unknown (%d).\n", connection, connection->conn, connection->conn->state);
 				debug(" Remote address " IPSTR ":%d.\n", 
 					  IP2STR(connection->remote_ip),
 					  connection->remote_port);
@@ -275,11 +271,11 @@ void ICACHE_FLASH_ATTR tcp_print_connection_status(void)
 		}
 		if (connections == 1)
 		{
-			debug("1 connection.\n");
+			debug("1 TCP connection.\n");
 		}
 		else
 		{
-			debug("%d connections.\n", connections);
+			debug("%d TCP connections.\n", connections);
 		}
 	}
 }

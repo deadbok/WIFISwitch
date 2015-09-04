@@ -5,9 +5,11 @@ WIFI controlled mains switch using ESP8266.
 
 Features.
 ---------
+
 * Built in web server.
 * RESTful (I think) interface.
 * Enters AP mode and serves a WIFI configuration page, when there is no AP connection at start up.
+* Captive portal in configuration mode.
 
 Credits.
 ========
@@ -22,12 +24,6 @@ Dave Hylands (http://www.davehylands.com/)
 ------------------------------------------
 
 Suggested using a zip file, as file system image, and shared his code
-
-
-Owen Versteeg (http://owenversteeg.com/)
-----------------------------------------
-
-min CSS framework.
 
 
 Todd Motto (http://toddmotto.com/)

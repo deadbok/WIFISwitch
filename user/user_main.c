@@ -67,6 +67,7 @@
 #include "driver/uart.h"
 #include "fs/fs.h"
 #include "net/wifi.h"
+#include "net/capport.h"
 #include "slighttp/http.h"
 #include "slighttp/http-handler.h"
 #include "handlers/fs//http-fs.h"
@@ -83,6 +84,7 @@ os_timer_t status_timer;
 static void ICACHE_FLASH_ATTR status_check(void)
 {
 	db_mem_list();
+	udp_print_connection_status();
 	tcp_print_connection_status();
 }
 
@@ -113,6 +115,8 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 	}
 	else
 	{
+		//Start captive portal
+		init_captive_portal("wifiswitch");
 		//Start in network configuration mode.
 		init_http(80);
 		db_printf("Adding network password REST handler.\n");

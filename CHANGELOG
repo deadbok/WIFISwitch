@@ -1,5 +1,15 @@
+2015-09-03 Martin Grønholdt
+
+* user_main.c (status_check): Added UDP status print.
+			  (connected): Added captive portal in configuration mode.
+* net/capport.*: Added files.
+* net/dns.h: Added file.
+* user_config.h: Added db_hexdump.
+* debug.c: Added db_hexdump.
+
 2015-09-02 Martin Grønholdt
 
+* net/udp.*: Added files.
 * slighttp/http.h: Set buffers to 1440 bytes.
 * slighttp/http-tcp.c (tcp_disconnect_cb): Fixed bug where everything was not deallocated.
 * slighttp/http_response.c (http_process_response): Only send on buffer full or done.
