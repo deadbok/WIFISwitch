@@ -1,3 +1,10 @@
+2015-09-05 Martin Grønholdt
+
+* docs/HTTP_Flow.md_ Added file.
+* handlers/fs/http-fs.c (http_fs_handler): Use default header handler.
+* slighttp/http-request.c (http_get_request_type): Return status 400 on error.
+* slighttp/http-handlers.h: Added http_default_header_handler.
+
 2015-09-04 Martin Grønholdt
 
 * debug.c (db_hexdump): Fixed ifdef placement error.

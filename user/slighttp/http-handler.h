@@ -117,5 +117,6 @@ struct http_response_handler
 extern bool http_add_handler(char *uri, struct http_response_handler *handler);
 extern bool http_remove_handler(struct http_response_handler *handler);
 extern struct http_response_handler *http_get_handler(struct http_request *request);
+extern void http_default_header_handler(struct http_request *request, char *header_line);
 
 #endif

@@ -49,7 +49,7 @@ void http_fs_destroy(struct http_request *request);
 struct http_response_handler http_fs_handler =
 {
 	http_fs_test,
-	http_fs_header,
+	http_default_header_handler,
 	{
 		NULL,
 		http_fs_get_handler,

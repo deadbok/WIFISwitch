@@ -98,7 +98,7 @@ static size_t ICACHE_FLASH_ATTR http_get_request_type(struct tcp_connection *con
 					else
 					{
 						error("Unknown request: %s\n", connection->callback_data.data);
-						request->response.status_code = 501;
+						request->response.status_code = 400;
 						return(0);
 					}
 				}

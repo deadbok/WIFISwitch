@@ -217,3 +217,16 @@ struct http_response_handler ICACHE_FLASH_ATTR *http_get_handler(struct http_req
 	debug(" No response handler found for URI %s.\n", request->uri);
 	return(NULL);
 }
+
+/**
+ * @brief Handle headers.
+ * 
+ * Default handler for headers, that does nothing.
+ * 
+ * @param request The request to handle.
+ * @param header_line Header line to handle.
+ */
+void ICACHE_FLASH_ATTR http_default_header_handler(struct http_request *request, char *header_line)
+{
+	debug("HTTP ignoring header \"%s\".\n", header_line);
+}

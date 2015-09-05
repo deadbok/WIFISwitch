@@ -78,7 +78,7 @@ static void ICACHE_FLASH_ATTR dns_recv(struct udp_connection *connection)
 	//Get the name in the first question.
 	while ((length > 0) && (i < 255))
 	{
-		debug(".", length);
+		debug(".");
 		offset++;
 		os_memcpy(domain + i, connection->callback_data.data + offset, length);
 		offset += length;
