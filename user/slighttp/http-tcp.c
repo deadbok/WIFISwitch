@@ -25,6 +25,7 @@
 #include "c_types.h"
 #include "osapi.h"
 #include "user_config.h"
+#include "net/net.h"
 #include "net/tcp.h"
 #include "http-common.h"
 #include "http-handler.h"
@@ -141,7 +142,7 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 	request->response.handler = http_get_handler(request, NULL);
 
 	//Put in buffer if there is stuff there already.
-	if (request_buffer.count > 0)
+	if ((request_buffer.count > 0) || net_sending)
 	{
 		if (request_buffer.count < (HTTP_REQUEST_BUFFER_SIZE - 1))
 		{
@@ -189,7 +190,7 @@ void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
 	debug(" Handler return value: %d.\n", ret);
 	
 	//Go on if no data was send.
-	if (ret < 0)
+	if (ret <= 0)
 	{
 		//Answer buffered request.
 		debug(" %d buffered Requests.\n", request_buffer.count); 
@@ -200,7 +201,9 @@ void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
 			if (connection_ptr)
 			{
 				request = (*((struct tcp_connection **)connection_ptr))->user;
-				request->response.handler(request);
+				ret = http_handle_response(request);
+				debug(" Handler return value: %d.\n", ret);
+				db_free(connection_ptr);
 			}
 		}
 	}

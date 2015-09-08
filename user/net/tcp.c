@@ -37,6 +37,7 @@
 #include "mem.h"
 #include "user_config.h"
 #include "driver/uart.h"
+#include "net.h"
 #include "tcp.h"
 
 /**
@@ -369,6 +370,10 @@ static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err)
 		os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
 		//Set new data
 		connection->callback_data.arg = arg;
+		if (connection->sending)
+		{
+			net_sending = false;
+		}
 		
 		debug("Handling as disconnect.\n");
 
@@ -420,6 +425,11 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
 		os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
 		//Set new data
 		connection->callback_data.arg = arg;
+		//Reset sending state if connection was sending.
+		if (connection->sending)
+		{
+			net_sending = false;
+		}
 
 		if (listening_connection)
 		{
@@ -550,6 +560,7 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
 
 	if (connection)
 	{
+		net_sending = false;
 		connection->sending = false;
 		//Clear previous data.
 		os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
@@ -787,7 +798,7 @@ bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, s
     debug("Sending %d bytes of TCP data (%p using %p),\n", size, data, connection);
 	debug(" espconn pointer %p.\n", connection->conn);
 	
-	if (connection->sending)
+	if ((connection->sending) || (net_sending))
 	{
 		error(" Still sending something else.\n");
 		return(false);
@@ -797,6 +808,7 @@ bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, s
 #endif //DEBUG
 	if (connection->conn)
 	{
+		net_sending = true;
 		connection->sending = true;
 		ret = espconn_send(connection->conn, (unsigned char*)data, size);
 		debug(" Send status %d.\n", ret);

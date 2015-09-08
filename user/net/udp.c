@@ -37,6 +37,7 @@
 #include "mem.h"
 #include "user_config.h"
 #include "driver/uart.h"
+#include "net.h"
 #include "udp.h"
 
                   
@@ -130,7 +131,7 @@ void ICACHE_FLASH_ATTR udp_print_connection_status(void)
 			connections++;
 			if (connection->conn->state == ESPCONN_NONE)
 			{
-				debug("UDP onnection %p (%p).\n", connection, connection->conn);
+				debug("UDP connection %p (%p).\n", connection, connection->conn);
 				debug(" Remote address " IPSTR ":%d.\n", 
 					  IP2STR(connection->remote_ip),
 					  connection->remote_port);
@@ -206,6 +207,7 @@ static void ICACHE_FLASH_ATTR udp_sent_cb(void *arg)
 
 	if (connection)
 	{
+		net_sending = false;
 		connection->sending = false;
 		//Clear previous data.
 		os_memset(&connection->callback_data, 0, sizeof(struct udp_callback_data));
@@ -399,7 +401,7 @@ bool ICACHE_FLASH_ATTR db_udp_send(struct udp_connection *connection, char *data
     debug("Sending %d bytes of UDP data (%p using %p),\n", size, data, connection);
 	debug(" espconn pointer %p.\n", connection->conn);
 	
-	if (connection->sending)
+	if ((connection->sending) || (net_sending))
 	{
 		error(" Still sending something else.\n");
 		return(false);
@@ -409,6 +411,7 @@ bool ICACHE_FLASH_ATTR db_udp_send(struct udp_connection *connection, char *data
 #endif //DEBUG
 	if (connection->conn)
 	{
+		net_sending = true;
 		connection->sending = true;
 		return(espconn_send(connection->conn, (unsigned char*)data, size));
 	}

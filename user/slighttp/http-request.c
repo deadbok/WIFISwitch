@@ -288,6 +288,11 @@ void ICACHE_FLASH_ATTR http_free_request(struct http_request *request)
 			debug("Deallocating request message.\n");
 			db_free(request->message);
 		}
+		if (request->headers)
+		{
+			debug("Deallocating request headers.\n");
+			db_free(request->headers);
+		}
 		debug("Deallocating request.\n");
 		db_free(request);
 	}

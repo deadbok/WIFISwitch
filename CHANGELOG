@@ -1,5 +1,11 @@
 2015-09-08 Martin Grønholdt
 
+* slighttp/http.h: Upped version.
+* slighttp/http-tcp.c (tcp_recv_cb): Global send lock and fixes.
+* slighttp/http-request.c (http_free_request): Free headers.
+* net/udp.c: Added global send lock.
+* net/tcp.c: Added global send lock.
+* debug.c (db_mem_list): Added more info.
 * handlers/deny/*.*: Reworked for new handler code, again.
 * handlers/rest/*.*: Reworked for new handler code, again.
 

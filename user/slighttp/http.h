@@ -32,7 +32,7 @@
 /**
  * @brief Server version.
  */
-#define HTTP_SERVER_VERSION         "0.0.6"
+#define HTTP_SERVER_VERSION         "0.0.7"
 /**
  * @brief Version of HTTP that is supported.
  */

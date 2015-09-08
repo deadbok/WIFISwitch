@@ -209,10 +209,11 @@ void ICACHE_FLASH_ATTR db_dealloc(void *ptr)
 void ICACHE_FLASH_ATTR db_mem_list(void)
 {
 	unsigned short i = 0;
-	
+
+	db_printf("Free heap (free): %d.\n", system_get_free_heap_size());
+	db_printf("Allocs: %d.\n", dbg_mem_n_alloc);
 	while(i < dbg_mem_n_alloc)
 	{
-
 		db_printf("  %p size %d info: %s.\n",
 				  dbg_mem_alloc_infos[i].ptr,
 				  dbg_mem_alloc_infos[i].size,
