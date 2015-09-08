@@ -20,12 +20,17 @@ Find a handler (receive callback).
 The first handler is found in the receive callback.
 
 * Search the list of handlers from the top and use the first available.
-* Loop.
-  * Call handler.
-  * If return is RESPONSE_DONE_FINAL, exit.
-  * If return is RESPONSE_DONE_CONTINUE, find next handler.
-  * If return is positive, data has been sent, exit and leave it to the
-    next sent callback.
+* If request are waiting in the ring buffer.
+  * Add request to ring buffer, and exit.
+* If no request is waiting.
+  * Loop.
+    * Call handler.
+    * If return is RESPONSE_DONE_FINAL, exit.
+    * If return is RESPONSE_DONE_CONTINUE.
+      * Find next handler.
+      * Call handler.
+    * If return is positive, data has been sent, exit and leave it to the
+      next sent callback.
 
 
 Create response (receive callback -> handler).
@@ -52,9 +57,13 @@ Sent callback.
 When the data has been sent we get here.
 
 * Call handler.
-* If return is RESPONSE_DONE_FINAL, exit.
 * If return is RESPONSE_DONE_CONTINUE.
   * Find next handler.
   * Call handler.
 * If return is positive, data has been sent, exit and leave it to the
   next sent callback.
+* If return is RESPONSE_DONE_FINAL
+  * If there are waiting request in the ring buffer.
+    * Get one.
+    * Call handler.
+  * If there are no waiting request, exit.

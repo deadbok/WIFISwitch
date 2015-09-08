@@ -77,6 +77,70 @@ char *http_status_line_501 = HTTP_STATUS_501;
  void *connection_ptr = NULL;
 
 /**
+ * @brief Send HTTP response status line.
+ * 
+ * Handles 200, 204, 400, 403, 405, and 501.
+ * 
+ * @param connection Pointer to the connection to use. 
+ * @param code Status code to use in the status line.
+ * @return Size of data that has been sent.
+ */
+unsigned char ICACHE_FLASH_ATTR http_send_status_line(struct tcp_connection *connection, unsigned short status_code)
+{
+	size_t size;
+	char *response;
+	char status_line[15];
+
+	debug("Sending status line with status code %d.\n", status_code);	
+	switch (status_code)
+	{
+		case 200:
+			response = HTTP_STATUS_200;
+			size = os_strlen(HTTP_STATUS_200);
+			break;
+		case 204: 
+			response = http_status_line_204;
+			size = os_strlen(http_status_line_204);
+			break;
+		case 400: 
+			response = http_status_line_400;
+			size = os_strlen(http_status_line_400);
+			break;
+		case 403: 
+			response = http_status_line_403;
+			size = os_strlen(http_status_line_403);
+			break;
+		case 404: 
+			response = http_status_line_404;
+			size = os_strlen(http_status_line_404);
+			break;
+		case 405: 
+			response = http_status_line_405;
+			size = os_strlen(http_status_line_405);
+			break;				  
+		case 500: 
+			response = http_status_line_500;
+			size = os_strlen(http_status_line_500);
+			break;
+		case 501: 
+			response = http_status_line_501;
+			size = os_strlen(http_status_line_501);
+			break;
+		default:  
+			debug(" Unknown response code: %d.\n", status_code);
+			os_memcpy(status_line, HTTP_STATUS_HTTP_VERSION " ", 9);
+			size = 9;
+			itoa(status_code, status_line + size, 10);
+			size += 3;
+			memcpy(status_line + size, "\r\n\0", 3);
+			size += 2;
+			response = status_line;
+			break;
+	}
+	return(http_send(connection, response, size));
+}
+
+/**
  * @brief Send a header.
  * 
  * @note Header name and value may be no larger than 508 bytes.
@@ -98,50 +162,60 @@ unsigned short ICACHE_FLASH_ATTR http_send_header(struct tcp_connection *connect
 }
 
 /**
- * @brief Send HTTP response status line.
+ * @brief Send web server default headers.
  * 
- * @param connection Pointer to the connection to use. 
- * @param code Status code to use in the status line.
- * @return Size of data that has been sent.
+ * Send `Connection`, `Server`, `Content-Length`, and `Content-Type`.
+ * 
+ * @param request The request to respond to.
+ * @param size Message size.
+ * @param mime Mime type file extension.
+ * @return Size of send data.
  */
-unsigned char ICACHE_FLASH_ATTR http_send_status_line(struct tcp_connection *connection, unsigned short status_code)
+signed int ICACHE_FLASH_ATTR http_send_default_headers(
+	struct http_request *request,
+	size_t size,
+	char *mime
+)
 {
-	size_t size;
-	char *response;
-
-	debug("Sending status line with status code %d.\n", status_code);	
-	switch (status_code)
+	char str_size[16];
+	unsigned int i;
+	signed int ret;
+	
+	//Always send connections close and server info.
+	ret = http_send_header(request->connection, "Connection",
+						   "close");
+	ret += http_send_header(request->connection, "Server",
+							HTTP_SERVER_NAME);
+	os_sprintf(str_size, "%d", size);
+	//Send message length.
+	ret += http_send_header(request->connection, 
+							"Content-Length",
+							str_size);
+	//Find the MIME-type
+	if (mime)
 	{
-		case 200: response = http_status_line_200;
-				  size = os_strlen(http_status_line_200);
-				  break;
-		case 204: response = http_status_line_204;
-				  size = os_strlen(http_status_line_204);
-				  break;
-		case 400: response = http_status_line_400;
-				  size = os_strlen(http_status_line_400);
-				  break;
-		case 403: response = http_status_line_403;
-				  size = os_strlen(http_status_line_403);
-				  break;
-		case 404: response = http_status_line_404;
-				  size = os_strlen(http_status_line_404);
-				  break;
-		case 405: response = http_status_line_405;
-				  size = os_strlen(http_status_line_405);
-				  break;				  
-		case 500: response = http_status_line_500;
-				  size = os_strlen(http_status_line_500);
-				  break;
-		case 501: response = http_status_line_501;
-				  size = os_strlen(http_status_line_501);
-				  break;
-		default:  warn(" Unknown response code: %d.\n", status_code);
-				  response = http_status_line_501;
-				  size = os_strlen(http_status_line_501);
-				  break;
+		for (i = 0; i < HTTP_N_MIME_TYPES; i++)
+		{
+			//TODO: Maybe use os_strcmp to avoid mixing up htm and html.
+			if (os_strcmp(http_mime_types[i].ext, mime) == 0)
+			{
+				break;
+			}
+		}
 	}
-	return(http_send(connection, response, size));
+	if ((i >= HTTP_N_MIME_TYPES) || (!mime))
+	{
+		debug(" Did not find a usable MIME type, using application/octet-stream.\n");
+		ret += http_send_header(request->connection, "Content-Type", "application/octet-stream");
+	}
+	else
+	{
+		ret += http_send_header(request->connection, "Content-Type", http_mime_types[i].type);
+	}
+	//Send end of headers.
+	ret += http_send(request->connection, "\r\n", 2);
+
+	return(ret);
 }
 
 /**
@@ -178,207 +252,77 @@ size_t ICACHE_FLASH_ATTR http_send(struct tcp_connection *connection, char *data
 /**
  * @brief Send the waiting buffer.
  * 
- * @return true on success.
+ * @return true if nothing went wrong.
  */
- static bool send_buffer(struct tcp_connection *connection)
- {
-	 struct http_request *request = connection->user;
-	 size_t buffer_use;
-	 
-	 debug("Sending buffer %p using connection %p.\n", request->response.send_buffer, connection);
-	 buffer_use = request->response.send_buffer_pos - request->response.send_buffer;
-	 
-	 return(tcp_send(connection, request->response.send_buffer, buffer_use));
- }
- 
-/**
- * @brief Last chance error status handler.
- * 
- * @param connection Connection to use.
- * @param status_code The code to handle.
- */
-void fall_through_status_handler(struct tcp_connection *connection, unsigned short status_code)
+static bool ICACHE_FLASH_ATTR send_buffer(struct http_request *request)
 {
-	size_t size = 0;
-	char str_size[5];
-	char *msg = NULL;
+	size_t buffer_use;
 
-	debug("Last chance handler status code %d.\n", status_code);
-	switch (status_code)
+	debug("Sending buffer %p using connection %p.\n", request->response.send_buffer, request->connection);
+	buffer_use = request->response.send_buffer_pos - request->response.send_buffer;
+	
+	if (buffer_use)
 	{
-		case 400: size = HTTP_400_HTML_LENGTH;
-				  msg = HTTP_400_HTML;
-				  break;
-		case 403: size = HTTP_403_HTML_LENGTH;
-				  msg = HTTP_403_HTML;
-				  break;
-		case 404: size = HTTP_404_HTML_LENGTH;
-				  msg = HTTP_404_HTML;
-				  break;
-		case 405: size = HTTP_405_HTML_LENGTH;
-				  msg = HTTP_405_HTML;
-				  break;
-		case 500: size = HTTP_500_HTML_LENGTH;
-				  msg = HTTP_500_HTML;
-				  break;
-		case 501: size = HTTP_501_HTML_LENGTH;
-				  msg = HTTP_501_HTML;
-				  break;
+		return(tcp_send(request->connection, request->response.send_buffer, buffer_use));
 	}
-	itoa(size, str_size, 10);
-	http_send_status_line(connection, status_code);
-	http_send_header(connection, "Connection", "close");
-	http_send_header(connection, "Server", HTTP_SERVER_NAME);	
-	//Send message length.
-	http_send_header(connection, "Content-Length", str_size);
-	http_send_header(connection, "Content-Type", http_mime_types[MIME_HTML].type);	
-	//Send end of headers.
-	http_send(connection, "\r\n", 2);
-	if (msg)
-	{
-		http_send(connection, msg, size);
-	}
+	debug( "Buffer empty.\n");
+	return(true);
+	
 }
 
-/**
- * @brief Process and send response data for a connection.
- * 
- * @param connection Pointer to connection to use.
- * @return True when done.
- */
-void ICACHE_FLASH_ATTR http_process_response(struct tcp_connection *connection)
+signed int ICACHE_FLASH_ATTR http_handle_response(struct http_request *request)
 {
-	struct http_request *request = connection->user;
-	signed int size;
+	signed int ret = 0;
 	
-	debug("Processing request for connection %p.\n", connection);
-	//Since request was zalloced, request->type will be zero until parsed.
-	if (request)
+	debug("Handle response for request %p.\n", request);
+	if (request->response.handler == NULL)
 	{
-		//Increase recursion level.
-		request->response.level++;
-		debug(" -> Recursion level: %d.\n", request->response.level);
-		debug(" Request type %d,\n", request->type);
-		//Get started
-		if (request->response.state == HTTP_STATE_NONE)
-		{
-			debug(" New response.\n");
-			//Find someone to respond.
-			request->response.state = HTTP_STATE_STATUS;
-		}
-		switch (request->response.state)
-		{
-			case HTTP_STATE_STATUS: 
-			case HTTP_STATE_HEADERS: 
-			case HTTP_STATE_MESSAGE: 
-				//Send response, until there is no more to send
-				if (request->response.handlers->method_cb[request->type -1])
-				{
-					debug(" Calling response handler %p.\n",
-						  request->response.handlers->method_cb[request->type - 1]);
-					size = request->response.handlers->method_cb[request->type - 1](request);
-					if (size > 0)
-					{
-						debug(" Response %d bytes.\n", size); 
-						if (request->response.send_buffer_pos > request->response.send_buffer)
-						{
-							debug(" Sending buffer contents.\n");
-							send_buffer(connection);
-						}
-						else
-						{
-							http_process_response(connection);
-						}
-					}
-					else if (size == 0)
-					{
-						if (request->response.send_buffer_pos > request->response.send_buffer)
-						{
-							debug(" Sending buffer contents.\n");
-							send_buffer(connection);
-						}
-						http_process_response(connection);
-					}
-				}
-				else
-				{
-					warn(" No handler, sending error status.\n");
-					request->response.status_code = 501;
-					request->response.state = HTTP_STATE_ERROR;
-					http_process_response(connection);						
-				}
-				break;
-			case HTTP_STATE_ASSEMBLED:
-				if (request->response.send_buffer_pos > request->response.send_buffer)
-				{
-					debug(" Sending buffer contents.\n");
-					send_buffer(connection);
-				}
-				/* Here we simply wait for the TCP sent callback to
-				 * change the state, when the last data have been
-				 * sent. */
-				debug(" Waiting for message dispatch on connection %p.\n", connection);
-				
-				if (request->response.send_buffer_pos == request->response.send_buffer)
-				{
-					//Done sending, print log line.
-					http_print_clf_status(request); 
-				}
-				break;
-			case HTTP_STATE_DONE:
-				debug("Closing connection %p.\n", connection);
-				tcp_disconnect(connection);
-
-				if (request->response.handlers)
-				{
-					request->response.handlers->destroy_cb(request);
-				}
-				http_free_request(request);
-				connection->user = NULL;
-					
-				//Remove from response buffer.
-				debug(" Response buffer pointer %p.\n", connection_ptr);
-				if (connection_ptr)
-				{
-					debug(" Freeing response buffer pointer.\n");
-					db_free(connection_ptr);
-					connection_ptr = NULL;
-					
-				}
-				if (request->type != HTTP_NONE)
-				{
-					//Requeest has been parsed, decrease mutex.
-					http_response_mutex--;
-				}
-				//Answer buffered request.
-				debug(" Response handler mutex %d.\n", http_response_mutex);
-				debug(" %d buffered Requests.\n", request_buffer.count); 
-				if ((!http_response_mutex) && (request_buffer.count > 0))
-				{
-					debug(" Handling request from buffer.\n");
-					connection_ptr = ring_pop_front(&request_buffer);
-					if (connection_ptr)
-					{
-						http_response_mutex++;
-						http_process_response(*((struct tcp_connection **)connection_ptr));
-					}
-				}
-				break;
-			case HTTP_STATE_ERROR:
-				warn("HTTP response status: %d.\n", request->response.status_code);
-				fall_through_status_handler(connection, request->response.status_code);
-				send_buffer(connection);
-				request->response.state = HTTP_STATE_ASSEMBLED;
-				break;
-			default: 
-				warn("Unknown HTTP response state %d.\n", request->response.state);
-		}
-		//Decrease recursion level.
-		request->response.level--;
-		debug(" <- Recursion level: %d.\n", request->response.level);
+		debug(" No handler, finding one.\n");
+		//Get the first handler.
+		request->response.handler = http_get_handler(request, NULL);
 	}
-	else
+	if (request->response.handler == NULL)
 	{
-		debug("No request parsed yet.\n");
+		debug(" No handler found.\n");
+		return(RESPONSE_DONE_ERROR);
 	}
+	//Handle while there are handlers.
+	while (request->response.handler)
+	{
+		//Handle.
+		ret = request->response.handler(request);
+		//Leave to sent callback if data has been sent.
+		if (ret > 0)
+		{
+			debug(" Data has been buffered.\n");
+			if (!send_buffer(request))
+			{
+				debug(" Couldn't send buffer.\n");
+			}
+			return(ret);
+		}
+		//Stop if handler says so.
+		if (ret == RESPONSE_DONE_FINAL)
+		{
+			debug(" Handler is done and no new handler is to be called.\n");
+			//Don't leave the user pointer dangling.
+			request->connection->user = NULL;
+			http_free_request(request);
+			//Done sending, print log line.
+			http_print_clf_status(request);
+			return(RESPONSE_DONE_FINAL);
+		}
+		//Stop but do not clean up.
+		if (ret == RESPONSE_DONE_NO_DEALLOC)
+		{
+			debug(" Handler is done, no new handler is to be called, connection and request data are kept.\n");
+			return(RESPONSE_DONE_NO_DEALLOC);
+		}
+		debug(" Handler is done, finding next handler.\n");
+		//Find next handler.
+		request->response.handler = http_get_handler(request, request->response.handler);
+	}
+	//Done sending, print log line.
+	http_print_clf_status(request);
+	return(RESPONSE_DONE_FINAL);
 }

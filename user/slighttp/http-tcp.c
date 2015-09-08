@@ -27,6 +27,7 @@
 #include "user_config.h"
 #include "net/tcp.h"
 #include "http-common.h"
+#include "http-handler.h"
 #include "http-request.h"
 #include "http-response.h"
 #include "http.h"
@@ -74,8 +75,6 @@ void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
 void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
 {  
     debug("HTTP reconnect (%p).\n", connection);
-    
-    http_process_response(connection);
 }
 
 /**
@@ -88,42 +87,7 @@ void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
  */
 void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
 {
-	struct http_request *request;
-	
     debug("HTTP disconnect (%p).\n", connection);
-    
-    if (connection)
-    {
-		if (!connection->closing)
-		{
-			connection->closing = true;
-			
-			if (connection->user)
-			{
-				request = connection->user;
-				//Call clean up if not yet done.
-				if (request->response.state != HTTP_STATE_DONE)
-				{
-					request->response.state = HTTP_STATE_DONE;
-					//Call one last time to clean up.
-					http_process_response(connection);
-				}
-				debug("Clean up done.\n");
-			}
-			else
-			{
-				debug("Empty request.\n");
-			}
-		}
-		else
-		{
-			debug(" Connection is already closing.\n");
-		}
-	}
-	else
-	{
-		warn("Empty connection.\n");
-	}
 }
 
 /**
@@ -146,6 +110,7 @@ void ICACHE_FLASH_ATTR tcp_write_finish_cb(struct tcp_connection *connection)
 void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 {
 	void *buffer_ptr;
+	signed int ret;
 	
 	struct http_request *request = connection->user;
 	
@@ -169,34 +134,33 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 		{
 			//Set internal error status.
 			request->response.status_code = 400;
-			//Use internal error handler.
-			request->response.state = HTTP_STATE_ERROR;
 		}
 	}
 	
-    debug(" Response handler mutex %d.\n", http_response_mutex);
-    if ((http_response_mutex < 1) && (request_buffer.count < 1))
-    {
-		if (http_response_mutex < 0)
-		{
-			warn("Response mutex: %d.\n", http_response_mutex);
-		}
-		http_response_mutex++;
-		//No request waiting just process.
-		http_process_response(connection);
-	}
-	else
+	//Get the first handler.
+	request->response.handler = http_get_handler(request, NULL);
+
+	//Put in buffer if there is stuff there already.
+	if (request_buffer.count > 0)
 	{
 		if (request_buffer.count < (HTTP_REQUEST_BUFFER_SIZE - 1))
 		{
 			debug(" Adding request to buffer.\n");
 			buffer_ptr = ring_push_back(&request_buffer);
 			*((struct tcp_connection **)buffer_ptr) = connection;
+			return;
 		}
 		else
 		{
 			error("Dumping request, no free buffers.\n");
+			return;
 		}
+	}
+	else
+	{
+		//Start response.
+		ret = http_handle_response(request);
+		debug(" Handler return value: %d.\n", ret);
 	}
     debug(" Request %p done.\n", request);
 }
@@ -204,24 +168,40 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
 void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
 {
 	struct http_request *request = connection->user;
-	//void *buffer_ptr;
+	signed int ret = 0;
+	void *connection_ptr;
 		
 	debug("HTTP send (%p).\n", connection);
-	
+	//Reset send buffer.
 	request->response.send_buffer_pos = request->response.send_buffer;
-	//This was the end of a message. Signal that it is send.
 	debug(" Response state: %d.\n", request->response.state);
-	if (request->response.state == HTTP_STATE_ASSEMBLED)
+	
+	//Call handler again.
+	if (request->response.handler == NULL)
 	{
-		http_process_response(connection);
-		debug(" Message end.\n");
-		request->response.state = HTTP_STATE_DONE;
-		//Call one last time to clean up.
-		http_process_response(connection);
+		/* This should never happen, since the only way to get here, is
+		 * when a handler has sent something.
+		 */
+		error(" No handler.\n");
+		return;
 	}
-	else
+	ret = http_handle_response(request);
+	debug(" Handler return value: %d.\n", ret);
+	
+	//Go on if no data was send.
+	if (ret < 0)
 	{
-		//Send some more, we're not done yet.
-		http_process_response(connection);
+		//Answer buffered request.
+		debug(" %d buffered Requests.\n", request_buffer.count); 
+		if (request_buffer.count > 0)
+		{
+			debug(" Handling request from buffer.\n");
+			connection_ptr = ring_pop_front(&request_buffer);
+			if (connection_ptr)
+			{
+				request = (*((struct tcp_connection **)connection_ptr))->user;
+				request->response.handler(request);
+			}
+		}
 	}
 }

@@ -22,7 +22,10 @@
  * MA 02110-1301, USA.
  */
 #include "user_config.h"
+#include "tools/strxtra.h"
+#include "http-response.h"
 #include "http-handler.h"
+#include "http-mime.h"
 
 /**
  * @brief Struct to keep info on a registered handler.
@@ -36,7 +39,7 @@ struct http_handler_entry
 	/**
 	 * @brief Handler callbacks.
 	 */
-	 struct http_response_handler *handler;
+	http_handler_callback handler;
 	/**
      * @brief Pointers for the prev and next entry in the list.
      */
@@ -62,9 +65,9 @@ static unsigned int n_handlers = 0;
  * @param uri The base URI that the handler will start at. Everything
  *            below this URI will be handled by this handler, except
  *            when another rule, *added before this*, will handle it.
- * @param handler Pointer to a http_handler struct with callbacks.
+ * @param handler Pointer to the callback.
  */
-bool ICACHE_FLASH_ATTR http_add_handler(char *uri, struct http_response_handler *handler)
+bool ICACHE_FLASH_ATTR http_add_handler(char *uri, http_handler_callback handler)
 {
 	struct http_handler_entry *handlers = response_handlers;
 	struct http_handler_entry *entry = NULL;
@@ -111,9 +114,9 @@ bool ICACHE_FLASH_ATTR http_add_handler(char *uri, struct http_response_handler 
 /**
  * @brief Remove a registered handler.
  * 
- * @param handler Pointer to a http_handler struct with callbacks.
+ * @param handler Pointer to a the callback.
  */
-bool ICACHE_FLASH_ATTR http_remove_handler(struct http_response_handler *handler)
+bool ICACHE_FLASH_ATTR http_remove_handler(http_handler_callback handler)
 {
 	struct http_handler_entry *entry = response_handlers;
 	struct http_handler_entry *handlers = response_handlers;
@@ -154,9 +157,13 @@ bool ICACHE_FLASH_ATTR http_remove_handler(struct http_response_handler *handler
  * @brief Find a handler for an URI.
  * 
  * @param request Pointer to the request data, only URI needs to be populated.
- * @return Pointer to a handler struct, or NULL if not found.
+ * @param start_handler If not NULL, search the list only after this handler-
+ * @return Function pointer to a handler.
  */
-struct http_response_handler ICACHE_FLASH_ATTR *http_get_handler(struct http_request *request)
+http_handler_callback ICACHE_FLASH_ATTR http_get_handler(
+	struct http_request *request,
+	http_handler_callback start_handler
+)
 {
 	struct http_handler_entry *handlers = response_handlers;
 	unsigned short i = 1;
@@ -179,8 +186,30 @@ struct http_response_handler ICACHE_FLASH_ATTR *http_get_handler(struct http_req
 		debug(" No handlers.\n");
 		return(NULL);
 	}
-	
+
 	debug(" %d response handlers.\n", n_handlers);
+	if (start_handler != NULL)
+	{
+		debug(" Starting at handler %p.\n", start_handler);
+		while (handlers)
+		{
+			if (handlers->handler == start_handler)
+			{
+				debug(" Handler %p is number %d.\n", start_handler, i);
+				i++;
+				if (i > n_handlers)
+				{
+					debug(" No more handlers.\n");
+					return(NULL);
+				}
+				handlers = handlers->next;
+				break;
+			}
+			i++;
+			handlers = handlers->next;
+		}
+	}
+	
 	//Check URI, go through and stop if URIs match.
 	while (handlers)
 	{
@@ -219,14 +248,87 @@ struct http_response_handler ICACHE_FLASH_ATTR *http_get_handler(struct http_req
 }
 
 /**
- * @brief Handle headers.
+ * @brief Last chance status handler.
  * 
- * Default handler for headers, that does nothing.
- * 
- * @param request The request to handle.
- * @param header_line Header line to handle.
+ * @param request Request to handle.
+ * @return Bytes send.
  */
-void ICACHE_FLASH_ATTR http_default_header_handler(struct http_request *request, char *header_line)
+signed int ICACHE_FLASH_ATTR http_status_handler(struct http_request *request)
 {
-	debug("HTTP ignoring header \"%s\".\n", header_line);
+	size_t size = 0;
+	char str_size[5];
+	char *msg = NULL;
+	char default_msg[102];
+	signed int ret;
+	static bool done = false;
+	
+	if (!request)
+	{
+		warn("Empty request.\n");
+		return(RESPONSE_DONE_ERROR);
+	}
+	if (done)
+	{
+		done = false;
+		return(RESPONSE_DONE_FINAL);
+	}
+
+	debug("Last chance handler status code %d.\n", request->response.status_code);
+	//We only get here if there was no one else willing to do the job.
+	if (request->response.status_code < 400)
+	{
+		debug(" Returning 404.\n");
+		request->response.status_code = 404;
+	}
+	switch (request->response.status_code)
+	{
+		case 400:
+			size = HTTP_400_HTML_LENGTH;
+			msg = HTTP_400_HTML;
+			break;
+		case 403:
+			size = HTTP_403_HTML_LENGTH;
+			msg = HTTP_403_HTML;
+			break;
+		case 404:
+			size = HTTP_404_HTML_LENGTH;
+			msg = HTTP_404_HTML;
+			break;
+		case 405:
+			size = HTTP_405_HTML_LENGTH;
+			msg = HTTP_405_HTML;
+			break;
+		case 500:
+			size = HTTP_500_HTML_LENGTH;
+			msg = HTTP_500_HTML;
+			break;
+		case 501:
+			size = HTTP_501_HTML_LENGTH;
+			msg = HTTP_501_HTML;
+			break;
+		default:
+			os_memcpy(default_msg, HTTP_ERROR_HTML_START, 83);
+			size = 83;
+			itoa(request->response.status_code, (char *)(default_msg + size), 10);
+			size += 3;
+			os_memcpy(default_msg + size, HTTP_ERROR_HTML_END "\0", 16);
+			size += 15;
+			msg = default_msg;
+	}
+	itoa(size, str_size, 10);
+	ret = http_send_status_line(request->connection, request->response.status_code);
+	ret += http_send_header(request->connection, "Connection", "close");
+	ret += http_send_header(request->connection, "Server", HTTP_SERVER_NAME);	
+	//Send message length.
+	ret += http_send_header(request->connection, "Content-Length", str_size);
+	ret += http_send_header(request->connection, "Content-Type", http_mime_types[MIME_HTML].type);	
+	//Send end of headers.
+	ret += http_send(request->connection, "\r\n", 2);
+	if (msg)
+	{
+		ret += http_send(request->connection, msg, size);
+	}
+	request->response.message_size = ret;
+	done = true;
+	return(ret);
 }

@@ -35,32 +35,6 @@
 #include "slighttp/http-response.h"
 #include "slighttp/http-handler.h"
 
-bool rest_net_names_test(struct http_request *request);
-void rest_net_names_header(struct http_request *request, char *header_line);
-signed int rest_net_names_head_handler(struct http_request *request);
-signed int rest_net_names_get_handler(struct http_request *request);
-void rest_net_names_destroy(struct http_request *request);
-
-/**
- * @brief Struct used to register the handler.
- */
-struct http_response_handler http_rest_net_names_handler =
-{
-	rest_net_names_test,
-	rest_net_names_header,
-	{
-		NULL,
-		rest_net_names_get_handler,
-		rest_net_names_head_handler,
-		NULL,
-		NULL,
-		NULL,
-		NULL,
-		NULL
-	}, 
-	rest_net_names_destroy
-};
-
 /**
  * @brief AP names.
  */
@@ -151,34 +125,6 @@ static char ICACHE_FLASH_ATTR *json_create_string_array(char **values, size_t en
 }
 
 /**
- * @brief Tell if we will handle a certain URI.
- * 
- * @param request The request to test.
- * @return True if we can handle the URI.
- */
-bool ICACHE_FLASH_ATTR rest_net_names_test(struct http_request *request)
-{
-    if (os_strncmp(request->uri, "/rest/net/networks\0", 19) == 0)
-    {
-		debug("Rest handler net-names found: %s.\n", request->uri);
-        return(true);
-    }
-    debug("Rest handler net-names will not handle request,\n"); 
-    return(false);  
-}
-
-/**
- * @brief Handle headers.
- * 
- * @param request The request to handle.
- * @param header_line Header line to handle.
- */
-void ICACHE_FLASH_ATTR rest_net_names_header(struct http_request *request, char *header_line)
-{
-	debug("HTTP REST network names header handler.\n");
-}
-
-/**
  * @brief Callback for when the ESP8266 is done finding access points.
  * 
  * This sends off the headers, restarting the send cycle.
@@ -235,7 +181,6 @@ static void scan_done_cb(void *arg, STATUS status)
 		error = true;
 	}
 	request = waiting_request;
-	waiting_request = NULL;
 	if (request->connection)
 	{
 		if (!error)
@@ -262,7 +207,7 @@ static void scan_done_cb(void *arg, STATUS status)
 
 		//We'll be sending headers next.
 		request->response.state = HTTP_STATE_HEADERS;
-		http_process_response(request->connection);
+		http_handle_response(request);
 	}
 	else
 	{
@@ -295,36 +240,40 @@ static void scan_net_names(struct http_request *request)
 }
 
 /**
- * @brief Generate the response for a HEAD request from a file.
- * 
- * @param request Request that got us here.
- * @return Size of send data.
+ * @brief REST handler to get/set the GPIO state and get GPIO information.
+ *
+ * @param request The request that we're handling.
+ * @return Bytes send.
  */
-signed int ICACHE_FLASH_ATTR rest_net_names_head_handler(struct http_request *request)
+signed int ICACHE_FLASH_ATTR http_rest_net_names_handler(struct http_request *request)
 {
-	char str_size[16];
-	size_t ret = 0;
-	static bool done = false;
-	
-	//If the send buffer is over 200 bytes, this should never fill it.
-	debug("REST network names HEAD handler.\n");
-	if (done)
+	signed int ret = 0;
+		
+	if (!request)
 	{
-		debug(" State done.\n");
+		warn("Empty request.\n");
+		return(RESPONSE_DONE_ERROR);
 	}
-	switch(request->response.state)
+	if ((request->type != HTTP_GET) &&
+		(request->type != HTTP_HEAD))
 	{
-		case HTTP_STATE_STATUS:
-			//Go on if we're done.
-			if (done)
-			{
-				done = false;
-				ret = -1;
-				break;
-			}
-			//Only do stuff if we're not already waiting. 
+		debug(" Rest handler net-names only supports HEAD, GET.\n");
+		return(RESPONSE_DONE_CONTINUE);
+	}
+	if (os_strncmp(request->uri, "/rest/net/networks\0", 19) != 0)
+    {
+		debug("Rest handler net-names will not handle request,\n");
+        return(RESPONSE_DONE_CONTINUE);
+    }
+     
+	if (request->response.state == HTTP_STATE_NONE)
+	{
+		if ((request->type == HTTP_HEAD) ||
+		    (request->type == HTTP_GET))
+		{
 			if (!waiting_request)
 			{
+				//Only do stuff if we're not already waiting. 
 				//Get some mem if we need it.
 				if (!request->response.context)
 				{
@@ -335,109 +284,62 @@ signed int ICACHE_FLASH_ATTR rest_net_names_head_handler(struct http_request *re
 				{
 					scan_net_names(request);
 				}
-				ret = http_send_status_line(request->connection, request->response.status_code);
 			}
-			//Onwards
-			done = true;
-			break;
-		case HTTP_STATE_HEADERS:
-			if (done)
-			{
-				if (request->type == HTTP_HEAD)
-				{
-					//Stop if only HEAD was requested.
-					request->response.state = HTTP_STATE_ASSEMBLED;
-				}
-				else
-				{
-					request->response.state = HTTP_STATE_MESSAGE;
-				}
-				done = false;
-				ret = 0;
-				break;
-			}
-			//Always send connections close and server info.
-			ret = http_send_header(request->connection, "Connection",
-								   "close");
-			ret += http_send_header(request->connection, "Server",
-									HTTP_SERVER_NAME);
-			//Get data size.
-			os_sprintf(str_size, "%d", ((struct rest_net_names_context *)request->response.context)->size);
-			//Send message length.
-			ret += http_send_header(request->connection, 
-									"Content-Length",
-									str_size);
-			ret += http_send_header(request->connection,
-									"Content-Type",
-									http_mime_types[MIME_JSON].type);	
-			//Send end of headers.
-			ret += http_send(request->connection, "\r\n", 2);
-			done = true;
-			break;
-	}
-    return(ret);
-}
-
-/**
- * @brief Handle GET requests.
- * 
- * @param request The GET request.
- * @return The size of the send data.
- */
-signed int ICACHE_FLASH_ATTR rest_net_names_get_handler(struct http_request *request)
-{
-	char *uri = request->uri;
-	size_t ret;
-	static bool done = false;
-	    
-    debug("In network names REST GET handler (%s).\n", uri);
-    if (done)
-	{
-		debug(" State done.\n");
-	}
-
-	//Don't duplicate, just call the head handler.
-	if (request->response.state < HTTP_STATE_MESSAGE)
-	{
-		ret = rest_net_names_head_handler(request);
-	}
-	else
-	{
-		//Go on if we're done.
-		if (done)
-		{
-			done = false;
-			request->response.state++;
-			return(0);
+			//Done, scan callback will take over and clean up afterwards.
+			return(RESPONSE_DONE_NO_DEALLOC);
 		}
-		debug(" Response: %s.\n", ((struct rest_net_names_context *)request->response.context)->response);
-		ret = http_send(request->connection, 
-				 ((struct rest_net_names_context *)request->response.context)->response,
-				 ((struct rest_net_names_context *)request->response.context)->size);
-		request->response.state = HTTP_STATE_ASSEMBLED;
-		
-		request->response.message_size = ((struct rest_net_names_context *)request->response.context)->size;
-		debug(" Response size: %lu\n", request->response.message_size);
-		done = true;
 	}
-	return(ret);
-}
-
-/**
- * @brief Deallocate memory used for the request.
- * 
- * @param request A pointer to the request with the context to deallocate.
- */
-void ICACHE_FLASH_ATTR rest_net_names_destroy(struct http_request *request)
-{
-	debug("Freeing network names REST handler data.\n");
 	
-	if (request->response.context)
-	{	
-		if (((struct rest_net_names_context *)request->response.context)->response)
+	if (request->response.state == HTTP_STATE_HEADERS)
+	{
+		if ((request->type == HTTP_HEAD) ||
+		    (request->type == HTTP_GET))
 		{
-			db_free(((struct rest_net_names_context *)request->response.context)->response);
+			//This is the answer, we're called from the scan callback.
+			request->response.status_code = 200;
+			//Send status and headers.
+			ret += http_send_status_line(request->connection, request->response.status_code);
+			ret += http_send_default_headers(request, ((struct rest_net_names_context *)request->response.context)->size, "json");
+			if (request->type == HTTP_HEAD)
+			{
+				request->response.state = HTTP_STATE_DONE;
+				return(ret);
+			}
+			else
+			{
+				//Go on to sending the file.
+				request->response.state = HTTP_STATE_MESSAGE;
+			}
 		}
-		db_free(request->response.context);
 	}
+	
+	if (request->response.state == HTTP_STATE_MESSAGE)
+	{
+		if (request->type == HTTP_GET)
+		{
+			debug(" Response: %s.\n", ((struct rest_net_names_context *)request->response.context)->response);
+			ret += http_send(request->connection, 
+					 ((struct rest_net_names_context *)request->response.context)->response,
+					 ((struct rest_net_names_context *)request->response.context)->size);
+			request->response.state = HTTP_STATE_DONE;
+			request->response.message_size = ((struct rest_net_names_context *)request->response.context)->size;
+			return(ret);
+		}
+	}
+	    
+	if (request->response.state == HTTP_STATE_DONE)
+	{
+		debug("Freeing network names REST handler data (%p).\n", request->response.context);	
+		if (request->response.context)
+		{	
+			if (((struct rest_net_names_context *)request->response.context)->response)
+			{
+				db_free(((struct rest_net_names_context *)request->response.context)->response);
+			}
+			db_free(request->response.context);
+			request->response.context = NULL;
+			waiting_request = NULL;
+		}
+	}
+	return(RESPONSE_DONE_FINAL);
 }

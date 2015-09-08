@@ -38,166 +38,103 @@
 #include "slighttp/http-handler.h"
 
 
-//Set password for current network.
-extern bool rest_net_passwd_test(struct http_request *request);
-extern void rest_net_passwd_header(struct http_request *request, char *header_line);
-extern signed int rest_net_passwd_put_handler(struct http_request *rquest);
-extern void rest_net_passwd_destroy(struct http_request *request);
-
-
-/**
- * @brief Struct used to register the handler.
- */
-struct http_response_handler http_rest_passwd_handler =
-{
-	rest_net_passwd_test,
-	rest_net_passwd_header,
-	{
-		NULL,
-		NULL,
-		NULL,
-		NULL,
-		rest_net_passwd_put_handler,
-		NULL,
-		NULL,
-		NULL
-	}, 
-	rest_net_passwd_destroy
-};
-
 /**
  * @brief Keep track of actual password changes.
  */
 static bool passwd_changed = false;
-/**
- * @brief Tell if we will handle a certain URI.
- * 
- * @param request The request to handle.
- * @return True if we can handle the URI.
- */
-bool ICACHE_FLASH_ATTR rest_net_passwd_test(struct http_request *request)
-{
-    if (os_strncmp(request->uri, "/rest/net/password\0", 19) == 0)
-    {
-		debug("Rest handler network found: %s.\n", request->uri);
-        return(true);
-    }
-    debug("Rest handler network will not request,\n"); 
-    return(false);       
-}
 
 /**
- * @brief Handle headers.
- * 
- * @param request The request to handle.
- * @param header_line Header line to handle.
+ * @brief REST handler to get/set the GPIO state and get GPIO information.
+ *
+ * @param request The request that we're handling.
+ * @return Bytes send.
  */
-void ICACHE_FLASH_ATTR rest_net_passwd_header(struct http_request *request, char *header_line)
+signed int ICACHE_FLASH_ATTR http_rest_net_passwd_handler(struct http_request *request)
 {
-	debug("HTTP REST network password handler.\n");
-}
-
-/**
- * @brief Set the network password for the WIFI connection.
- * 
- * @param request Data for the request that got us here.
- * @return The HTML.
- */
-signed int ICACHE_FLASH_ATTR rest_net_passwd_put_handler(struct http_request *request)
-{
-	struct jsonparse_state state;
-	char *uri = request->uri;
-	char passwd[64];
 	int type;
+	char passwd[64];
+	signed int ret = 0;
 	struct station_config sc;
-	size_t ret = 0;
-	static bool done = false;
-	    
-    debug("In network password PUT REST handler (%s).\n", uri);
-    
-    passwd_changed = false;
-	if (request->response.state == HTTP_STATE_STATUS)
+	struct jsonparse_state json_state;
+	
+	if (!request)
 	{
-		//Go on if we're done.
-		if (done)
-		{
-			done = false;
-			request->response.state++;
-			return(0);
-		}
-		request->response.status_code = 204;
-		ret = http_send_status_line(request->connection, request->response.status_code);
-		done = true;
+		warn("Empty request.\n");
+		return(RESPONSE_DONE_ERROR);
 	}
-	else if (request->response.state == HTTP_STATE_HEADERS)
+	if (request->type != HTTP_PUT)
 	{
-		//Go on if we're done.
-		if (done)
-		{
-			done = false;
-			request->response.state++;
-			return(0);
-		}
-		ret = http_send_header(request->connection, "Connection", "close");
-		ret += http_send_header(request->connection, "Server", HTTP_SERVER_NAME);
-		ret += http_send(request->connection, "\r\n", 2);		
-		done = true;
+		debug(" File system handler only supports PUT.\n");
+		return(RESPONSE_DONE_CONTINUE);
 	}
-	else if (request->response.state == HTTP_STATE_MESSAGE)
-	{
-		//Go on if we're done.
-		if (done)
-		{
-			done = false;
-			request->response.state++;
-			return(0);
-		}
-		jsonparse_setup(&state, request->message, os_strlen(request->message));
-		while ((type = jsonparse_next(&state)) != 0)
-		{
-			if (type == JSON_TYPE_PAIR_NAME)
-			{
-				if (jsonparse_strcmp_value(&state, "password") == 0)
-				{
-					debug(" Found network value in JSON.\n");
-                    jsonparse_next(&state);
-                    jsonparse_next(&state);
-                    jsonparse_copy_value(&state, passwd, sizeof(passwd));
-                    debug(" Password: %s.\n", passwd);
 
-					wifi_station_get_config(&sc);
-					
-					sc.bssid_set = 0;
-					//need not check MAC address of AP
-				   
-					os_memcpy(&sc.password, passwd, 64);
-					wifi_station_set_config(&sc);
-					passwd_changed = true;
-				}
+    if (os_strncmp(request->uri, "/rest/net/password\0", 19) != 0)
+    {
+		debug("Rest handler network names will not request,\n"); 
+        return(RESPONSE_DONE_CONTINUE);
+    }
+	
+	if (request->response.state == HTTP_STATE_NONE)
+	{
+		if (request->type == HTTP_PUT)
+		{
+			request->response.status_code = 204;
+			//Send status and headers.
+			ret += http_send_status_line(request->connection, request->response.status_code);
+			ret += http_send_default_headers(request, 0, NULL);
+			if (request->type == HTTP_HEAD)
+			{
+				request->response.state = HTTP_STATE_DONE;
+				return(ret);
+			}
+			else
+			{
+				//Go on to sending the file.
+				request->response.state = HTTP_STATE_MESSAGE;
 			}
 		}
-		request->response.message_size = 0;
-		done = true;
 	}
-	return(ret);
-}
-/**
- * @brief Deallocate memory used for request.
- * 
- * @param request A pointer to the request with the context to deallocate.
- */
-void ICACHE_FLASH_ATTR rest_net_passwd_destroy(struct http_request *request)
-{
-	debug("Freeing network password REST handler data.\n");
 	
-	if (request->response.context)
+	if (request->response.state == HTTP_STATE_MESSAGE)
 	{
-		db_free(request->response.context);
+		if (request->type == HTTP_PUT)
+		{
+			jsonparse_setup(&json_state, request->message, os_strlen(request->message));
+			while ((type = jsonparse_next(&json_state)) != 0)
+			{
+				if (type == JSON_TYPE_PAIR_NAME)
+				{
+					if (jsonparse_strcmp_value(&json_state, "password") == 0)
+					{
+						debug(" Found network value in JSON.\n");
+						jsonparse_next(&json_state);
+						jsonparse_next(&json_state);
+						jsonparse_copy_value(&json_state, passwd, sizeof(passwd));
+						debug(" Password: %s.\n", passwd);
+
+						wifi_station_get_config(&sc);					
+						sc.bssid_set = 0;
+						os_memcpy(&sc.password, passwd, 64);
+						wifi_station_set_config(&sc);
+						passwd_changed = true;
+					}
+				}
+			}
+			request->response.message_size = 0;
+			return(ret);
+		}
 	}
-	if (passwd_changed)
+	    
+	if (request->response.state == HTTP_STATE_DONE)
 	{
-		//Restart to apply new WIFI configuration.
-		debug(" System restart.\n");
-		system_restart();
+		if (request->type == HTTP_GET)
+		{
+			debug("Freeing network password REST handler data.\n");	
+			if (request->response.context)
+			{
+				db_free(request->response.context);
+			}
+		}
 	}
+	return(RESPONSE_DONE_FINAL);
 }

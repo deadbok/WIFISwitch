@@ -34,73 +34,15 @@
 #include "slighttp/http-response.h"
 #include "handlers/deny/http-deny.h"
 
-bool http_deny_test(struct http_request *request);
-void http_deny_header(struct http_request *request, char *header_line);
-signed int http_deny_all_handler(struct http_request *request);
-void http_deny_destroy(struct http_request *request);
-
-/**
- * @brief Struct used to register the handler.
- */
-struct http_response_handler http_deny_handler =
-{
-	http_deny_test,
-	http_deny_header,
-	{
-		http_deny_all_handler,
-		http_deny_all_handler,
-		http_deny_all_handler,
-		http_deny_all_handler,
-		http_deny_all_handler,
-		http_deny_all_handler,
-		http_deny_all_handler,
-		http_deny_all_handler
-	}, 
-	http_deny_destroy
-};
-
-/**
- * @brief Tell if we will handle a certain URI.
- * 
- * @param request The request to handle.
- * @return True if we can handle the URI.
- */
-bool ICACHE_FLASH_ATTR http_deny_test(struct http_request *request)
-{
-	//Handle anything, but return 403.
-    return(true); 
-}
-
-/**
- * @brief Handle headers.
- * 
- * @param request The request to handle.
- * @param header_line Header line to handle.
- */
-void ICACHE_FLASH_ATTR http_deny_header(struct http_request *request, char *header_line)
-{
-	debug("HTTP deny header handler.\n");
-}
-
 /**
  * @brief Generate the response for a HEAD request from a file.
  * 
  * @param request Request that got us here.
  * @return Return unused.
  */
-signed int ICACHE_FLASH_ATTR http_deny_all_handler(struct http_request *request)
+signed int ICACHE_FLASH_ATTR http_deny_handler(struct http_request *request)
 {
 	request->response.status_code = 403;
-	request->response.state = HTTP_STATE_ERROR;
-	return(0);
+	return(RESPONSE_DONE_CONTINUE);
 }
 
-/**
- * @brief Deallocate memory used for the response.
- * 
- * @param request Request for which to free the response.
- */
-void ICACHE_FLASH_ATTR http_deny_destroy(struct http_request *request)
-{
-	debug("Freeing data for deny response.\n");
-}

@@ -3,7 +3,8 @@
  *
  * @brief Captive portal routines for the ESP8266.
  * 
- * Emit fake DNS records to always redirect request here. See RFC1035.
+ * Emit fake DNS records to always redirect request here. See RFC1035
+ * and [The TCP/IP guide - DNS Name Servers and Name Resolution](http://www.tcpipguide.com/free/t_DNSNameServersandNameResolution.htm).
  * 
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>

@@ -26,6 +26,6 @@
 
 #include "slighttp/http-handler.h"
 
-extern struct http_response_handler http_deny_handler;
+extern signed int http_deny_handler(struct http_request *request);
 
 #endif

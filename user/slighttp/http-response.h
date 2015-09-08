@@ -78,7 +78,7 @@
 /**
  * @brief HTTP 403 response HTML.
  */
-#define HTTP_403_HTML               "<!DOCTYPE html><head><title>Forbidden.</title></head><body><h1>403 Forbidden</h1><br />No you didn't.</body></html>"                                    
+#define HTTP_403_HTML               "<!DOCTYPE html><head><title>Forbidden.</title></head><body><h1>403 Forbidden</h1><br />No you didn't.</body></html>"
 #define HTTP_403_HTML_LENGTH		115
 /**
  * @brief HTTP 404 response HTML.
@@ -100,11 +100,20 @@
  */
 #define HTTP_501_HTML               "<!DOCTYPE html><head><title>Resource not found.</title></head><body><h1>501 Not Implemented</h1><br />Don't know what to say.</body></html>"
 #define HTTP_501_HTML_LENGTH		139
+/**
+ * @brief HTTP default response HTML.
+ */
+#define HTTP_ERROR_HTML_START 		"<!DOCTYPE html><head><title>Error.</title></head><body><h1>Error status.</h1><br />"
+#define HTTP_ERROR_HTML_END			".</body></html>"
+#define HTTP_ERROR_HTML_LENGTH		105
 
-extern unsigned char http_send_status_line(struct tcp_connection *connection, 
-                                  unsigned short status_code);
-extern unsigned short http_send_header(struct tcp_connection *connection, char *name,
-							 char *value);
+extern unsigned char http_send_status_line(
+	struct tcp_connection *connection, unsigned short status_code);
+extern unsigned short http_send_header(
+	struct tcp_connection *connection, char *name, char *value);
+extern signed int http_send_default_headers(
+	struct http_request *request, size_t size, char *mime);
 extern void http_process_response(struct tcp_connection *connection);
+extern signed int http_handle_response(struct http_request *request);
 
 #endif //HTTP_RESPONSE_H

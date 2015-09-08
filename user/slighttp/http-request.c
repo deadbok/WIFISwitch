@@ -109,16 +109,16 @@ static size_t ICACHE_FLASH_ATTR http_get_request_type(struct tcp_connection *con
 }
 
 /**
- * @brief Parse headers of a request.
+ * @brief Get the size of the headers.
  * 
  * @param request Pointer to the request where the headers belong.
- * @param raw_headers Pointer to the raw headers to parse. *This memory is
- *                    modified*.
- * @return Pointer to the first character after the header and the CRLFCRLF
- *         or
+ * @param raw_headers Pointer to the raw headers to parse. 
+ * @return Size of the headers in bytes.
  */
-static char ICACHE_FLASH_ATTR *http_parse_headers(struct http_request *request,
-												  char* raw_headers)
+static size_t ICACHE_FLASH_ATTR http_get_headers_size(
+	struct http_request *request,
+	char* raw_headers
+)
 {
     //Pointers to keep track of where we are.
     char *data = raw_headers;
@@ -127,8 +127,7 @@ static char ICACHE_FLASH_ATTR *http_parse_headers(struct http_request *request,
     bool done;
     
 	//Run through the response headers.
-	debug("Parsing headers (%p):\n", data);
-	debug(" Header callback %p.\n", request->response.handlers->header_cb);
+	debug("Getting headers (%p) size:\n", data);
 	//Not done.
 	done = false;
 	//Go go go.
@@ -148,32 +147,24 @@ static char ICACHE_FLASH_ATTR *http_parse_headers(struct http_request *request,
 			}
 			else
 			{
-				//Do bad things to the actual SDK buffer.
-				//Replace CRLF with \0 to separate the headers.
-				HTTP_EAT_CRLF(next_data, 1);
-			}
-			if (request->response.handlers->header_cb)
-			{
-				request->response.handlers->header_cb(request, data);
-			}
-			else
-			{
-				warn("No header callback.\n");
-				return(NULL);
+				debug(".");
+				HTTP_SKIP_CRLF(next_data, 1);
 			}
 			//Go to the next entry
 			data = next_data;
 		}
 		else
 		{
-			debug("Done (%p).", next_data);
+			error("Unexpected or missing end of request headers.\n");
+			request->response.status_code = 400;
+			return(0);
 		}
 	}
-	return(next_data);
+	return(next_data - raw_headers);
 }
 
 /**
- * @brief Parse the request-line and header fields.
+ * @brief Parse the request-line, header fields, and save message.
  * 
  * Parse the request-line and header fields of a HTTP request. Put the whole thing
  * in a #http_request and add it to the #tcp_connection data. Any additional
@@ -240,28 +231,22 @@ bool ICACHE_FLASH_ATTR http_parse_request(struct tcp_connection *connection, uns
     debug(" Version (%p): %s\n", request_entry, request->version);
     
     HTTP_SKIP_CRLF(next_entry, 1);
-    
-    request->response.handlers = http_get_handler(request);
-    if (!request->response.handlers)
-    {
-		warn("No request handlers.\n");
-		return(false);
+    size = http_get_headers_size(request, next_entry);
+	//Copy headers
+	if (size > 0)
+	{
+		debug(" Copying %d bytes of header data.\n", size);
+		request->headers = db_malloc(size + 1, "request->headers http_parse_request");
+		os_memcpy(request->headers, next_entry, size);
+		request->headers[size] = '\0';
+		//Forward.
+		next_entry += size;
 	}
-    if (!request->response.handlers->request_cb)
-    {
-		warn("Could not find request handler.\n");
-		return(false);
+	else
+	{
+		debug(" No headers.\n");
 	}
-	debug(" Header callback %p.\n", request->response.handlers->request_cb);
-	request->response.handlers->request_cb(request);
 	
-    next_entry = http_parse_headers(request, next_entry);
-    if (!next_entry)
-    {
-		warn("Could not parse headers.\n");
-		return(false);
-	}
-        
     //Get length of message data if any.
     size = length - (next_entry - connection->callback_data.data);
     debug(" Message length: %d.\n", size);

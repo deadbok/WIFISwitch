@@ -29,22 +29,22 @@
 /**
  * @brief REST handler for the default network name.
  */
-extern struct http_response_handler http_rest_network_handler;
+extern signed int http_rest_network_handler(struct http_request *request);
 
 /**
  * @brief REST handler for the scanning for available networks.
  */
-extern struct http_response_handler http_rest_net_names_handler;
+extern signed int http_rest_net_names_handler(struct http_request *request);
 
 /**
  * @brief REST handler for setting the password for the default network.
  */
-extern struct http_response_handler http_rest_passwd_handler;
+extern signed int http_rest_net_passwd_handler(struct http_request *request);
 
 /**
  * @brief REST handler for GPIO toggling.
  */
-extern struct http_response_handler http_rest_gpio_handler;
+extern signed int http_rest_gpio_handler(struct http_request *request);
 
 //General REST function.
 extern bool rest_init(void);

@@ -50,4 +50,6 @@ enum http_mime_enum
 
 extern struct http_mime_type http_mime_types[HTTP_N_MIME_TYPES];
 
+extern char *http_mime_get_ext(char *filename);
+
 #endif //HTTP_TCP_H

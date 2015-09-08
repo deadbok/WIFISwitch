@@ -25,7 +25,6 @@
 #define HTTP_H
 
 #include "net/tcp.h"
-
 /**
  * @brief Server name.
  */
@@ -50,6 +49,9 @@
  * @brief Number of request that can be buffered.
  */
 #define HTTP_REQUEST_BUFFER_SIZE 50
+
+//Forward declaration.
+struct http_request;
 
 /**
  * @brief HTTP request types.
@@ -108,6 +110,22 @@ enum response_states
 };
 
 /**
+ * @brief Callback function for HTTP handlers.
+ * 
+ * This called to generate the response message or modify the 
+ * request/response in some way, before calling another handler. If the
+ * handler send a response, *care must be taken, not to overflow
+ * the send buffer*.
+ * The handler is called repeatedly until the return value is less than
+ * 1. This makes it possible to send the data in chunks.
+ * 
+ * @param request The request that led us here.
+ * @return The size of the of what has been sent, or one of the 
+ *         RESPONSE_DONE_* values.
+ */
+typedef signed int (*http_handler_callback)(struct http_request *request);
+
+/**
  * @brief Structure to keep the data of a HTTP response.
  */
 struct http_response
@@ -123,7 +141,7 @@ struct http_response
      /**
       * @brief Function pointers to handlers.
       */
-     struct http_response_handler *handlers;
+     http_handler_callback handler;
      /**
       * @brief Pointer to the context used by the sender.
       */
@@ -167,7 +185,10 @@ struct http_request
      * @brief The version of the HTTP request.
      */
     char *version;
-
+    /**
+     * @brief Copy of the header data received.
+     */
+    char *headers;
     /**
      * @brief The message body of the HTTP request.
      */
@@ -182,7 +203,6 @@ extern char *http_fs_doc_root;
 
 extern bool init_http(unsigned int port);
 extern bool http_get_status(void);
-extern struct http_response_handler *http_get_handlers(struct http_request *request);
 extern size_t http_send(struct tcp_connection *connection, char *data, size_t size);
 
 #endif

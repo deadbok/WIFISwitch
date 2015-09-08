@@ -117,6 +117,8 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 		http_fs_init("/");
 		db_printf("Adding file system handler.\n");
 		http_add_handler("/*", &http_fs_handler);
+		db_printf("Adding error status handler.\n");
+		http_add_handler("/*", &http_status_handler);
 	}
 	else
 	{
@@ -125,7 +127,7 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 		//Start in network configuration mode.
 		init_http(80);
 		db_printf("Adding network password REST handler.\n");
-		http_add_handler("/rest/net/password", &http_rest_passwd_handler);
+		http_add_handler("/rest/net/password", &http_rest_net_passwd_handler);
 		db_printf("Adding network names REST handler.\n");
 		http_add_handler("/rest/net/networks", &http_rest_net_names_handler);
 		db_printf("Adding default network REST handler.\n");
@@ -133,6 +135,8 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 		http_fs_init("/connect/");
 		db_printf("Adding file system handler.\n");
 		http_add_handler("/*", &http_fs_handler);
+		db_printf("Adding error status handler.\n");
+		http_add_handler("/*", &http_status_handler);
 	}
 	//Arm the timer, run every #CHECK_TIME  ms.
 	os_timer_arm(&status_timer, CHECK_TIME, 1);

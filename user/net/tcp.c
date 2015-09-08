@@ -782,6 +782,8 @@ struct tcp_connection ICACHE_FLASH_ATTR *tcp_get_connections(void)
  */
 bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, size_t size)
 {
+	signed char ret;
+	
     debug("Sending %d bytes of TCP data (%p using %p),\n", size, data, connection);
 	debug(" espconn pointer %p.\n", connection->conn);
 	
@@ -796,9 +798,18 @@ bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, s
 	if (connection->conn)
 	{
 		connection->sending = true;
-		return(espconn_send(connection->conn, (unsigned char*)data, size));
+		ret = espconn_send(connection->conn, (unsigned char*)data, size);
+		debug(" Send status %d.\n", ret);
+		if (!ret)
+		{
+			return(true);
+		}
 	}
-	warn(" Connection is empty.\n");
+	else
+	{
+		warn(" Connection is empty.\n");
+	}
+	debug(" Send returned an error status.\n");
 	return(false);
 }
 
@@ -837,6 +848,10 @@ void ICACHE_FLASH_ATTR tcp_free(struct tcp_connection *connection)
 
     if (connection != NULL)
     {
+		if (connection->user)
+		{
+			warn(" User data not NULL.\n");
+		}
 		//Remove connection from, the list of active connections.
 		debug(" Unlinking.\n");
 		DL_LIST_UNLINK(connection, connections);

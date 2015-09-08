@@ -21,6 +21,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */ 
+#include "osapi.h"
 #include "http-mime.h"
 
 /**
@@ -39,3 +40,39 @@ struct http_mime_type http_mime_types[HTTP_N_MIME_TYPES] =
 	{"png", "image/png"}, //MIME_PNG
 	{"ico", "image/x-icon"} //MIME_ICO
 };
+
+/**
+ * @brief Get extension of a file.
+ * 
+ * @param filename The file name to work on.
+ * @return Extension or NULL if none if found.
+ */
+char ICACHE_FLASH_ATTR *http_mime_get_ext(char *filename)
+{
+	size_t length;
+	char *ret;
+	
+	debug("Getting extension for %s.\n", filename);
+	if (!filename)
+	{
+		debug(" No file name.\n");
+		return(NULL);
+	}
+	length = os_strlen(filename);
+	
+	//Start from the end and find the last dot.
+	ret = (char *)(filename + length);
+	while (length > 0)
+	{
+		if (*ret == '.')
+		{
+			ret++;
+			debug(" Extension %s.\n", ret);
+			return(ret);
+		}
+		length--;
+		ret = (char *)(filename + length);
+	}
+	debug(" Found no extension.\n");
+	return(NULL);
+}

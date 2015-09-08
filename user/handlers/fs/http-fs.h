@@ -24,10 +24,8 @@
 #ifndef HTTP_FS_H
 #define HTTP_FS_H
 
-#include "slighttp/http-handler.h"
-
-extern struct http_response_handler http_fs_handler;
+#include "slighttp/http.h"
 
 extern bool http_fs_init(char *root);
-
+extern signed int http_fs_handler(struct http_request *request);
 #endif

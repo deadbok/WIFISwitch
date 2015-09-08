@@ -1,8 +1,35 @@
+2015-09-08 Martin Grønholdt
+
+* handlers/deny/*.*: Reworked for new handler code, again.
+* handlers/rest/*.*: Reworked for new handler code, again.
+
+2015-09-07 Martin Grønholdt
+
+* slighttp/http-handler.c (fall_through_status_handler): Renamed http_status_handler.
+						  (http_status_handler): Handle all error codes, and default to 404.
+* slighttp/http-response.c (fall_through_status_handler): Return bytes send.
+						   (fall_through_status_handler): Moved to http-handler.c
+						   (http_send_status_line): Handle all status code, but maybe send empty reason.
+
+2015-09-06 Martin Grønholdt
+
+* handlers/fs/http-fs.*: Reworked for new handler code, again.
+* net/tcp.c (tcp_send): Better and more noisy error handling.
+* slighttp/http-mime.*: Added http_mime_get_ext.
+* slighttp/http-response.* (send_buffer): Cahnged parameter to http_request pointer.
+
+
 2015-09-05 Martin Grønholdt
 
+* slighttp/http-response.*: Added http_handle_response.
+* slighttp/http-handler.*: Only one handler function, removed everything else.
+* slighttp/http-handler.h (http_get_handler): Added start_handler parameter.
+* slighttp/http.h (http_request): Added headers.
 * docs/HTTP_Flow.md_ Added file.
 * handlers/fs/http-fs.c (http_fs_handler): Use default header handler.
-* slighttp/http-request.c (http_get_request_type): Return status 400 on error.
+* slighttp/http-request.c: Added http_get_headers_size.
+						  (http_get_request_type): Return status 400 on error.
+*						  (http_parse_request): Removed response handler calls.
 * slighttp/http-handlers.h: Added http_default_header_handler.
 
 2015-09-04 Martin Grønholdt

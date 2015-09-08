@@ -44,8 +44,9 @@ TARGET		= wifiswitch
 
 # which modules (subdirectories) of the project to include in compiling
 MODULES			= user user/fs user/net user/slighttp user/tools
-MODULES			+= user/driver user/handlers/fs user/handlers/rest
+MODULES			+= user/driver user/handlers/fs 
 MODULES			+= user/handlers/deny
+MODULES			+= user/handlers/rest
 EXTRA_INCDIR    = include
 
 # Directory to use when creating the file system image.
