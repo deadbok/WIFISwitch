@@ -28,4 +28,6 @@
 
 extern bool http_fs_init(char *root);
 extern signed int http_fs_handler(struct http_request *request);
+extern signed int http_fs_error_handler(struct http_request *request);
+
 #endif

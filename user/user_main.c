@@ -117,6 +117,8 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 		http_fs_init("/");
 		db_printf("Adding file system handler.\n");
 		http_add_handler("/*", &http_fs_handler);
+		db_printf("Adding file system error status handler.\n");
+		http_add_handler("/*", &http_fs_error_handler);
 		db_printf("Adding error status handler.\n");
 		http_add_handler("/*", &http_status_handler);
 	}
@@ -135,6 +137,8 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 		http_fs_init("/connect/");
 		db_printf("Adding file system handler.\n");
 		http_add_handler("/*", &http_fs_handler);
+		db_printf("Adding file system error status handler.\n");
+		http_add_handler("/*", &http_fs_error_handler);
 		db_printf("Adding error status handler.\n");
 		http_add_handler("/*", &http_status_handler);
 	}

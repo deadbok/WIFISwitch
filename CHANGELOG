@@ -1,3 +1,11 @@
+2015-09-09 Martin Grønholdt
+
+* handler/deny/deny.c (http_deny_handler): Little more debug yelling.
+* slighttp/http-fs.h: Added http_fs_error_handler.
+* slighttp/http-fs.c: Added http_fs_error_handler.
+					 (http_fs_open_file): Added error parameter, and isolated error status handling.
+
+
 2015-09-08 Martin Grønholdt
 
 * slighttp/http.h: Upped version.
@@ -9,6 +17,7 @@
 * handlers/deny/*.*: Reworked for new handler code, again.
 * handlers/rest/*.*: Reworked for new handler code, again.
 
+
 2015-09-07 Martin Grønholdt
 
 * slighttp/http-handler.c (fall_through_status_handler): Renamed http_status_handler.
@@ -16,6 +25,7 @@
 * slighttp/http-response.c (fall_through_status_handler): Return bytes send.
 						   (fall_through_status_handler): Moved to http-handler.c
 						   (http_send_status_line): Handle all status code, but maybe send empty reason.
+
 
 2015-09-06 Martin Grønholdt
 
