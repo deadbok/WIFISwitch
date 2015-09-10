@@ -106,6 +106,10 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 	{
 		//Start web server with default pages.
 		init_http(80);		
+		db_printf("Adding memory REST handler.\n");
+		http_add_handler("/rest/fw/mem", &http_rest_mem_handler);
+		db_printf("Adding version REST handler.\n");
+		http_add_handler("/rest/fw/version", &http_rest_version_handler);
 		db_printf("Adding network names REST handler.\n");
 		http_add_handler("/rest/net/networks", &http_rest_net_names_handler);
 		db_printf("Adding default network REST handler.\n");
@@ -128,6 +132,10 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
 		init_captive_portal("wifiswitch");
 		//Start in network configuration mode.
 		init_http(80);
+		db_printf("Adding memory REST handler.\n");
+		http_add_handler("/rest/fw/mem", &http_rest_mem_handler);
+		db_printf("Adding version REST handler.\n");
+		http_add_handler("/rest/fw/version", &http_rest_version_handler);
 		db_printf("Adding network password REST handler.\n");
 		http_add_handler("/rest/net/password", &http_rest_net_passwd_handler);
 		db_printf("Adding network names REST handler.\n");

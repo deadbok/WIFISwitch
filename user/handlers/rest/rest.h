@@ -46,7 +46,17 @@ extern signed int http_rest_net_passwd_handler(struct http_request *request);
  */
 extern signed int http_rest_gpio_handler(struct http_request *request);
 
-//General REST function.
+/**
+ * @brief REST handler for version information.
+ */
+extern signed int http_rest_version_handler(struct http_request *request);
+
+/**
+ * @brief Rest handler for memory info.
+ */
+extern signed int http_rest_mem_handler(struct http_request *request);
+
+//General REST functions.
 extern bool rest_init(void);
 
 #endif

@@ -273,6 +273,11 @@ void ICACHE_FLASH_ATTR http_free_request(struct http_request *request)
 	debug("Freeing request data at %p.\n", request);
 	if (request)
 	{
+		if (request->response.message)
+		{
+			debug("Deallocating response message.\n");
+			db_free(request->response.message);
+		}
 		if (request->uri)
 		{
 			debug("Deallocating request URI %s.\n", request->uri);

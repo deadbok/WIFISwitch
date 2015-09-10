@@ -162,6 +162,10 @@ struct http_response
       * @brief Size of the message.
       */
      signed long message_size;
+     /**
+      * @brief Pointer to the message.
+      */
+     char *message;
 };
 
 /**

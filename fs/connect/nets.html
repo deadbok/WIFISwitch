@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Network connection setup.</title>
+<link href="css/normalize.css" rel="stylesheet" type="text/css" />
+<link href="css/custom.css" rel="stylesheet" type="text/css" />
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+</head>
+<body>
+	<div class="header inverted">
+		<ul class="menu">
+			<li class="menu"><a href="index.html" class="menu-link">WIFISwitch</a></li>
+			<li class="menu"><a href="nets.html" class="menu-link">Setup</a></li>
+			<li class="menu"><a href="about.html" class="menu-link">About</a></li>
+		</ul>
+	</div>
+	<div class="main">
+		<h3>Network connection setup</h3>
+		<p>Current configured network: <span id="network"></span></p>
+		<form onsubmit="networkSelect()" action="">
+			Networks: 
+			<select id="networks">
+				<option value="nets">Networks...</option>
+			</select>
+			<input type="button" onclick="networkSelect()" value="Set">
+		</form>
+		<div class="message" id="scnstat">
+			<strong>Scanning!</strong> Still scanning for WIFI networks.
+		</div>
+	</div>
+	<div class="footer inverted">
+		<small><span class="copyright">&copy; Copyright 2015 Martin Bo Kristensen Gr&oslash;nholdt.</span><a href="LICENSE" class="license inverted">Read license.</a></small>
+	</div>
+	<script src="js/atomic.min.js" type="text/javascript"></script>
+	<script type="text/javascript">
+		var pending = false;
+
+		function populateNetworks(networks) {
+			var netSelect = document.getElementById("networks");
+
+			netSelect.options.length = 0;
+
+			if (networks.length === 0) {
+				netSelect.options[netSelect.options.length] = new Option(
+						"Scanning...", "", false, false);
+				return;
+			}
+			for (var i = 0; i < networks.length; i++) {
+				netSelect.options[netSelect.options.length] = new Option(
+						networks[i], networks[i], false, false);
+				var scnstat = document.getElementById("scnstat");
+				scnstat.className += " success";
+				scnstat.innerHTML = "<strong>Done!</strong> WIFI networks have been scanned.";
+				clearInterval(nameTimer);
+			}
+		}
+
+		function getNetworks() {
+			if (!pending) {
+				pending = true;
+				atomic.get('/rest/net/networks').success(function(data, xhr) {
+					populateNetworks(data);
+					pending = false;
+				}).error(function(data, xhr) {
+					populateNetworks(new Array("Error..."));
+					pending = false;
+				scnstat.className += " error";
+				scnstat.innerHTML = "<strong>Error</strong> scanning WIFI network names.";
+				});
+			}
+		}
+
+		function networkSelect() {
+			var networkName = document.getElementById("networks").value;
+			var network = document.getElementById("network");
+
+			atomic.put('/rest/net/network',
+					"{ \"network\" : \"" + networkName + "\" }").success(
+					function(data, xhr) {
+						network.innerHTML = networkName;
+						window.location.assign("/passwd.html");
+					}).error(function(data, xhr) {
+				network.innerHTML = "Could not set network name.";
+			});
+		}
+
+		var network = document.getElementById("network");
+
+		atomic.get('/rest/net/network').success(function(data, xhr) {
+			network.innerHTML = data.network;
+		}).error(function(data, xhr) {
+			network.innerHTML = "Could not get default network name.";
+		});
+
+		var nameTimer = setInterval(getNetworks, 2000);
+	</script>
+</body>
+<html></html>

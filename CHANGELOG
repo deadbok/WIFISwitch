@@ -1,5 +1,27 @@
+2015-09-10 Martin Grønholdt
+
+* fs/connect/hostname.html: New file.
+* fs/connect/passwd.html: Updated menu and fixes.
+* fs/connect/nets.html: Updated menu and fixes.
+* fs/connect/index.html: Moved original content to nets.html.
+						 Created new info page.
+* fs/connect/css/custom.css: added class form-margin.
+* user_main.c: Added new handlers.
+* handlers/rest/rest.h: Added new handlers.
+* handler/rest/network.c: Moved to using http_simple_GET_PUT_handler.
+						  Added create_put_response.
+						 (create_response): Added hostname and IP address to response.
+						 (create_response): Renamed create_get_response.
+* handler/rest/mem.c: Added file.
+* handler/rest/version.c: Added file.
+* slighttp/http.h (struct http_response): Added message pointer.
+* slighttp/http-handler.*: Added http_simple_GET_PUT_handler.
+* slighttp/http-request.c (http_free_request): Free response message.
+
+
 2015-09-09 Martin Grønholdt
 
+* user_main.c (connected): Added HTTP FS error handler.
 * handler/deny/deny.c (http_deny_handler): Little more debug yelling.
 * slighttp/http-fs.h: Added http_fs_error_handler.
 * slighttp/http-fs.c: Added http_fs_error_handler.

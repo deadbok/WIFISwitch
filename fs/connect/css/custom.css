@@ -128,3 +128,9 @@
 	border-color: #2d2;
 	background: #dfd;
 }
+
+.form-margin
+{
+	margin-top: 1em;
+	margin-bottom: 1em;
+}

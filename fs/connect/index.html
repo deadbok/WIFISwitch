@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Network connection setup.</title>
+<title>Network setup info.</title>
 <link href="css/normalize.css" rel="stylesheet" type="text/css" />
 <link href="css/custom.css" rel="stylesheet" type="text/css" />
 <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
@@ -9,92 +9,54 @@
 <body>
 	<div class="header inverted">
 		<ul class="menu">
-			<li class="menu">WIFISwitch</li>
+			<li class="menu"><a href="index.html" class="menu-link">WIFISwitch</a></li>
+			<li class="menu"><a href="nets.html" class="menu-link">Setup</a></li>
+			<li class="menu"><a href="about.html" class="menu-link">About</a></li>
 		</ul>
 	</div>
 	<div class="main">
-		<h3>Network connection setup</h3>
-		<p>Current configured network:
-		<div id="network"></div>
-		</p>
-		<form onsubmit="networkSelect()" action="">
-			Networks: 
-			<select id="networks">
-				<option value="nets" class="smooth">Networks...</option>
-			</select>
-			<input type="button" onclick="networkSelect()" value="Set">
-		</form>
-		<div class="message" id="scnstat">
-			<strong>Scanning!</strong> Still scanning for WIFI networks.
-		</div>
-	</div>
+		<h3>WIFISwitch setup.</h3>
+		<h4>Info:</h4>
+		<p>Firmware version: <span id="fw_ver">0.0.0</span></p>
+		<p>HTTP server version: <span id="httpd_ver">0.0.0</span></p>
+		<p>Free memory: <span id="free_mem">?</span> bytes</p>
+		<h4>Network config.</h4>
+		<p>IP address: <span id="ip_addr">none</span></p>
+		<p>Network name: <span id="network">none</span></p>
+		<p>Hostname: <span id="hostname">none</span></p>
 	<div class="footer inverted">
 		<small><span class="copyright">&copy; Copyright 2015 Martin Bo Kristensen Gr&oslash;nholdt.</span><a href="LICENSE" class="license inverted">Read license.</a></small>
 	</div>
 	<script src="js/atomic.min.js" type="text/javascript"></script>
 	<script type="text/javascript">
-		var pending = false;
-
-		function populateNetworks(networks) {
-			var netSelect = document.getElementById("networks");
-
-			netSelect.options.length = 0;
-
-			if (networks.length === 0) {
-				netSelect.options[netSelect.options.length] = new Option(
-						"Scanning...", "", false, false);
-				return;
-			}
-			for (var i = 0; i < networks.length; i++) {
-				netSelect.options[netSelect.options.length] = new Option(
-						networks[i], networks[i], false, false);
-				var scnstat = document.getElementById("scnstat");
-				scnstat.className += " great";
-				scnstat.innerHTML = "<strong>Done!</strong> WIFI networks have been scanned.";
-				clearInterval(nameTimer);
-			}
-		}
-
-		function getNetworks() {
-			if (!pending) {
-				pending = true;
-				atomic.get('/rest/net/networks').success(function(data, xhr) {
-					populateNetworks(data);
-					pending = false;
-				}).error(function(data, xhr) {
-					populateNetworks(new Array("Error..."));
-					pending = false;
-				scnstat.className += " warning";
-				scnstat.innerHTML = "<strong>Error</strong> scanning WIFI network names.";
-				});
-			}
-		}
-
-		function networkSelect() {
-			var networkName = document.getElementById("networks").value;
-			var network = document.getElementById("network");
-
-			atomic.put('/rest/net/network',
-					"{ \"network\" : \"" + networkName + "\" }").success(
-					function(data, xhr) {
-						network.innerHTML = networkName;
-						setTimeout(function() {
-							window.location.assign("/passwd.html");
-						}, 1000);
-					}).error(function(data, xhr) {
-				network.innerHTML = "Could not set network name.";
-			});
-		}
-
+		var fw_version = document.getElementById("fw_ver");
+		var httpd_version = document.getElementById("httpd_ver");
+		var free_mem = document.getElementById("free_mem");
+		var ip_addr = document.getElementById("ip_addr");
 		var network = document.getElementById("network");
-
-		atomic.get('/rest/net/network').success(function(data, xhr) {
-			network.innerHTML = data.network;
+		var hostname = document.getElementById("hostname");
+		
+		atomic.get('/rest/fw/version').success(function(data, xhr) {
+			fw_version.innerHTML = data.fw_ver;
+			httpd_version.innerHTML = data.httpd_ver;
 		}).error(function(data, xhr) {
-			network.innerHTML = "Error: Could not get default network name.";
+			fw_version.innerHTML = "Could not get firmware version.";
+			httpd_version.innerHTML = "Could not get HTTP server version.";
 		});
-
-		var nameTimer = setInterval(getNetworks, 2000);
+		atomic.get('/rest/fw/mem').success(function(data, xhr) {
+			free_mem.innerHTML = data.free;
+		}).error(function(data, xhr) {
+			free_mem.innerHTML = "Could not get free memory.";
+		});
+		atomic.get('/rest/net/network').success(function(data, xhr) {
+			network.innerHTML = data.network
+			hostname.innerHTML = data.hostname;
+			ip_addr.innerHTML = data.ip_addr;
+		}).error(function(data, xhr) {
+			network.innerHTML = "Could not get default network name.";
+			hostname.innerHTML = "Could not get host name.";
+			ip_addr.innerHTML = "Could net get IP address.";
+		});
 	</script>
 </body>
 <html></html>

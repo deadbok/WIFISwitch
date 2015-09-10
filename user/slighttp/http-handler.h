@@ -59,7 +59,16 @@
 
 extern bool http_add_handler(char *uri, http_handler_callback handler);
 extern bool http_remove_handler(http_handler_callback handler);
-extern http_handler_callback http_get_handler(struct http_request *request, http_handler_callback start_handler);
+extern http_handler_callback http_get_handler(
+	struct http_request *request,
+	http_handler_callback start_handler
+);
 extern signed int http_status_handler(struct http_request *request);
+extern signed int ICACHE_FLASH_ATTR http_simple_GET_PUT_handler(
+	struct http_request *request, 
+	http_handler_callback get_cb,
+	http_handler_callback put_cb,
+	http_handler_callback free_cb
+);
 
 #endif

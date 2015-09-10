@@ -332,3 +332,118 @@ signed int ICACHE_FLASH_ATTR http_status_handler(struct http_request *request)
 	done = true;
 	return(ret);
 }
+
+
+/**
+ * @brief Template handler for simple GET/PUT handlers.
+ * 
+ * A simple handler template, that support GET and PUT. Messages in
+ * request->response.message, is send after the respective callback.
+ * No more than about 1300 bytes can be send.
+ *
+ * If any callback pointer is NULL, a request with that method is 
+ * skipped.
+ * 
+ * @param request The request that we're handling.
+ * @param get_cb Callback to handle get requests.
+ * @param put_cb Callback to handle put requests
+ * @return Bytes send.
+ */
+signed int ICACHE_FLASH_ATTR http_simple_GET_PUT_handler(
+	struct http_request *request, 
+	http_handler_callback get_cb,
+	http_handler_callback put_cb,
+	http_handler_callback free_cb
+)
+{
+	signed int ret = 0;
+	size_t msg_size = 0;
+		
+	if (!request)
+	{
+		warn("Empty request.\n");
+		return(RESPONSE_DONE_ERROR);
+	}
+	if (((request->type == HTTP_GET) ||
+		(request->type == HTTP_HEAD)) &&
+		(get_cb == NULL))
+	{
+		debug(" Simple GET PUT handler will not handle HEAD/GET request.\n");
+		return(RESPONSE_DONE_CONTINUE);
+	}
+	if ((request->type == HTTP_PUT) &&
+		(put_cb == NULL))
+	{
+		debug(" Simple GET PUT handler will not handle PUT request.\n");
+		return(RESPONSE_DONE_CONTINUE);
+	}
+	
+	if (request->response.state == HTTP_STATE_NONE)
+	{
+		debug("Simple GET PUT handler entering state %d.\n", request->response.state);
+		if ((request->type == HTTP_HEAD) ||
+		    (request->type == HTTP_GET))
+		{
+			msg_size = get_cb(request);
+		}
+		else
+		{
+			msg_size = put_cb(request);
+		}
+		//No data.
+		if (msg_size == 0)
+		{
+			request->response.status_code = 204;
+		}
+		//We have not send anything.
+		request->response.message_size = 0;
+		//Send status and headers.
+		ret += http_send_status_line(request->connection, request->response.status_code);
+		ret += http_send_default_headers(request, msg_size, "json");
+		if (request->type == HTTP_HEAD)
+		{
+			debug("Simple GET PUT handler leaving state %d.\n", request->response.state);
+			request->response.state = HTTP_STATE_DONE;
+			return(ret);
+		}
+		else
+		{
+			//Go on to sending the file.
+			request->response.state = HTTP_STATE_MESSAGE;
+		}
+	}
+	
+	if (request->response.state == HTTP_STATE_MESSAGE)
+	{
+		debug("Simple GET PUT handler entering state %d.\n", request->response.state);
+		if (request->response.message)
+		{
+			msg_size = os_strlen(request->response.message);
+			debug(" Response: %s.\n", (char *)request->response.message);
+			ret += http_send(request->connection, request->response.message, msg_size);
+		}
+		//We're done sending the message.
+		request->response.state = HTTP_STATE_DONE;
+		request->response.message_size = msg_size;
+		debug("Simple GET PUT handler leaving state %d.\n", request->response.state);
+		return(ret);
+	}
+	    
+	if (request->response.state == HTTP_STATE_DONE)
+	{
+		debug("Simple GET PUT handler entering state %d.\n", request->response.state);
+		if (free_cb)
+		{
+			debug(" Freeing request data.\n");
+			free_cb(request);
+		}
+		if (request->response.context)
+		{
+			debug(" Freeing context data.\n");
+			db_free(request->response.context);
+			request->response.context = NULL;
+		}
+	}
+	debug("Simple GET PUT handler leaving state %d.\n", request->response.state);
+	return(RESPONSE_DONE_FINAL);
+}
