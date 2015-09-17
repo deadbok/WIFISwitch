@@ -71,10 +71,11 @@
 #include "net/tcp.h"
 #include "net/capport.h"
 #include "slighttp/http.h"
-#include "slighttp/http-handler.h"
-#include "handlers/fs//http-fs.h"
 #include "handlers/rest/rest.h"
+#include "handlers/fs//http-fs.h"
+#include "slighttp/http-handler.h"
 #include "handlers/deny/http-deny.h"
+#include <xtensa/config/specreg.h>
 
 /**
  * @brief Timer for handling events.

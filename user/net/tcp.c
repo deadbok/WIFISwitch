@@ -245,30 +245,41 @@ void ICACHE_FLASH_ATTR tcp_print_connection_status(void)
 		while (connection)
 		{
 			connections++;
-			if (connection->conn->state <= ESPCONN_CLOSE)
+			if (connection->conn)
 			{
-				debug("TCP connection %p (%p) state \"%s\".\n",
-					  connection, connection->conn,
-					  state_names[connection->conn->state]);
-				debug(" Remote address " IPSTR ":%d.\n", 
-					  IP2STR(connection->remote_ip),
-					  connection->remote_port);
+				if (connection->conn->state <= ESPCONN_CLOSE)
+				{
+					debug("TCP connection %p (%p) state \"%s\".\n",
+						  connection, connection->conn,
+						  state_names[connection->conn->state]);
+					debug(" Remote address " IPSTR ":%d.\n", 
+						  IP2STR(connection->remote_ip),
+						  connection->remote_port);
+				}
+				else
+				{
+					debug("TCP connection %p (%p) state unknown (%d).\n",
+						  connection, connection->conn,
+						  connection->conn->state);
+					debug(" Remote address " IPSTR ":%d.\n", 
+						  IP2STR(connection->remote_ip),
+						  connection->remote_port);
+
+				}
+				if (connection->conn->state < ESPCONN_CLOSE)
+				{
+					debug(" SDK remote address " IPSTR ":%d.\n", 
+						  IP2STR(connection->conn->proto.tcp->remote_ip),
+						  connection->conn->proto.tcp->remote_port);
+				}
 			}
 			else
 			{
-				debug("TCP connection %p (%p) state unknown (%d).\n",
-					  connection, connection->conn,
-					  connection->conn->state);
+				debug("TCP connection %p, no SDK connections.\n",
+					  connection);
 				debug(" Remote address " IPSTR ":%d.\n", 
 					  IP2STR(connection->remote_ip),
 					  connection->remote_port);
-
-			}
-			if (connection->conn->state < ESPCONN_CLOSE)
-			{
-				debug(" SDK remote address " IPSTR ":%d.\n", 
-					  IP2STR(connection->conn->proto.tcp->remote_ip),
-					  connection->conn->proto.tcp->remote_port);
 			}
 			connection = connection->next;
 		}
@@ -811,7 +822,10 @@ bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, s
 		net_sending = true;
 		connection->sending = true;
 		ret = espconn_send(connection->conn, (unsigned char*)data, size);
-		debug(" Send status %d.\n", ret);
+		debug(" Send status %d: ", ret);
+#ifdef DEBUG
+		print_status(ret);
+#endif //DEBUG
 		if (!ret)
 		{
 			return(true);

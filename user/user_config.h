@@ -84,11 +84,11 @@
 /**
  * @brief Print memory allocation info.
  */
-//#define DEBUG_MEM
+#define DEBUG_MEM
 /**
  * @brief List memory allocations.
  */
-//#define DEBUG_MEM_LIST
+#define DEBUG_MEM_LIST
 /**
  * @brief Mostly shut up output from the SDK.
  */
@@ -136,7 +136,7 @@ extern void db_hexdump(void *mem, unsigned int len);
 /**
  * @brief Maximum number of memory blocks to keep track of in debug mode.
  */
-#define DBG_MEM_MAX_INFOS	500
+#define DBG_MEM_MAX_INFOS	200
 #define db_malloc(ARG, INFO)  db_alloc(ARG, false, INFO)
 #define db_zalloc(ARG, INFO)  db_alloc(ARG, true, INFO)
 #define db_free(ARG)    db_dealloc(ARG)             

@@ -47,7 +47,7 @@ MODULES			= user user/fs user/net user/slighttp user/tools
 MODULES			+= user/driver user/handlers/fs 
 MODULES			+= user/handlers/deny
 MODULES			+= user/handlers/rest
-EXTRA_INCDIR    = include
+EXTRA_INCDIR    = $(XTENSA_TOOLS_ROOT)../xtensa-lx106-elf/sysroot/usr/include/
 
 # Directory to use when creating the file system image.
 FS_DIR		?= fs
@@ -80,6 +80,7 @@ AR		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-ar
 LD		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 
 #Other tools
+CP 		?= cp
 MKDIR 	?= mkdir -p
 RM		?= rm -f
 ECHO	?= @echo
@@ -90,20 +91,23 @@ GET_FILESIZE ?= stat --printf="%s"
 ####
 #### no user configurable options below here
 ####
-SRC_DIR		:= $(MODULES)
-BUILD_DIR	:= $(addprefix $(BUILD_BASE)/,$(MODULES))
-LOG_DIR		:= logs
-TOOLS_DIR	:= tools
+SRC_DIR		 := $(MODULES)
+BUILD_DIR	 := $(addprefix $(BUILD_BASE)/,$(MODULES))
+LOG_DIR		 := logs
+TOOLS_DIR	 := tools
+FS_ROOT_DIR	 := $(BUILD_BASE)/fs_root
 
-SDK_LIBDIR	:= $(addprefix $(SDK_BASE)/,$(SDK_LIBDIR))
-SDK_INCDIR	:= $(addprefix -I$(SDK_BASE)/,$(SDK_INCDIR))
+SDK_LIBDIR	 := $(addprefix $(SDK_BASE)/,$(SDK_LIBDIR))
+SDK_INCDIR	 := $(addprefix -I$(SDK_BASE)/,$(SDK_INCDIR))
 
-SRC			:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.c))
-OBJ			:= $(patsubst %.c,$(BUILD_BASE)/%.o,$(SRC))
-LIBS		:= $(addprefix -l,$(LIBS))
-APP_AR		:= $(addprefix $(BUILD_BASE)/,$(TARGET)_app.a)
-TARGET_OUT	:= $(addprefix $(BUILD_BASE)/,$(TARGET).out)
-FS_FILES	:= $(shell find $(FS_DIR) -type f -name '*')
+SRC			 := $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.c))
+OBJ			 := $(patsubst %.c,$(BUILD_BASE)/%.o,$(SRC))
+LIBS		 := $(addprefix -l,$(LIBS))
+APP_AR		 := $(addprefix $(BUILD_BASE)/,$(TARGET)_app.a)
+TARGET_OUT	 := $(addprefix $(BUILD_BASE)/,$(TARGET).out)
+FS_FILES	 := $(shell find $(FS_DIR) -type f -name '*')
+FS_FILES_TMP := $(patsubst $(FS_DIR)%,$(FS_ROOT_DIR)/%,$(FS_FILES))
+FS_FILES_GZ  := $(patsubst $(FS_DIR)%,$(FS_ROOT_DIR)/%.gz,$(FS_FILES))
 
 LD_SCRIPT		:= $(addprefix -T$(SDK_BASE)/$(SDK_LDDIR)/,$(LD_SCRIPT))
 
@@ -161,6 +165,9 @@ $(LOG_DIR):
 
 $(TOOLS_DIR):
 	$(MKDIR) $@
+
+$(FS_ROOT_DIR):
+	$(MKDIR) $@
 	
 flash: all 
 	tools/testsize.sh $(FW_FS) $(FS_MAX_SIZE)
@@ -185,10 +192,21 @@ docs: doxygen
 
 doxygen: .doxyfile
 	doxygen .doxyfile
-	
-$(FW_FS): $(FS_FILES)
-	-$(RM) $(FW_FS) 
-	(cd $(FS_DIR); $(ZIP) -0 -r0 ../$@ .; cd ..;);
+
+%.gz: %
+	gzip $(patsubst %.gz,%,$@)
+
+$(FS_FILES_TMP): $(FS_ROOT_DIR)
+	$(CP) -R $(FS_DIR)/* $(FS_ROOT_DIR)
+
+$(FS_FILES_GZ): $(FS_FILES_TMP) 
+
+$(FW_FS): $(FS_FILES_GZ)
+	$(ECHO) Firmware files: $(FS_FILES)
+	$(ECHO) Firmware temp files: $(FS_FILES_TMP)
+	$(ECHO) Firmware gzip file: $(FS_FILES_GZ)
+	-$(RM) $(FW_FS)
+	(cd $(FS_ROOT_DIR); $(ZIP) -0 -r0 ../../$@ .; cd ..;);
 	
 flashfs: $(FW_FS)
 	tools/testsize.sh $(FW_FS) $(FS_MAX_SIZE)

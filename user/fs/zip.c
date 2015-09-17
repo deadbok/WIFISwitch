@@ -6,7 +6,7 @@
  * The suggestion, to use a ZIP file this way, was made by [Dave Hylands](http://www.davehylands.com/), 
  * and the code is based on his original work.
  *  
- * ZIP file structure (from [.ZIP Application Note](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT):
+ * ZIP file structure (from [APPNOTE.TXT - .ZIP File Format Specification](https://pkware.cachefly.net/webdocs/casestudies/APPNOTE.TXT):
  * 
  *     [local file header 1]
  *     [encryption header 1]
@@ -34,7 +34,7 @@
  * In this implementation, only the bare minimum data are read from the ZIP 
  * file. The code assumes that the ZIP file starts with a "local file header".
  * This is true in most cases, though reading the specs, it seems to me this
- * might not alway be the case.
+ * might not always be the case.
  * From the "local file header" only useful information is parsed, and used to
  * locate the file data. Since the ZIP structure is only used to emulate a file
  * system structure, no decompression is implemented.
@@ -83,7 +83,7 @@ static unsigned short zip_flut_entries;
  */
 static struct zip_file_hdr ICACHE_FLASH_ATTR *zip_load_header(unsigned int address)
 {
-    struct zip_file_hdr *file_hdr = db_malloc(sizeof(struct zip_file_hdr), "file_hdr");
+    struct zip_file_hdr *file_hdr = db_malloc(sizeof(struct zip_file_hdr), "file_hdr zip_load_header");
     uint32_t signature;
     unsigned int offset = address;
     
@@ -123,7 +123,7 @@ static struct zip_file_hdr ICACHE_FLASH_ATTR *zip_load_header(unsigned int addre
         return(NULL);
     }
     //Alloc an extra byte for the \0 byte.
-    file_hdr->filename = db_malloc(file_hdr->filename_len + 1, "file_hdr->filename");
+    file_hdr->filename = db_malloc(file_hdr->filename_len + 1, "file_hdr->filename zip_load_header");
     //Load the file name.
     if (!aflash_read(file_hdr->filename, 
                     address + ZIP_REAL_FILE_HEADER_SIZE, 

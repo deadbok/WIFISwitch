@@ -1,5 +1,12 @@
+2015-09-11 Martin Grønholdt
+
+* slighttp/http-mime.*: Added GZIP mime type.
+
+
 2015-09-10 Martin Grønholdt
 
+* net/tcp.c: (tcp_print_connection_status): More error checking.
+			 (tcp_send): Print error status as text as well.
 * fs/connect/hostname.html: New file.
 * fs/connect/passwd.html: Updated menu and fixes.
 * fs/connect/nets.html: Updated menu and fixes.

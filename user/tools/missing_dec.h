@@ -66,5 +66,7 @@ extern void ets_wdt_enable(void);
 extern void ets_wdt_disable(void);
 extern void wdt_feed(void);
 
+void _xtos_set_exception_handler();
+void _ResetVector();
 
 #endif

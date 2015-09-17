@@ -1,11 +1,14 @@
-/** @file http-mime.h
+/** 
+ * @file dbffs-file.h
  *
- * @brief MIME types.
+ * @brief File related DBFFS routines.
+ * 
+ * *This tool is meant for small file systems used on embedded
+ * systems, and keeps everything in memory while building the
+ * image.*
  *
- * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
- * @license
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -20,37 +23,26 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
- */ 
-#ifndef HTTP_MIME_H
-#define HTTP_MIME_H
+ */
+#ifndef DBFFS_FILE_H
+#define DBFFS_FILE_H
+
+#include "dbffs.h"
 
 /**
- * @brief Structure to represent a MIME-type.
+ * @brief Create a file entry.
+ *
+ * @param path Path to the entry in the root directory to use as source.
+ * @param entryname The name of the entry to add to the file system.
+ * @return Pointer to the directory entry.
  */
-struct http_mime_type
-{
-	char *ext;
-	char *type;
-};
+extern struct dbffs_file_hdr *create_file_entry(const char *path, char *entryname);
+/**
+ * @brief Write a file entry to a file.
+ * 
+ * @param entry File entry pointer.
+ * @param fp Output file pointer.
+ */
+extern void write_file_entry(const struct dbffs_file_hdr *entry, FILE *fp);
 
-enum http_mime_enum
-{
-	MIME_HTM,
-	MIME_HTML,
-	MIME_CSS,
-	MIME_JS,
-	MIME_JSON,
-	MIME_TXT,
-	MIME_JPG,
-	MIME_JPEG,
-	MIME_PNG,
-	MIME_ICO,
-	MIME_GZIP,
-	HTTP_N_MIME_TYPES
-};
-
-extern struct http_mime_type http_mime_types[HTTP_N_MIME_TYPES];
-
-extern char *http_mime_get_ext(char *filename);
-
-#endif //HTTP_TCP_H
+#endif //DBFFS_FILE_H

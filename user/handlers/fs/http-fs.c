@@ -123,7 +123,7 @@ bool ICACHE_FLASH_ATTR http_fs_open_file(struct http_request *request, bool err)
 		uri[0] = '/';
 		itoa(request->response.status_code, uri + 1, 10);
 		os_memcpy(uri + 4, ".html\0", 6);
-		debug(" Status not 200 using URI %s.\n", uri);
+		debug(" Using URI %s.\n", uri);
 	}
 
 	//Check if we've already done this.
@@ -187,7 +187,7 @@ bool ICACHE_FLASH_ATTR http_fs_open_file(struct http_request *request, bool err)
 	{
 		//Set size.
 		context->total_size = fs_size(context->file);
-		debug("File system handler found: %s.\n", context->filename);
+		debug("File found: %s.\n", context->filename);
 		return(true);
 	}
 	//Free context if there is an error, and we are not handling it.
@@ -197,7 +197,7 @@ bool ICACHE_FLASH_ATTR http_fs_open_file(struct http_request *request, bool err)
 		db_free(context);
 		request->response.context = NULL;
 	}
-	debug("No file system handler found.\n");
+	debug("File not found: %s.\n", context->filename);
     return(false);
 }
 

@@ -130,19 +130,27 @@ static struct dbg_mem_alloc_info dbg_mem_alloc_infos[DBG_MEM_MAX_INFOS];
 void ICACHE_FLASH_ATTR *db_alloc(size_t size, bool zero, char *info)
 {
 	void *ptr;
+	size_t free;
 
 	os_printf("Allocating %d bytes.\n", size);	
 	if (zero)
 	{
 		ptr = os_zalloc(size);
-		db_printf("Free heap (zalloc): %d.\n", system_get_free_heap_size());
+		free = system_get_free_heap_size();
+		db_printf("Free heap (zalloc): %d.\n", free);
 	}
 	else
 	{
 		ptr = os_malloc(size);
-		db_printf("Free heap (malloc): %d.\n", system_get_free_heap_size());
+		free = system_get_free_heap_size();
+		db_printf("Free heap (malloc): %d.\n", free);
 	}
 	
+	//If free heap is unreasonably high, something is probably wrong. 
+	if (free > 100000)
+	{
+		warn("Memory management seems to be corrupted.\n");
+	}
 
 	if (dbg_mem_n_alloc < DBG_MEM_MAX_INFOS)
 	{

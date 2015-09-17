@@ -1,11 +1,14 @@
-/** @file http-mime.h
+/** 
+ * @file common.c
  *
- * @brief MIME types.
+ * @brief Common routines.
+ * 
+ * *This tool is meant for small file systems used on embedded
+ * systems, and keeps everything in memory while building the
+ * image.*
  *
- * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
- * @license
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation; either version 2 of the License, or
@@ -20,37 +23,26 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
- */ 
-#ifndef HTTP_MIME_H
-#define HTTP_MIME_H
+ */
+#include <errno.h> //errno
+#include <stdio.h> //fprintf, perror
+#include <stdlib.h> //abort
+#include "common.h"
 
 /**
- * @brief Structure to represent a MIME-type.
+ * @brief Print error to stderr and exit with failure status..
+ *
+ * @param message Message to print with the error.
  */
-struct http_mime_type
+void die(const char* message)
 {
-	char *ext;
-	char *type;
-};
-
-enum http_mime_enum
-{
-	MIME_HTM,
-	MIME_HTML,
-	MIME_CSS,
-	MIME_JS,
-	MIME_JSON,
-	MIME_TXT,
-	MIME_JPG,
-	MIME_JPEG,
-	MIME_PNG,
-	MIME_ICO,
-	MIME_GZIP,
-	HTTP_N_MIME_TYPES
-};
-
-extern struct http_mime_type http_mime_types[HTTP_N_MIME_TYPES];
-
-extern char *http_mime_get_ext(char *filename);
-
-#endif //HTTP_TCP_H
+	if (errno > 0)
+	{
+		perror(message);
+	}
+	else
+	{
+		fprintf(stderr, "Error: %s\n", message);
+	}
+	abort();
+}

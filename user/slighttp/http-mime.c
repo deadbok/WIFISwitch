@@ -38,7 +38,8 @@ struct http_mime_type http_mime_types[HTTP_N_MIME_TYPES] =
 	{"jpg", "image/jpeg"}, //MIME_JPG
 	{"jpeg", "image/jpeg"}, //MIME_JPEG
 	{"png", "image/png"}, //MIME_PNG
-	{"ico", "image/x-icon"} //MIME_ICO
+	{"ico", "image/x-icon"}, //MIME_ICO
+	{"gz", "application/x-gzip"} //MIME_GZIP 
 };
 
 /**

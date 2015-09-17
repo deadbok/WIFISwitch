@@ -290,6 +290,7 @@ signed int ICACHE_FLASH_ATTR http_handle_response(struct http_request *request)
 	while (request->response.handler)
 	{
 		//Handle.
+		debug(" Calling handler at %p.\n", request->response.handler);
 		ret = request->response.handler(request);
 		//Leave to sent callback if data has been sent.
 		if (ret > 0)
