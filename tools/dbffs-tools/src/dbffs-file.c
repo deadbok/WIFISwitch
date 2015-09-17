@@ -106,7 +106,6 @@ void write_file_entry(const struct dbffs_file_hdr *entry, FILE *fp)
 {
 	size_t ret;
 	uint32_t offset;
-	uint32_t dword;
 	
 	//Write signature.
 	errno = 0;

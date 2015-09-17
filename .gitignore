@@ -57,5 +57,5 @@ cov-int
 #dbffs-tools
 tools/dbffs-tools/docs
 tools/dbffs-tools/src/*.d
-tools/dbffs-tools/bin/dbffs-image
+tools/dbffs-tools/bin
 tools/dbffs-image
