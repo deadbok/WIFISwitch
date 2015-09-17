@@ -54,3 +54,7 @@ docs/html
 *.bz2
 cov-int
 
+#dbffs-tools
+tools/dbffs-tools/docs
+tools/dbffs-tools/dbffs-image
+tools/dbffs-image
