@@ -25,7 +25,7 @@
 #include "c_types.h"
 #include "user_config.h"
 #include "int_flash.h"
-#include "zip.h"
+#include "dbffs.h"
 #include "fs.h"
 
 /**
@@ -66,7 +66,7 @@ static FS_FILE_H n_open_files = 0;
 void ICACHE_FLASH_ATTR fs_init(void)
 {
 	db_printf("ROM size %d KiB.\n", flash_size() >> 10);
-	init_zip();
+	init_dbffs();
 }
 
 /**
@@ -117,7 +117,7 @@ static bool ICACHE_FLASH_ATTR fs_check_eof(FS_FILE_H handle)
  */
 FS_FILE_H ICACHE_FLASH_ATTR fs_open(char *filename)
 {
-    struct zip_file_hdr *file_hdr;
+    struct dbffs_file_hdr *file_hdr;
     struct fs_file *file;
     FS_FILE_H i;
     
@@ -128,7 +128,7 @@ FS_FILE_H ICACHE_FLASH_ATTR fs_open(char *filename)
         return(-1);
     }
     
-    file_hdr = zip_find_file_header(filename);
+    file_hdr = dbffs_find_file_header(filename);
     if (!file_hdr)
     {
         debug("Could not open %s.\n", filename);
@@ -138,12 +138,12 @@ FS_FILE_H ICACHE_FLASH_ATTR fs_open(char *filename)
     //Get some memory for file house keeping, and fill in the data.
     file = db_malloc(sizeof(struct fs_file), "file fs_open");
     file->pos = 0;
-    file->start_pos = file_hdr->data_pos;
-    file->size = file_hdr->uncompressed_size;
+    file->start_pos = file_hdr->data_addr;
+    file->size = file_hdr->size;
     file->eof = false;
     
     //Free up the ZIP header, since we don't need it anymore.
-    zip_free_header(file_hdr);
+    //zip_free_header(file_hdr);
     
     //Find the first free file handle
     for(i = 0; ((i < FS_MAX_OPEN_FILES) && (fs_open_files[i] != NULL)); i++);

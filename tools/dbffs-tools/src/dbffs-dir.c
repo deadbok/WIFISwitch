@@ -69,13 +69,11 @@ struct dbffs_dir_hdr *create_dir_entry(const char *path, char *entryname)
 void write_dir_entry(const struct dbffs_dir_hdr *entry, FILE *fp)
 {
 	size_t ret;
-	uint16_t word;
 	uint32_t dword;
 	
 	//Write signature.
 	errno = 0;
-	dword = swap32(entry->signature);
-	ret = fwrite(&dword, sizeof(uint8_t), sizeof(entry->signature), fp);
+	ret = fwrite(&entry->signature, sizeof(uint8_t), sizeof(entry->signature), fp);
 	if ((ret != sizeof(entry->signature)) || (errno > 0))
 	{
 		die("Could not write directory entry signature.");
@@ -107,8 +105,7 @@ void write_dir_entry(const struct dbffs_dir_hdr *entry, FILE *fp)
 	}
 	//Write number of entries.
 	errno = 0;
-	word = swap16(entry->entries);
-	ret = fwrite(&word, sizeof(uint8_t), sizeof(entry->entries), fp);
+	ret = fwrite(&entry->entries, sizeof(uint8_t), sizeof(entry->entries), fp);
 	if ((ret != sizeof(entry->entries)) || (errno > 0))
 	{
 		die("Could not write directory entries.");

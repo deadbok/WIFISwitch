@@ -158,7 +158,7 @@ static size_t ICACHE_FLASH_ATTR amemcpy(unsigned char *d, unsigned char *s, size
 }
 
 /**
- * @brief Read data from an arbitrary position in the flash.
+ * @brief Read data from an arbitrary position in the FS portion of the flash.
  * 
  * @param data Pointer to a buffer to place the data in.
  * @param read_addr Address to read from.

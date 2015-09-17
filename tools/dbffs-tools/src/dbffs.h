@@ -26,7 +26,7 @@
 /**
  * @brief DBFFS version.
  */
-#define DBFFS_VERSION "0.0.1"
+#define DBFFS_VERSION "0.0.2"
 /**
  * @brief File header signature.
  */

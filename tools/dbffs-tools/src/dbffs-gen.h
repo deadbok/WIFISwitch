@@ -64,8 +64,7 @@ extern void create_entry(const char *path, char *entryname);
 /**
  * @brief Populate data structures for DBFFS from root dir.
  * 
- * @param path Path to the root directory to use as source.
- * @param dirname The FS name of the current directory
+ * @param root_dir The directory to start populating from.
  * @return Number of entries add or -1 on error.
  */
 extern unsigned int populate_fs_image(const char* root_dir);

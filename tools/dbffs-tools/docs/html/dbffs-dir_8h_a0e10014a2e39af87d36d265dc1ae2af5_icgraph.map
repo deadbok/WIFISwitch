@@ -1,0 +1,5 @@
+<map id="create_dir_entry" name="create_dir_entry">
+<area shape="rect" id="node3" href="$dbffs-gen_8h.html#a1f0f88961f2e46366c70e44dc4dd0809" title="Create a new entry from a path in the root directory. " alt="" coords="169,5,263,35"/>
+<area shape="rect" id="node5" href="$dbffs-gen_8h.html#a500ef5eb27b5d8ca85c61abc6c527a4c" title="Populate data structures for DBFFS from root dir. " alt="" coords="312,32,443,61"/>
+<area shape="rect" id="node8" href="$dbffs-image_8c.html#a0ddf1224851353fc92bfbff6f499fa97" title="Main program. " alt="" coords="491,32,541,61"/>
+</map>

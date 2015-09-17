@@ -27,7 +27,12 @@ $(TARGET): bin $(OBJECTS)
 
 $(INSTALL_TARGET): $(TARGET)
 	cp $(TARGET) $(INSTALL_TARGET)
-	
+
+.PHONY: docs
+docs:
+	mkdir -p docs
+	doxygen .doxyfile
+
 .PHONY: install
 install: $(INSTALL_TARGET)
 

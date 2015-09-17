@@ -1,3 +1,11 @@
+2015-09-18 Martin Grønholdt
+
+* fs/fs.c: Ported to DBBFS.
+* fs/dbffs.*: Added files.
+* Makefile: Rewrote rules for FS to use DBFFS.
+* tools/dbffs-tools: Added file system creation tool.
+
+
 2015-09-11 Martin Grønholdt
 
 * slighttp/http-mime.*: Added GZIP mime type.

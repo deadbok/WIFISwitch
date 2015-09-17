@@ -30,6 +30,7 @@
  *
  * @param path Path to the entry in the root directory to use as source.
  * @param entryname The name of the entry to add to the file system.
+ * @return A pointer to a directory entry.
  */
 extern struct dbffs_dir_hdr *create_dir_entry(const char *path, char *entryname);
 /**

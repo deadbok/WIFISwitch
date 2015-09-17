@@ -1,0 +1,12 @@
+<map id="die" name="die">
+<area shape="rect" id="node3" href="$dbffs-dir_8h.html#a0e10014a2e39af87d36d265dc1ae2af5" title="Create a directory entry. " alt="" coords="265,202,380,231"/>
+<area shape="rect" id="node5" href="$dbffs-gen_8h.html#a1f0f88961f2e46366c70e44dc4dd0809" title="Create a new entry from a path in the root directory. " alt="" coords="439,125,532,154"/>
+<area shape="rect" id="node7" href="$dbffs-gen_8h.html#a500ef5eb27b5d8ca85c61abc6c527a4c" title="Populate data structures for DBFFS from root dir. " alt="" coords="587,227,717,257"/>
+<area shape="rect" id="node10" href="$dbffs-image_8c.html#a0ddf1224851353fc92bfbff6f499fa97" title="Main program. " alt="" coords="765,357,816,386"/>
+<area shape="rect" id="node13" href="$dbffs-file_8h.html#a742a1478f7d6f5599f65e079b71c5d4e" title="Create a file entry. " alt="" coords="95,47,212,77"/>
+<area shape="rect" id="node16" href="$dbffs-link_8h.html#a7a1fe530a619aa4b8c2a788b03542220" title="Create a link entry. " alt="" coords="263,125,383,154"/>
+<area shape="rect" id="node19" href="$dbffs-link_8c.html#a2022dfbd693bbdbbcea66ea54197774b" title="Get the contents of a symbolic link. " alt="" coords="109,151,197,181"/>
+<area shape="rect" id="node24" href="$dbffs-dir_8h.html#a0b0a57035e84be0075b35d1d932169c7" title="Write a dir entry to a file. " alt="" coords="432,357,539,386"/>
+<area shape="rect" id="node27" href="$dbffs-file_8h.html#a5bca5657662fafb85aa4f0292cbaac0c" title="Write a file entry to a file. " alt="" coords="597,409,707,438"/>
+<area shape="rect" id="node30" href="$dbffs-link_8h.html#ac7fe205a78c4c145b54a8c2668ce7bd6" title="Write a link entry to an image. " alt="" coords="267,461,379,490"/>
+</map>

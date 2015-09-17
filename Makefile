@@ -87,6 +87,7 @@ ECHO	?= @echo
 ZIP		?= zip
 CD		?= cd
 GET_FILESIZE ?= stat --printf="%s"
+FS_CREATE ?= tools/dbffs-image
 
 ####
 #### no user configurable options below here
@@ -106,8 +107,6 @@ LIBS		 := $(addprefix -l,$(LIBS))
 APP_AR		 := $(addprefix $(BUILD_BASE)/,$(TARGET)_app.a)
 TARGET_OUT	 := $(addprefix $(BUILD_BASE)/,$(TARGET).out)
 FS_FILES	 := $(shell find $(FS_DIR) -type f -name '*')
-FS_FILES_TMP := $(patsubst $(FS_DIR)%,$(FS_ROOT_DIR)/%,$(FS_FILES))
-FS_FILES_GZ  := $(patsubst $(FS_DIR)%,$(FS_ROOT_DIR)/%.gz,$(FS_FILES))
 
 LD_SCRIPT		:= $(addprefix -T$(SDK_BASE)/$(SDK_LDDIR)/,$(LD_SCRIPT))
 
@@ -117,14 +116,15 @@ MODULE_INCDIR	:= $(addsuffix /include,$(INCDIR))
 
 FW_FILE_1		:= $(addprefix $(FW_BASE)/,$(FW_FILE_1_ADDR).bin)
 FW_FILE_2		:= $(addprefix $(FW_BASE)/,$(FW_FILE_2_ADDR).bin)
-FW_FS			:= $(FW_BASE)/fs.zip
 
-FS_SIZE = $(shell printf '%d\n' $$($(GET_FILESIZE) $(FW_FS) ))
+FS_SIZE = $(shell printf '%d\n' $$($(GET_FILESIZE) $(FW_FILE_FS) ))
 
 #File system image flash location
 FS_START_OFFSET = $(shell printf '0x%X\n' $$(( ($$($(GET_FILESIZE) $(FW_FILE_1)) + 16384 + 36864) & (0xFFFFC000) )) )
 FS_END = 0x2E000
 FS_MAX_SIZE = $(shell printf '%d\n' $$(($(FS_END) - $(FS_START_OFFSET) - 1)))
+
+FW_FILE_FS		:= $(FW_BASE)/$(FS_START_OFFSET).bin
 
 vpath %.c $(SRC_DIR)
 vpath %.h $(SRC_DIR)
@@ -136,7 +136,7 @@ endef
 
 .PHONY: all checkdirs flash flashblank clean debug debugflash docs flashfs
 
-all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2) $(FW_FS)
+all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2) $(FW_FILE_FS)
 	@./mem_usage.sh $(TARGET_OUT) 81920
 	$(ECHO) File system start offset: $(FS_START_OFFSET)
 	$(ECHO) File system end offset: $(FS_END)
@@ -170,14 +170,15 @@ $(FS_ROOT_DIR):
 	$(MKDIR) $@
 	
 flash: all 
-	tools/testsize.sh $(FW_FS) $(FS_MAX_SIZE)
-	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_2_ADDR) $(FW_FILE_2) $(FS_START_OFFSET) $(FW_FS)
+	tools/testsize.sh $(FW_FILE_FS) $(FS_MAX_SIZE)
+	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_2_ADDR) $(FW_FILE_2) $(FS_START_OFFSET) $(FW_FILE_FS)
 	
 flashblank:
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash 0x7E000 bin/blank.bin
 
 clean:
 	$(RM) -R $(FW_BASE) $(BUILD_BASE)
+	$(MAKE) -C tools/dbffs-tools clean
 
 debug: $(LOG_DIR)
 #Remove the old log
@@ -192,25 +193,18 @@ docs: doxygen
 
 doxygen: .doxyfile
 	doxygen .doxyfile
+	$(MAKE) -C tools/dbffs-tools/
 
-%.gz: %
-	gzip $(patsubst %.gz,%,$@)
+.PHONY: $(FS_CREATE)
+$(FS_CREATE):
+	$(MAKE) -C tools/dbffs-tools all install
 
-$(FS_FILES_TMP): $(FS_ROOT_DIR)
-	$(CP) -R $(FS_DIR)/* $(FS_ROOT_DIR)
-
-$(FS_FILES_GZ): $(FS_FILES_TMP) 
-
-$(FW_FS): $(FS_FILES_GZ)
-	$(ECHO) Firmware files: $(FS_FILES)
-	$(ECHO) Firmware temp files: $(FS_FILES_TMP)
-	$(ECHO) Firmware gzip file: $(FS_FILES_GZ)
-	-$(RM) $(FW_FS)
-	(cd $(FS_ROOT_DIR); $(ZIP) -0 -r0 ../../$@ .; cd ..;);
+$(FW_FILE_FS): $(FS_FILES) $(FS_CREATE)
+	$(FS_CREATE) fs/ $(FW_FILE_FS)
 	
 flashfs: $(FW_FS)
-	tools/testsize.sh $(FW_FS) $(FS_MAX_SIZE)
-	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FS_START_OFFSET) $(FW_FS)
+	tools/testsize.sh $(FW_FILE_FS) $(FS_MAX_SIZE)
+	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FS_START_OFFSET) $(FW_FILE_FS)
 
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
 

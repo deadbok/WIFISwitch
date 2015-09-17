@@ -43,7 +43,7 @@
 /**
  * @brief Program version.
  */
-#define DBBFS_IMAGE_VERSION "0.0.1"
+#define DBBFS_IMAGE_VERSION "0.0.2"
 
 /**
  * @brief Print welcome message.
@@ -63,6 +63,9 @@ static void print_commandline_help(const char *progname)
 	printf("Create DBFFS image, IMAGE, from filed in ROOT.\n");	
 }
 
+/**
+ * @brief Main program.
+ */
 int main(int argc, char *argv[])
 {
 	char *root_dir = NULL;

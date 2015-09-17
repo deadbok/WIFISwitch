@@ -110,8 +110,7 @@ void write_link_entry(const struct dbffs_link_hdr *entry, FILE *fp)
 	
 	//Write signature.
 	errno = 0;
-	dword = swap32(entry->signature);
-	ret = fwrite(&dword, sizeof(uint8_t), sizeof(entry->signature), fp);
+	ret = fwrite(&entry->signature, sizeof(uint8_t), sizeof(entry->signature), fp);
 	if ((ret != sizeof(entry->signature)) || (errno > 0))
 	{
 		die("Could not write link entry signature.");

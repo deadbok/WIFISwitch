@@ -110,8 +110,7 @@ void write_file_entry(const struct dbffs_file_hdr *entry, FILE *fp)
 	
 	//Write signature.
 	errno = 0;
-	dword = swap32(entry->signature);
-	ret = fwrite(&dword, sizeof(uint8_t), sizeof(entry->signature), fp);
+	ret = fwrite(&entry->signature, sizeof(uint8_t), sizeof(entry->signature), fp);
 	if ((ret != sizeof(entry->signature)) || (errno > 0))
 	{
 		die("Could not write file entry signature.");
@@ -144,8 +143,7 @@ void write_file_entry(const struct dbffs_file_hdr *entry, FILE *fp)
 	}
 	//Write data size.
 	errno = 0;
-	dword = swap32(entry->size);
-	ret = fwrite(&dword, sizeof(uint8_t), sizeof(entry->size), fp);
+	ret = fwrite(&entry->size, sizeof(uint8_t), sizeof(entry->size), fp);
 	if ((ret != sizeof(entry->size)) || (errno > 0))
 	{
 		die("Could not write file data size.");

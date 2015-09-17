@@ -32,7 +32,7 @@
  * 
  * @todo: Deallocate memory gracefully.
  *
- * @param err STD C lib errno or 0.
+ * @param message Error message.
  */
 extern void die(const char* message);
 
