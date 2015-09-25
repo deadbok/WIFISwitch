@@ -99,6 +99,7 @@ struct dbffs_link_hdr *create_link_entry(const char *path, char *entryname)
 	entry->name = entryname;
 	entry->name_len  = strlen(entryname);
 	entry->target = link_target;
+	entry->target_len = strlen(link_target);
 
 	return(entry);
 }
@@ -116,9 +117,17 @@ void write_link_entry(const struct dbffs_link_hdr *entry, FILE *fp)
 		die("Could not write link entry signature.");
 	}
 	//Calculate offset of the next entry.
-	dword = swap32(sizeof(entry->signature) + 4 +
-					sizeof(entry->name_len) +
-					entry->name_len + sizeof(dword));
+	if (entry->next)
+	{
+		dword = sizeof(entry->signature) + sizeof(dword) +
+				sizeof(entry->name_len) + entry->name_len +
+				sizeof(entry->target_len) + entry->target_len;
+	}
+	else
+	{
+		dword = 0;
+	}
+
 	//Write offset to next entry.
 	errno = 0;
 	ret = fwrite(&dword, sizeof(uint8_t), sizeof(dword), fp);

@@ -43,7 +43,7 @@
 /**
  * @brief Program version.
  */
-#define DBBFS_IMAGE_VERSION "0.0.2"
+#define DBBFS_IMAGE_VERSION "0.0.3"
 
 /**
  * @brief Print welcome message.
@@ -122,7 +122,7 @@ int main(int argc, char *argv[])
 			switch (*((uint32_t *)(fs_entry)))
 			{
 				case DBFFS_FILE_SIG:
-					printf(" Writing file %s.\n", ((struct dbffs_dir_hdr *)(fs_entry))->name);
+					printf(" Writing file %s.\n", ((struct dbffs_file_hdr *)(fs_entry))->name);
 					write_file_entry(fs_entry, fp);
 					break;
 				case DBFFS_DIR_SIG:
@@ -130,7 +130,7 @@ int main(int argc, char *argv[])
 					write_dir_entry(fs_entry, fp);
 					break;
 				case DBFFS_LINK_SIG:
-					printf(" Writing link %s.\n", ((struct dbffs_dir_hdr *)(fs_entry))->name);
+					printf(" Writing link %s.\n", ((struct dbffs_link_hdr *)(fs_entry))->name);
 					write_link_entry(fs_entry, fp);
 					break;
 				default:

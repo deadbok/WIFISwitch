@@ -73,7 +73,7 @@ Entries are either directories, files, or links.
 
  * 256 character entry name limit.
  * 65536 Entries in each directory.
- * 4,294,967,295 bytes in a file.
+ * 4,294,967,295 bytes in file system.
  
 Image creation.
 ---------------

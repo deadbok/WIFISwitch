@@ -44,7 +44,7 @@
  * value, is where the initialisation routine starts scanning for the
  * file system.
  */
-size_t fs_addr = 0x10000;
+size_t fs_addr = 0xa000;
 
 /**
  * @brief Return the flash chip's size, in bytes.
@@ -170,6 +170,7 @@ bool ICACHE_FLASH_ATTR aflash_read(const void *data, unsigned int read_addr, siz
     unsigned int addr = 0x40200000 + fs_addr + read_addr;
     size_t ret;
 	
+	debug("Reading %d bytes from 0x%x to %p.\n", size, addr, data);
 	ret = amemcpy((unsigned char *)data, (unsigned char *)addr, size);
 	if (size == ret)
 	{

@@ -88,7 +88,7 @@
 /**
  * @brief List memory allocations.
  */
-#define DEBUG_MEM_LIST
+//#define DEBUG_MEM_LIST
 /**
  * @brief Mostly shut up output from the SDK.
  */

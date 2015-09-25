@@ -56,7 +56,11 @@ FS_DIR		?= fs
 LIBS		= c gcc hal pp phy net80211 lwip wpa main json
 
 # compiler flags using during compilation of source files
-CFLAGS		= -Os -g -O2 -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+ifndef DEBUG
+CFLAGS		= -O2 -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+else
+CFLAGS		= -g -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+endif
 
 # linker flags used to generate the main object file
 LDFLAGS		= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
@@ -120,7 +124,8 @@ FW_FILE_2		:= $(addprefix $(FW_BASE)/,$(FW_FILE_2_ADDR).bin)
 FS_SIZE = $(shell printf '%d\n' $$($(GET_FILESIZE) $(FW_FILE_FS) ))
 
 #File system image flash location
-FS_START_OFFSET = $(shell printf '0x%X\n' $$(( ($$($(GET_FILESIZE) $(FW_FILE_1)) + 16384 + 36864) & (0xFFFFC000) )) )
+#FS_START_OFFSET = $(shell printf '0x%X\n' $$(( ($$($(GET_FILESIZE) $(FW_FILE_1)) + 16384 + 36864) & (0xFFFFC000) )) )
+FS_START_OFFSET = $(shell printf '0x%X\n' $$(( ($$($(GET_FILESIZE) $(FW_FILE_1)) + 0x4000) & (0xFFFFC000) )) )
 FS_END = 0x2E000
 FS_MAX_SIZE = $(shell printf '%d\n' $$(($(FS_END) - $(FS_START_OFFSET) - 1)))
 
@@ -202,7 +207,7 @@ $(FS_CREATE):
 $(FW_FILE_FS): $(FS_FILES) $(FS_CREATE)
 	$(FS_CREATE) fs/ $(FW_FILE_FS)
 	
-flashfs: $(FW_FS)
+flashfs: $(FW_FILE_FS)
 	tools/testsize.sh $(FW_FILE_FS) $(FS_MAX_SIZE)
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FS_START_OFFSET) $(FW_FILE_FS)
 

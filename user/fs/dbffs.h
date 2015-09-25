@@ -1,7 +1,9 @@
 /** 
  * @file dbffs.h
  *
- * @brief DBFFS data structures and definitions
+ * @brief DBFFS data structures and definitions.
+ * 
+ * Can only handle absolute links.
  * 
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
@@ -54,11 +56,38 @@
  * @brief Maximum entries in file system. 
  */
 #define DBFFS_MAX_ENTRIES 65536
+/**
+ * @brief Maximum length that a path can resolve to.
+ */
+#define PATH_MAX 1023
+
+/**
+ * @brief Generic header part.
+ */
+struct dbffs_generic_hdr
+{
+	/**
+	 * @brief Signature.
+	 */
+	uint32_t signature;
+	/**
+	 * @brief Offset from start of the entry to next entry.
+	 */
+	uint32_t next;
+	/**
+	 * @brief Number of file entries.
+	 */
+	uint8_t name_len;
+	/**
+	 * @brief File name.
+	 */
+	char *name;
+}  __attribute__ ((__packed__));
 
 /**
  * @brief File header.
  */
-struct __attribute__ ((__packed__)) dbffs_file_hdr
+struct dbffs_file_hdr
 {
 	/**
 	 * @brief Header signature.
@@ -84,12 +113,12 @@ struct __attribute__ ((__packed__)) dbffs_file_hdr
 	 * @brief The address of the file data.
 	 */
 	uint32_t data_addr;
-};
+} __attribute__ ((__packed__));
 
 /**
  * @brief File header.
  */
-struct __attribute__ ((__packed__)) dbffs_dir_hdr
+struct dbffs_dir_hdr
 {
 	/**
 	 * @brief Directory signature.
@@ -100,23 +129,23 @@ struct __attribute__ ((__packed__)) dbffs_dir_hdr
 	 */
 	uint32_t next;
 	/**
-	 * @brief Number of file entries.
+	 * @brief Directory name length.
 	 */
 	uint8_t name_len;
 	/**
-	 * @brief File name.
+	 * @brief Directory name.
 	 */
 	char *name;
 	/**
 	 * @brief Entries in the directory.
 	 */
 	uint16_t entries;
-};
+} __attribute__ ((__packed__));
 
 /**
  * @brief Link header.
  */
-struct __attribute__ ((__packed__)) dbffs_link_hdr
+struct dbffs_link_hdr
 {
 	/**
 	 * @brief Header signature.
@@ -142,9 +171,10 @@ struct __attribute__ ((__packed__)) dbffs_link_hdr
 	 * @brief Target path.
 	 */
 	char *target;
-};
+}  __attribute__ ((__packed__));
 
 extern void init_dbffs(void);
+extern void dbffs_free_file_header(struct dbffs_file_hdr *entry);
 extern struct dbffs_file_hdr *dbffs_find_file_header(char *path);
 
 #endif //DBFFS

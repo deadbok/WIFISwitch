@@ -69,4 +69,13 @@ extern void create_entry(const char *path, char *entryname);
  */
 extern unsigned int populate_fs_image(const char* root_dir);
 
+/**
+ * @brief Count Directories, files, and links in a directory.
+ * 
+ * Aborts on more than 65535 entries.
+ * 
+ * @param root_dir The directory to work in.
+ * @return Number of entries.
+ */
+extern unsigned short count_dir_entries(const char* root_dir);
 #endif //DBFFS_GEN_H

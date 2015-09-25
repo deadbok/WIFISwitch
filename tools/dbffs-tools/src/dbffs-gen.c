@@ -64,6 +64,8 @@ uint32_t swap32(uint32_t v)
 void create_entry(const char *path, char *entryname)
 {
 	struct stat statbuf;
+	size_t dir_len;
+	char *dir;
 	void *ret;
 
 	if (fs_n_entries >= DBFFS_MAX_ENTRIES)
@@ -81,23 +83,45 @@ void create_entry(const char *path, char *entryname)
 	{
 		case S_IFREG:
 			ret = create_file_entry(path, entryname);
+			//Add to the list.
+			//By some strange coincidence I have put the same data in the top
+			//part of every header struct, so just pick a random header type
+			//and cast to that.
+			((struct dbffs_file_hdr *)(current_fs_entry))->next = ret;
+			current_fs_entry = ret;
+			fs_n_entries++;
 			break;
 		case S_IFDIR:
-			ret = create_dir_entry(path, entryname);
+			dir_len = strlen(path);
+			dir = malloc(dir_len + 2);
+			if (!dir)
+			{
+				die("Could not allocate memory for directory name.");
+			}
+			strcpy(dir, path);
+			strcat(dir, "/");
+			strcat(dir, "\0");
+			//Add dir.
+			printf("-> %s, ", dir);
+			ret = create_dir_entry(dir, entryname);
+			((struct dbffs_dir_hdr *)(current_fs_entry))->next = ret;
+			current_fs_entry = ret;
+			fs_n_entries++;
+			//Add entries in dir.
+			populate_fs_image(dir);
+			printf("<- %s %d entries.\n", dir, ((struct dbffs_dir_hdr *)(ret))->entries);
+			free(dir);
 			break;
 		case S_IFLNK:
 			ret = create_link_entry(path, entryname);
+			//Add to the list.
+			((struct dbffs_link_hdr *)(current_fs_entry))->next = ret;
+			current_fs_entry = ret;
+			fs_n_entries++;
 			break;
 		default:
 			printf("unsupported type, skipping.\n");
 	}
-	//Add to the list.
-	//By some strange coincidence I have put the same data in the top
-	//part of every header struct, so just pick a random header type
-	//and cast to that.
-	((struct dbffs_file_hdr *)(current_fs_entry))->next = ret;
-	current_fs_entry = ret;
-	fs_n_entries++;
 }
 
 unsigned int populate_fs_image(const char* root_dir)
@@ -126,7 +150,6 @@ unsigned int populate_fs_image(const char* root_dir)
 		//Skip "." and "..", also skips dot files, stone cold.
 		if ((strncmp(dp->d_name, ".", 1) != 0))
 		{
-			
 			filename_len = strlen(dp->d_name);
 			root_dir_len = strlen(root_dir);
 			
@@ -164,4 +187,48 @@ unsigned int populate_fs_image(const char* root_dir)
 		die("Could not close directory.");
 	}
 	return(entries);
+}
+
+unsigned short count_dir_entries(const char* root_dir)
+{
+	DIR *dir;
+    struct dirent *dp;
+    unsigned int ret = 0;
+    
+    errno = 0;
+    if (!(dir = opendir(root_dir)))
+    {
+        die("Cannot open directory.");
+    }
+    errno = 0;
+    if (!(dp = readdir(dir)))
+    {
+        die("Cannot read directory\n");
+	}
+	
+	while (dp)
+	{
+		//Skip "." and "..", also skips dot files, stone cold.
+		if ((strncmp(dp->d_name, ".", 1) != 0))
+		{
+			ret++;
+			if (ret > 65535)
+			{
+				die("More than 65536 entries in diectory.");
+			}
+		}
+		errno = 0;
+		dp = readdir(dir);
+		if (errno > 0)
+		{
+			die("Could not read directory contents.");
+		}
+	}
+	errno = 0;
+	closedir(dir);
+	if (errno > 0)
+	{
+		die("Could not close directory.");
+	}
+	return((unsigned short)ret);
 }

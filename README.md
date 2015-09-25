@@ -11,6 +11,13 @@ Features.
 * Enters AP mode and serves a WIFI configuration page, when there is no AP connection at start up.
 * Captive portal in configuration mode.
 
+Warning.
+--------
+
+**The communication is not encrypted!** Without insecurities this would not be a real IoT device,
+though spying has yet to be implemented. Seriously though, **do not put this thing on the internet
+in its current state.**
+
 Credits.
 ========
 

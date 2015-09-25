@@ -114,11 +114,19 @@ void write_file_entry(const struct dbffs_file_hdr *entry, FILE *fp)
 	{
 		die("Could not write file entry signature.");
 	}
-	//Calculate offset of the next entry.
-	offset = swap32(sizeof(entry->signature) + 4 + //signature(4) + offset(4) +
-				    sizeof(entry->name_len) + //name length(1) +
-				    entry->name_len + sizeof(entry->size) + //name_len + data_size(4) + 
-				    entry->size); //data_size
+	if (entry->next)
+	{
+		//Calculate offset of the next entry.
+		offset = sizeof(entry->signature) + 4 + //signature(4) + offset(4) +
+				 sizeof(entry->name_len) + //name length(1) +
+				 entry->name_len + sizeof(entry->size) + //name_len + data_size(4) + 
+				 entry->size; //data_size
+	}
+	else
+	{
+		offset = 0;
+	}
+
 	//Write offset to next entry.
 	errno = 0;
 	ret = fwrite(&offset, sizeof(uint8_t), sizeof(offset), fp);

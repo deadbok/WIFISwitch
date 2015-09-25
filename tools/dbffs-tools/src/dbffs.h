@@ -56,7 +56,7 @@
 /**
  * @brief File header.
  */
-struct __attribute__ ((__packed__)) dbffs_file_hdr
+struct dbffs_file_hdr
 {
 	/**
 	 * @brief Header signature.
@@ -82,12 +82,12 @@ struct __attribute__ ((__packed__)) dbffs_file_hdr
 	 * @brief The file data.
 	 */
 	uint8_t *data;
-};
+}  __attribute__ ((__packed__));
 
 /**
  * @brief File header.
  */
-struct __attribute__ ((__packed__)) dbffs_dir_hdr
+struct dbffs_dir_hdr
 {
 	/**
 	 * @brief Directory signature.
@@ -109,12 +109,12 @@ struct __attribute__ ((__packed__)) dbffs_dir_hdr
 	 * @brief Entries in the directory.
 	 */
 	uint16_t entries;
-};
+}  __attribute__ ((__packed__));
 
 /**
  * @brief Link header.
  */
-struct __attribute__ ((__packed__)) dbffs_link_hdr
+struct dbffs_link_hdr
 {
 	/**
 	 * @brief Header signature.
@@ -140,6 +140,6 @@ struct __attribute__ ((__packed__)) dbffs_link_hdr
 	 * @brief Target path.
 	 */
 	char *target;
-};
+}  __attribute__ ((__packed__));
 
 #endif //DBFFS

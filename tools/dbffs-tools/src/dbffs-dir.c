@@ -35,21 +35,11 @@
 
 struct dbffs_dir_hdr *create_dir_entry(const char *path, char *entryname)
 {
-	char *dir;
-	size_t dir_len;
+
 	struct dbffs_dir_hdr *entry;
 	
 	printf("-> dir\n");
 	errno = 0;
-	dir_len = strlen(path);
-	dir = malloc(dir_len + 2);
-	if (!dir)
-	{
-		die("Could not allocate memory for directory name.");
-	}
-	strcpy(dir, path);
-	strcat(dir, "/");
-	strcat(dir, "\0");
 	//Get mem and start populating a dir entry.
 	errno = 0;
 	entry = calloc(sizeof(struct dbffs_dir_hdr), sizeof(uint8_t));
@@ -60,8 +50,7 @@ struct dbffs_dir_hdr *create_dir_entry(const char *path, char *entryname)
 	entry->signature = DBFFS_DIR_SIG;
 	entry->name = entryname;
 	entry->name_len  = strlen(entryname);
-	entry->entries = populate_fs_image(dir);
-	printf("<- %s %d entries.\n", path, entry->entries);
+	entry->entries = count_dir_entries(path);
 	
 	return(entry);
 }
@@ -79,9 +68,16 @@ void write_dir_entry(const struct dbffs_dir_hdr *entry, FILE *fp)
 		die("Could not write directory entry signature.");
 	}
 	//Calculate offset of the next entry.
-	dword = swap32(sizeof(entry->signature) + 4 +
-					sizeof(entry->name_len) +
-					entry->name_len + sizeof(entry->entries));
+	if (entry->next)
+	{
+		dword = sizeof(entry->signature) + 4 +
+				sizeof(entry->name_len) +
+				entry->name_len + sizeof(entry->entries);
+	}
+	else
+	{
+		dword = 0;
+	}
 	//Write offset to next entry.
 	errno = 0;
 	ret = fwrite(&dword, sizeof(uint8_t), sizeof(dword), fp);

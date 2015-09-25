@@ -1,3 +1,22 @@
+2015-09-21 Martin Grønholdt
+
+* tools/dbffs-tools/dbffs-link.c (create_link_entry): Set target_len.
+
+2015-09-19 Martin Grønholdt
+
+* tools/dbffs-tools/dbffs-dir.c (write_dir_entry): Fixed a byte order bug.
+												 : Write offset of the last entry correctly.
+												 : Write directory and entries in the right order.
+* tools/dbffs-tools/dbffs-file.c (write_file_entry): Fixed a byte order bug.
+												   : Write offset of the last entry correctly.
+* tools/dbffs-tools/dbffs-link.c (write_link_entry): Fixed a byte order bug.
+												   : Write offset of the last entry correctly.
+												   : Write target name and length.
+* tool/dbffs-tools/dbffs-gen.c (create_entry): Write directory and entries in the right order.
+							   (count_dir_entries): Added function.
+* tool/dbffs-tools/dbffs-gen.h (count_dir_entries): Added function.								
+
+
 2015-09-18 Martin Grønholdt
 
 * fs/fs.c: Ported to DBBFS.
