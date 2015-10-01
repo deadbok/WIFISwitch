@@ -129,7 +129,7 @@ FS_START_OFFSET = $(shell printf '0x%X\n' $$(( ($$($(GET_FILESIZE) $(FW_FILE_1))
 FS_END = 0x2E000
 FS_MAX_SIZE = $(shell printf '%d\n' $$(($(FS_END) - $(FS_START_OFFSET) - 1)))
 
-FW_FILE_FS		:= $(FW_BASE)/$(FS_START_OFFSET).bin
+FW_FILE_FS		= $(FW_BASE)/$(FS_START_OFFSET).bin
 
 vpath %.c $(SRC_DIR)
 vpath %.h $(SRC_DIR)

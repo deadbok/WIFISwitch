@@ -10,3 +10,6 @@
 [submodule "user/parson"]
 	path = user/parson
 	url = https://github.com/deadbok/parson
+[submodule "tools/dbffs-tools/src/heatshrink"]
+	path = tools/dbffs-tools/src/heatshrink
+	url = https://github.com/deadbok/heatshrink
