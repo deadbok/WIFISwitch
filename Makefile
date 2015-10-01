@@ -205,7 +205,11 @@ $(FS_CREATE):
 	$(MAKE) -C tools/dbffs-tools all install
 
 $(FW_FILE_FS): $(FS_FILES) $(FS_CREATE)
+ifndef DEBUG
 	$(FS_CREATE) fs/ $(FW_FILE_FS)
+else
+	$(FS_CREATE) -v fs/ $(FW_FILE_FS)
+endif
 	
 flashfs: $(FW_FILE_FS)
 	tools/testsize.sh $(FW_FILE_FS) $(FS_MAX_SIZE)

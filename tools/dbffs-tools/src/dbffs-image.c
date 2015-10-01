@@ -24,26 +24,31 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
+/**
+ * @brief Use X/Open 5, incorporating POSIX 1995 (for nftw).
+ */
+#define _XOPEN_SOURCE 500 //For nftw.
+
 #include <errno.h> //errno
 #include <stdio.h> //printf
 #include <string.h>
 #include <stddef.h> //size_t
-#include <stdint.h> //Fixed width integer types.
 #include <stdlib.h> //malloc
 #include <unistd.h> //getopt
-#include <dirent.h> //opendir, readir, closedir. dirent, DIR
-#include <sys/stat.h> //lstat
+#include <ftw.h> //nftw
 #include "common.h"
 #include "dbffs.h"
 #include "dbffs-gen.h"
-#include "dbffs-dir.h"
 #include "dbffs-file.h"
 #include "dbffs-link.h"
 
 /**
  * @brief Program version.
  */
-#define DBBFS_IMAGE_VERSION "0.0.3"
+#define DBBFS_IMAGE_VERSION "0.2.0"
+
+char *root_dir = NULL;
+bool verbose = false;
 
 /**
  * @brief Print welcome message.
@@ -51,7 +56,7 @@
 static void print_welcome(void)
 {
 	printf("dbf file system image generation tool version " DBBFS_IMAGE_VERSION ".\n");
-	printf("DBFFS version " DBBFS_IMAGE_VERSION "\n\n");
+	printf("DBFFS version " DBFFS_VERSION "\n\n");
 }
 
 /**
@@ -59,8 +64,10 @@ static void print_welcome(void)
  */
 static void print_commandline_help(const char *progname)
 {
-	printf("Usage: %s ROOT IMAGE\n", progname);
-	printf("Create DBFFS image, IMAGE, from filed in ROOT.\n");	
+	printf("Usage: %s [options] root_dir image_file\n", progname);
+	printf("Create DBFFS image, image_file,  from files in root_dir.\n");	
+	printf("Options:\n");
+	printf(" -v: Be verbose.\n");
 }
 
 /**
@@ -68,46 +75,42 @@ static void print_commandline_help(const char *progname)
  */
 int main(int argc, char *argv[])
 {
-	char *root_dir = NULL;
-	unsigned int root_entries = 0;
+	int arg = 1;
+	FILE *fp;
+	void *fs_entry;
+	uint32_t offset;
 	unsigned int i = 0;
 	char *image_filename = NULL;
-	void *fs_entry;
-	struct dbffs_dir_hdr *root_dir_entry;
-	FILE *fp;
+	uint32_t fs_sig = DBFFS_FS_SIG;
     
 	print_welcome();
 	
-	if (argc < 2)
+	if (argc < 3)
 	{
 		print_commandline_help(argv[0]);
-		die("Error on command line");
+		die("Could not parse command line.");
 	}
-	root_dir = argv[1];
-	image_filename = argv[2];
+	
+	if (strcmp(argv[arg], "-v") == 0)
+	{
+		if (argc != 4)
+		{
+			printf("Found %d command line arguments.\n", argc);
+			print_commandline_help(argv[0]);
+			die("Missing command line arguments.");			
+		}
+		verbose = true;
+		arg++;
+	}
+		
+	root_dir = argv[arg];
+	arg++;
+	image_filename = argv[arg];
 	
 	printf("Creating image in RAM from files in %s.\n", root_dir);
-	//Get mem and populate root dir entry.
-	errno = 0;
-	root_dir_entry = calloc(sizeof(struct dbffs_dir_hdr), sizeof(uint8_t));
-	if ((root_dir_entry == NULL) || (errno > 0))
-	{
-		die("Could not allocate memory for root dir entry.");
-	}
-	root_dir_entry->signature = DBFFS_DIR_SIG;
-	root_dir_entry->name = "/";
-	root_dir_entry->name_len  = strlen(root_dir_entry->name);
-	fs_entries = root_dir_entry;
-	current_fs_entry = fs_entries;
-	fs_n_entries++;
-	
 	//Scan source.
-	root_entries = populate_fs_image(root_dir);
+	nftw(root_dir, handle_entry, 10, FTW_PHYS);
 
-	root_dir_entry->entries = root_entries;
-	printf("<- %s %d entries.\n", root_dir, root_entries);
-	printf("Added a total of %d entries.\n", fs_n_entries);
-	
 	//Write out the data structures to an image.
 	printf("\nWriting image to file %s.\n", image_filename);
 	errno = 0;
@@ -116,6 +119,12 @@ int main(int argc, char *argv[])
 	{
 		die("Could not open image file.");
 	}
+	//Write file system signature.
+	errno = 0;
+	if ((fwrite(&fs_sig, sizeof(uint8_t), sizeof(fs_sig), fp) != sizeof(fs_sig)) || (errno > 0))
+	{
+		die("Could not write file entry signature.");
+	}
 	for (fs_entry = fs_entries; fs_entry != NULL;
 		 fs_entry = ((struct dbffs_file_hdr *)(fs_entry))->next)
 	{
@@ -123,20 +132,17 @@ int main(int argc, char *argv[])
 			{
 				case DBFFS_FILE_SIG:
 					printf(" Writing file %s.\n", ((struct dbffs_file_hdr *)(fs_entry))->name);
-					write_file_entry(fs_entry, fp);
-					break;
-				case DBFFS_DIR_SIG:
-					printf(" Writing directory %s.\n", ((struct dbffs_dir_hdr *)(fs_entry))->name);
-					write_dir_entry(fs_entry, fp);
+					offset = write_file_entry((struct dbffs_file_hdr *)(fs_entry), fp);
 					break;
 				case DBFFS_LINK_SIG:
-					printf(" Writing link %s.\n", ((struct dbffs_link_hdr *)(fs_entry))->name);
-					write_link_entry(fs_entry, fp);
+					printf(" Writing link %s -> %s.\n", ((struct dbffs_link_hdr *)(fs_entry))->name, ((struct dbffs_link_hdr *)(fs_entry))->target);
+					offset = write_link_entry((struct dbffs_link_hdr *)(fs_entry), fp);
 					break;
 				default:
-					printf(" Unknown signature 0x%x.\n", ((struct dbffs_dir_hdr *)(fs_entry))->signature);
+					printf(" Unknown signature 0x%x.\n", ((struct dbffs_file_hdr *)(fs_entry))->signature);
 					break;
 			}
+			info(" Next header at 0x%x.\n", offset);
 			i++;
 	}
 	errno = 0;

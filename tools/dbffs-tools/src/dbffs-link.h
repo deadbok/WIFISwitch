@@ -40,19 +40,18 @@
 /**
  * @brief Create a link entry.
  * 
- * The offset is not set by this function.
- *
- * @param path Path to the entry in the root directory to use as source.
  * @param entryname The name of the entry to add to the file system.
- * @return A pointert to a link entry.
+ * @param target The target of the link.
+ * @return A pointer to a link entry.
  */
-extern struct dbffs_link_hdr *create_link_entry(const char *path, char *entryname);
+extern struct dbffs_link_hdr *create_link_entry(const char *entryname,
+												const char *target);
 /**
  * @brief Write a link entry to an image.
  *
  * @param entry Pointer to link entry to write to image.
  * @param fp Pointer to an open image file.
  */
-extern void write_link_entry(const struct dbffs_link_hdr *entry, FILE *fp);
+extern uint32_t write_link_entry(const struct dbffs_link_hdr *entry, FILE *fp);
 
 #endif //DBFFS_LINK_H

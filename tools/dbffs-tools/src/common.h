@@ -27,6 +27,48 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <stdbool.h>
+
+/**
+ * @brief Root directory to scan.
+ */
+extern char *root_dir;
+
+/**
+ * @brief Be verbose if set.
+ */
+extern bool verbose;
+
+/* Wrapping stuff in do...while(0), makes it possible to invoke the macro like a
+ * function call ending with semicolon (;).
+ * Idea from here: [https://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html
+ */
+#define info(...) do\
+				  {\
+					  if (verbose) \
+					  {\
+						  printf(__VA_ARGS__);\
+					  }\
+				   }\
+				   while (0)\
+
+/**
+ * @brief Get the contents of a symbolic link.
+ * 
+ * @param path Path to the link.
+ * @return Link target path or NULL.
+ */
+char *db_readlink(const char *path);
+
+/**
+ * @brief Shorten path by solving . and .. entries.
+ * 
+ * @param path Absolute path to solve.
+ * @param buf Buffer to save the new path, if NULL a buffer is allocated internally.
+ * @return Shortest path.
+ */
+char *rpath(const char *path, char *buf);
+
 /**
  * @brief Exit with failure status.
  * 

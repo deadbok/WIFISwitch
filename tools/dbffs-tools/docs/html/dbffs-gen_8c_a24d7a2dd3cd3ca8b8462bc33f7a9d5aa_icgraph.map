@@ -1,6 +1,0 @@
-<map id="swap32" name="swap32">
-<area shape="rect" id="node3" href="$dbffs-dir_8h.html#a0b0a57035e84be0075b35d1d932169c7" title="Write a dir entry to a file. " alt="" coords="124,5,231,35"/>
-<area shape="rect" id="node7" href="$dbffs-file_8h.html#a5bca5657662fafb85aa4f0292cbaac0c" title="Write a file entry to a file. " alt="" coords="123,59,232,88"/>
-<area shape="rect" id="node10" href="$dbffs-link_8h.html#ac7fe205a78c4c145b54a8c2668ce7bd6" title="Write a link entry to an image. " alt="" coords="121,112,233,141"/>
-<area shape="rect" id="node5" href="$dbffs-image_8c.html#a0ddf1224851353fc92bfbff6f499fa97" title="Main program. " alt="" coords="283,59,333,88"/>
-</map>

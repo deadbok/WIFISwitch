@@ -23,14 +23,16 @@
 #ifndef DBFFS_GEN_H
 #define DBFFS_GEN_H
 
+#include <ftw.h> //ftw
 #include <stdint.h> //Fixed width integer types.
+#include <stdbool.h> //Bool.
 
 /**
  * @brief Number of entries in the file system.
  */
 extern unsigned short fs_n_entries;
 /**
- * @brief Array of entries in the file system.
+ * @brief List of entries in the file system.
  */
 extern void *fs_entries;
 /**
@@ -54,28 +56,20 @@ extern uint16_t swap16(uint16_t v);
 extern uint32_t swap32(uint32_t v);
 
 /**
- * @brief Create a new entry from a path in the root directory.
+ * @brief Handle file system entries within a path.
  * 
- * @param path Path to the entry in the root directory to use as source.
- * @param entryname The name of the entry to add to the file system.
+ * ``nftw`` callback.
+ * 
+ * @note See ``nftw`` in the POSIX standard.
+ * 
+ * @param path Path of the current entry.
+ * @param pstat Pointer to stat info for the entry.
+ * @param flag ``nftw`` flags of the entry.
+ * @param pftw Pointer to an FTW struct with members ``base`` as offset of entry in path, and ``level`` as path depth.
+ * @return 0 to keep going, some other value to stop.
  */
-extern void create_entry(const char *path, char *entryname);
-
-/**
- * @brief Populate data structures for DBFFS from root dir.
- * 
- * @param root_dir The directory to start populating from.
- * @return Number of entries add or -1 on error.
- */
-extern unsigned int populate_fs_image(const char* root_dir);
-
-/**
- * @brief Count Directories, files, and links in a directory.
- * 
- * Aborts on more than 65535 entries.
- * 
- * @param root_dir The directory to work in.
- * @return Number of entries.
- */
-extern unsigned short count_dir_entries(const char* root_dir);
+extern int handle_entry(const char *path,
+						const struct stat *pstat,
+						int flag,
+						struct FTW *pftw);
 #endif //DBFFS_GEN_H

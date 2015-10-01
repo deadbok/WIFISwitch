@@ -1,9 +1,0 @@
-<map id="src/common.h" name="src/common.h">
-<area shape="rect" id="node3" href="$common_8c.html" title="Common routines. " alt="" coords="5,83,109,112"/>
-<area shape="rect" id="node5" href="$dbffs-dir_8c.html" title="Routines for handling directory entries. " alt="" coords="133,83,235,112"/>
-<area shape="rect" id="node7" href="$dbffs-file_8c.html" title="File related DBFFS. " alt="" coords="259,83,363,112"/>
-<area shape="rect" id="node9" href="$dbffs-gen_8c.html" title="Top level routines to generate a DBF file system image. " alt="" coords="356,160,465,189"/>
-<area shape="rect" id="node11" href="$dbffs-link_8h.html" title="Routines for handlink link entries. " alt="" coords="437,83,544,112"/>
-<area shape="rect" id="node14" href="$dbffs-image_8c.html" title="Generate a DBF file system image. " alt="" coords="509,160,632,189"/>
-<area shape="rect" id="node17" href="$dbffs-link_8c.html" title="Routines for handlink link entries. " alt="" coords="619,83,725,112"/>
-</map>

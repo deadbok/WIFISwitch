@@ -142,8 +142,8 @@ FS_FILE_H ICACHE_FLASH_ATTR fs_open(char *filename)
     file->size = file_hdr->size;
     file->eof = false;
     
-    //Free up the ZIP header, since we don't need it anymore.
-    //zip_free_header(file_hdr);
+    //Free up the file header, since we don't need it anymore.
+    dbffs_free_file_header(file_hdr);
     
     //Find the first free file handle
     for(i = 0; ((i < FS_MAX_OPEN_FILES) && (fs_open_files[i] != NULL)); i++);

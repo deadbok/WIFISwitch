@@ -1,8 +1,0 @@
-<map id="create_dir_entry" name="create_dir_entry">
-<area shape="rect" id="node3" href="$common_8c.html#a46a82a4f5106b731041e4f2893f3f21d" title="Print error to stderr and exit with failure status.. " alt="" coords="831,119,868,148"/>
-<area shape="rect" id="node5" href="$dbffs-gen_8c.html#a500ef5eb27b5d8ca85c61abc6c527a4c" title="Populate data structures for DBFFS from root dir. " alt="" coords="168,43,299,72"/>
-<area shape="rect" id="node8" href="$dbffs-gen_8c.html#a1f0f88961f2e46366c70e44dc4dd0809" title="Create a new entry from a path in the root directory. " alt="" coords="348,95,441,124"/>
-<area shape="rect" id="node11" href="$dbffs-file_8c.html#a742a1478f7d6f5599f65e079b71c5d4e" title="Create a file entry. " alt="" coords="663,144,780,173"/>
-<area shape="rect" id="node15" href="$dbffs-link_8c.html#a7a1fe530a619aa4b8c2a788b03542220" title="Create a link entry. " alt="" coords="492,196,612,225"/>
-<area shape="rect" id="node17" href="$dbffs-link_8c.html#a2022dfbd693bbdbbcea66ea54197774b" title="Get the contents of a symbolic link. " alt="" coords="677,248,765,277"/>
-</map>

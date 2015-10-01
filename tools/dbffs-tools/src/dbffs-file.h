@@ -36,13 +36,13 @@
  * @param entryname The name of the entry to add to the file system.
  * @return Pointer to the directory entry.
  */
-extern struct dbffs_file_hdr *create_file_entry(const char *path, char *entryname);
+extern struct dbffs_file_hdr *create_file_entry(const char *path, const char *entryname);
 /**
  * @brief Write a file entry to a file.
  * 
  * @param entry File entry pointer.
  * @param fp Output file pointer.
  */
-extern void write_file_entry(const struct dbffs_file_hdr *entry, FILE *fp);
+extern uint32_t write_file_entry(const struct dbffs_file_hdr *entry, FILE *fp);
 
 #endif //DBFFS_FILE_H

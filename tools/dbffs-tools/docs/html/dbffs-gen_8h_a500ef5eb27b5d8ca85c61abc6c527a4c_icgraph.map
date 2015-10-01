@@ -1,5 +1,0 @@
-<map id="populate_fs_image" name="populate_fs_image">
-<area shape="rect" id="node3" href="$dbffs-dir_8h.html#a0e10014a2e39af87d36d265dc1ae2af5" title="Create a directory entry. " alt="" coords="184,5,299,35"/>
-<area shape="rect" id="node8" href="$dbffs-image_8c.html#a0ddf1224851353fc92bfbff6f499fa97" title="Main program. " alt="" coords="216,59,267,88"/>
-<area shape="rect" id="node5" href="$dbffs-gen_8h.html#a1f0f88961f2e46366c70e44dc4dd0809" title="Create a new entry from a path in the root directory. " alt="" coords="348,59,441,88"/>
-</map>

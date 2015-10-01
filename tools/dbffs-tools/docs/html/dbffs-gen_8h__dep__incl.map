@@ -1,8 +1,0 @@
-<map id="src/dbffs&#45;gen.h" name="src/dbffs&#45;gen.h">
-<area shape="rect" id="node3" href="$dbffs-dir_8c.html" title="Routines for handling directory entries. " alt="" coords="5,83,107,112"/>
-<area shape="rect" id="node5" href="$dbffs-file_8c.html" title="File related DBFFS. " alt="" coords="131,83,235,112"/>
-<area shape="rect" id="node7" href="$dbffs-link_8h.html" title="Routines for handlink link entries. " alt="" coords="259,83,365,112"/>
-<area shape="rect" id="node11" href="$dbffs-image_8c.html" title="Generate a DBF file system image. " alt="" coords="341,160,464,189"/>
-<area shape="rect" id="node14" href="$dbffs-link_8c.html" title="Routines for handlink link entries. " alt="" coords="440,83,547,112"/>
-<area shape="rect" id="node9" href="$dbffs-gen_8c.html" title="Top level routines to generate a DBF file system image. " alt="" coords="208,160,317,189"/>
-</map>

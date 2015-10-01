@@ -1,6 +1,17 @@
+2015-10-01 Martin Grønholdt
+
+* tools/dbffs-tools/README.me: Added file.
+* tools/dbffs-tools/src/*: Removed directory support.
+						   Writes absolute links.
+						   Added verbose command line option.						   
+						   DBFFS at version 0.1.0.
+						   dbffs-iamge at version 0.2.0.
+
+
 2015-09-21 Martin Grønholdt
 
 * tools/dbffs-tools/dbffs-link.c (create_link_entry): Set target_len.
+
 
 2015-09-19 Martin Grønholdt
 

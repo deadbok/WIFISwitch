@@ -1,5 +1,0 @@
-<map id="write_dir_entry" name="write_dir_entry">
-<area shape="rect" id="node3" href="$common_8c.html#a46a82a4f5106b731041e4f2893f3f21d" title="Print error to stderr and exit with failure status.. " alt="" coords="175,5,212,35"/>
-<area shape="rect" id="node5" href="$dbffs-gen_8c.html#a39208df37638f525bc61941c4f84219b" title="Convert from host byte order to esp8266 byte order, 16 bit. " alt="" coords="160,59,227,88"/>
-<area shape="rect" id="node7" href="$dbffs-gen_8c.html#a24d7a2dd3cd3ca8b8462bc33f7a9d5aa" title="Convert from host byte order to esp8266 byte order, 32 bit. " alt="" coords="160,112,227,141"/>
-</map>

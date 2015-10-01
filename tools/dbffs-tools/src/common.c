@@ -27,13 +27,71 @@
 #include <errno.h> //errno
 #include <stdio.h> //fprintf, perror
 #include <stdlib.h> //abort
+#include <string.h>
+#include <unistd.h> //readlink
 #include "common.h"
 
-/**
- * @brief Print error to stderr and exit with failure status..
- *
- * @param message Message to print with the error.
- */
+char *rpath(const char *path, char *buf)
+{
+	const char *path_pos = path;
+	char *ret;
+	char *ret_pos;
+	
+	if (path[0] != '/')
+	{
+		die("Path most be absolute.");
+	}
+	if (buf)
+	{
+		ret = buf;
+	}
+	else
+	{
+		if (!(ret = calloc(strlen(path), sizeof(char))))
+		{
+			die("Could not allocate memory for new path.");
+		}
+	}
+	ret_pos = ret;
+	
+	while (*path_pos != '\0')
+	{
+		if (*path_pos == '.')
+		{
+			path_pos++;
+			
+			switch (*path_pos)
+			{
+				case '/':
+					//Current dir
+					break;
+				case '.':
+					//Up one dir.
+					ret_pos -= 2;
+					while (*ret_pos != '/')
+					{
+						ret_pos--;
+						if (ret_pos < ret)
+						{
+							die("Outside file system root.");
+						}
+					}
+					path_pos++;
+					break;
+				default:
+					*ret_pos++ = '.';
+					*ret_pos++ = *path_pos++;
+			}
+		}
+		else
+		{
+			*ret_pos++ = *path_pos++;
+		}
+	}
+	*ret_pos = '\0';
+	return(ret);
+}
+	
 void die(const char* message)
 {
 	if (errno > 0)

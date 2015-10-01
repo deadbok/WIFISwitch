@@ -1,5 +1,5 @@
 /** 
- * @file dbffs.h
+ * @file dbffs-std.h
  *
  * @brief DBFFS data structures and definitions
  * 
@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-#ifndef DBFFS_H
-#define DBFFS_H
+#ifndef DBFFS_STD_H
+#define DBFFS_STD_H
 
 #include <stdint.h> //Fixed width integer types.
 
@@ -61,6 +61,29 @@
 #define DBFFS_MAX_ENTRIES 65536
 
 /**
+ * @brief Generic header part.
+ */
+struct dbffs_generic_hdr
+{
+	/**
+	 * @brief Signature.
+	 */
+	uint32_t signature;
+	/**
+	 * @brief Offset from start of the entry to next entry.
+	 */
+	uint32_t next;
+	/**
+	 * @brief Number of file entries.
+	 */
+	uint8_t name_len;
+	/**
+	 * @brief File name.
+	 */
+	char *name;
+}  __attribute__ ((__packed__));
+
+/**
  * @brief File header.
  */
 struct dbffs_file_hdr
@@ -70,9 +93,9 @@ struct dbffs_file_hdr
 	 */
 	uint32_t signature;
 	/**
-	 * @brief Pointer to next entry.
+	 * @brief Offset from start of the entry to next entry.
 	 */
-	void *next;
+	uint32_t next;
 	/**
 	 * @brief File name length.
 	 */
@@ -86,36 +109,9 @@ struct dbffs_file_hdr
 	 */
 	uint32_t size;
 	/**
-	 * @brief The file data.
+	 * @brief The address of the file data.
 	 */
-	uint8_t *data;
-}  __attribute__ ((__packed__));
-
-/**
- * @brief File header.
- */
-struct dbffs_dir_hdr
-{
-	/**
-	 * @brief Directory signature.
-	 */
-	uint32_t signature;
-	/**
-	 * @brief Pointer to next entry.
-	 */
-	void *next;
-	/**
-	 * @brief Number of file entries.
-	 */
-	uint8_t name_len;
-	/**
-	 * @brief File name.
-	 */
-	char *name;
-	/**
-	 * @brief Entries in the directory.
-	 */
-	uint16_t entries;
+	uint32_t data_addr;
 }  __attribute__ ((__packed__));
 
 /**
@@ -128,9 +124,9 @@ struct dbffs_link_hdr
 	 */
 	uint32_t signature;
 	/**
-	 * @brief Pointer to next entry.
+	 * @brief Offset from start of the entry to next entry.
 	 */
-	void *next;
+	uint32_t next;
 	/**
 	 * @brief Number of file entries.
 	 */

@@ -12,32 +12,31 @@ Features.
 Structure.
 ----------
 
-The file system is an array of headers, and always start with the header
-of the root directory.
+The file system is an array of headers, and starts with a file system
+signature 4 bytes long.
 	
 	---------------------
-	| Directory header  |
+	|    FS signature   |
 	---------------------
 	|       Header      |
 	|...................-
-	|   Possible file   |
-	|        data.      |
+	| File data or link |
+	|                   |
 	~~~~~~~~~~~~~~~~~~~~~
 	~~~~~~~~~~~~~~~~~~~~~
 	|       Header      |
-	|...................|
-	|   Possible file   |
-	|        data.      |
+	|...................-
+	| File data or link |
+	|                   |
 	---------------------
 
 ### Headers. ###
 
 
 Each header starts with a 4 byte signature, to identify the type. There
-are 3 types of entries.
+are 2 types of entries.
  
  * Files (0xDBFF500F).
- * Directories (0xDBFF500D).
  * Links (0xDBFF5001).
  
 #### File header. ####
@@ -48,14 +47,6 @@ are 3 types of entries.
  * Name, see above for size.
  * Size of file data in bytes, 4 bytes.
  * File data, see above for size.
-
-#### Directory header. ####
-
- * Signature, 0xDBFF500D, 4 bytes.
- * Offset from this header to the next, 4 bytes.
- * Length of name, 1 byte.
- * Name, see above for size.
- * Number of entries in directory, 2 bytes.
 
 #### Link header. ####
 
@@ -69,16 +60,26 @@ are 3 types of entries.
 Limits.
 -------
 
-Entries are either directories, files, or links.
+Entries are either files, or links.
 
  * 256 character entry name limit.
- * 65536 Entries in each directory.
  * 4,294,967,295 bytes in file system.
+ * No directories.
+ 
+Even though directories are not supported at this time, file names may
+contain slashes (``/``). This makes it possible to have the "feel" of
+directory support without, the real deal.
+ 
+ESP8266 firmware limits.
+------------------------
+
+The ESP8266 firmware can only resolve absolute symbolic links. The file
+system supports relative path in links, but the firmware will fail.
  
 Image creation.
 ---------------
 
-`dbffs-image` is a tool to create a file DBF file system image from a
+`dbffs-image` is a tool to create a DBF file system image from a
 directory tree. On systems supporting symbolic links, these are made
 in to links on the target as well. There is no validation of the image,
 and especially links are not checked in any way.

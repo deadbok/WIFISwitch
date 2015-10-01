@@ -8,10 +8,10 @@ DEPS := $(SOURCES:.c=.d)
 INSTALL_DIR ?= ..
 INSTALL_TARGET := $(INSTALL_DIR)/$(notdir $(TARGET))
 
-ifdef $(DEBUG)
-CFLAGS := -Wall -g -MD
+ifdef DEBUG
+CFLAGS := -Wall -g -MD -std=c99
 else
-CFLAGS := -Wall -MD
+CFLAGS := -Wall -MD -std=c99
 endif
 
 all: $(TARGET)

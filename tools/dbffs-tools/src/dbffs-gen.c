@@ -20,24 +20,41 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-#include <errno.h> //errno
-#include <stdio.h> //printf
+/**
+ * @brief Use X/Open 5, incorporating POSIX 1995 (for nftw).
+ */
+#define _XOPEN_SOURCE 500 //For nftw.
+
+#include <sys/stat.h>
 #include <string.h>
 #include <stddef.h> //size_t
 #include <stdint.h> //Fixed width integer types.
 #include <stdlib.h> //malloc
 #include <unistd.h> //getopt
-#include <dirent.h> //opendir, readir, closedir. dirent, DIR
-#include <sys/stat.h> //lstat
+#include <errno.h> //errno
+#include <stdio.h> //printf
 #include "common.h"
 #include "dbffs.h"
-#include "dbffs-dir.h"
+#include "dbffs-gen.h"
 #include "dbffs-file.h"
 #include "dbffs-link.h"
 
 unsigned short fs_n_entries = 0;
-void *fs_entries = NULL;
 void *current_fs_entry = NULL;
+void *fs_entries = NULL;
+
+/**
+ * @brief Current path in the target image.
+ */ 
+static char fs_path[DBFFS_MAX_PATH_LENGTH];
+/**
+ * @brief Current root when handling links.
+ */
+static char *current_root;
+/**
+ * @brief True of the current link target is a directory..
+ */
+static bool linked_dir;
 
 uint16_t swap16(uint16_t v)
 {
@@ -61,174 +78,187 @@ uint32_t swap32(uint32_t v)
 	return (*((uint32_t *)ret));
 }
 
-void create_entry(const char *path, char *entryname)
+/**
+ * @brief Add an entry to the file system entry list.
+ * 
+ * @param entry Pointer to the entry to add.
+ */
+static void add_fs_entry(void *entry)
 {
-	struct stat statbuf;
-	size_t dir_len;
-	char *dir;
-	void *ret;
+	if (current_fs_entry)
+	{
+		((struct dbffs_file_hdr *)(current_fs_entry))->next = entry;
+	}
+	else
+	{
+		fs_entries = entry;
+	}
+	current_fs_entry = entry;
+	fs_n_entries++;
+}
 
-	if (fs_n_entries >= DBFFS_MAX_ENTRIES)
+/**
+ * @brief Handle entries within a link.
+ * 
+ * ``nftw`` callback.
+ * 
+ * @note See ``nftw`` the in POSIX standard.
+ * 
+ * @param path Path of the current entry.
+ * @param pstat Pointer to stat info for the entry.
+ * @param flag ``nftw`` flags of the entry.
+ * @param pftw Pointer to an FTW struct with members ``base`` as offset of entry in path, and ``level`` as path depth.
+ * @return 0 to keep going, some other value to stop.
+ */
+static int handle_link_entry(const char *path, const struct stat *pstat, int flag, struct FTW *pftw)
+{
+	void *ret;
+	size_t size = 0;
+	char *target_path;
+	char *fs_path_pos;
+	struct stat statbuf;
+	char fixed_target_path[2048];
+
+	fs_path_pos = fs_path + strlen(fs_path);
+	switch (flag)
 	{
-		die("No more entries in file system.");
-	}
-	errno = 0;
-	//Use lstat to find file type. Readdir could do this, but not on all
-	//systems.
-	if (lstat(path, &statbuf) != 0)
-	{
-		die("Error getting file info.");
-	}
-	switch (S_IFMT & statbuf.st_mode)
-	{
-		case S_IFREG:
-			ret = create_file_entry(path, entryname);
-			//Add to the list.
-			//By some strange coincidence I have put the same data in the top
-			//part of every header struct, so just pick a random header type
-			//and cast to that.
-			((struct dbffs_file_hdr *)(current_fs_entry))->next = ret;
-			current_fs_entry = ret;
-			fs_n_entries++;
-			break;
-		case S_IFDIR:
-			dir_len = strlen(path);
-			dir = malloc(dir_len + 2);
-			if (!dir)
+		case FTW_F:
+			if (linked_dir)
 			{
-				die("Could not allocate memory for directory name.");
+				strcat(fs_path, "/");
+				strcat(fs_path, path + pftw->base);
 			}
-			strcpy(dir, path);
-			strcat(dir, "/");
-			strcat(dir, "\0");
-			//Add dir.
-			printf("-> %s, ", dir);
-			ret = create_dir_entry(dir, entryname);
-			((struct dbffs_dir_hdr *)(current_fs_entry))->next = ret;
-			current_fs_entry = ret;
-			fs_n_entries++;
-			//Add entries in dir.
-			populate_fs_image(dir);
-			printf("<- %s %d entries.\n", dir, ((struct dbffs_dir_hdr *)(ret))->entries);
-			free(dir);
+			info("  Linked file %s -> %s.\n", fs_path, path);
+			//Make path absolute to link target.
+			target_path = rpath(path + strlen(root_dir) - 1, NULL);
+			ret = create_link_entry(fs_path, target_path);
+			add_fs_entry(ret);
+			free(target_path);
+			*fs_path_pos = '\0';
 			break;
-		case S_IFLNK:
-			ret = create_link_entry(path, entryname);
-			//Add to the list.
-			((struct dbffs_link_hdr *)(current_fs_entry))->next = ret;
-			current_fs_entry = ret;
-			fs_n_entries++;
+		case FTW_D:
+			//Check if we are till handling the linked dir.
+			if (strcmp(current_root, path) != 0)
+			{
+				strcat(fs_path, "/");
+				strcat(fs_path, path + pftw->base);
+				info("  Linked directory %s -> %s.\n", path, fs_path);
+				linked_dir = false;
+			}
+			break;
+		case FTW_SL:
+			errno = 0;
+			if (stat(path, &statbuf) == -1)
+			{
+				die("Could not read link target information.\n");
+			}
+			switch (statbuf.st_mode & S_IFMT)
+			{
+				case S_IFDIR:
+					info("  Link target is a directory.\n");
+					linked_dir = true;
+					strcpy(fs_path, path + strlen(root_dir) - 1);
+					break;
+				case S_IFLNK:
+					info("  Link target is a link.\n");
+					linked_dir = false;
+					break;
+				case S_IFREG:
+					info("  Link target is a file.\n");
+					linked_dir = false;
+					strcpy(fs_path, path + strlen(root_dir) - 1);
+					break;
+				default:
+					info("  Target type unknown %d.\n", statbuf.st_mode & S_IFMT);
+					break;
+			}
+			info("  Link %s -> %s.\n", path, fs_path);
+			//Copy current path without current entry.
+			memcpy(fixed_target_path, path, pftw->base);
+			//Add path to the link target.
+			size = readlink(path, fixed_target_path + pftw->base, 2048 - pftw->base);
+			if (size < 0)
+			{
+				perror("Error reading link target.");
+				return(1);
+			}
+			//Terminate string, now containing the path to the link target.
+			fixed_target_path[pftw->base + size] = '\0';
+			info(" Link target %s.\n", fixed_target_path);
+			current_root = fixed_target_path;
+			nftw(fixed_target_path, handle_link_entry, 10, FTW_PHYS);
 			break;
 		default:
-			printf("unsupported type, skipping.\n");
+			info("Unsupported type %d in link, skipping %s -> %s.\n", flag, path, fs_path);
 	}
+	return(0);
 }
-
-unsigned int populate_fs_image(const char* root_dir)
-{
-	DIR *dir;
-	char *filename;
-	char *entryname;
-    struct dirent *dp;
-    size_t filename_len;
-    size_t root_dir_len;
-    unsigned int entries = 0;
-    
-    errno = 0;
-    if (!(dir = opendir(root_dir)))
-    {
-        die("Cannot open directory.");
-    }
-    errno = 0;
-    if (!(dp = readdir(dir)))
-    {
-        die("Cannot read directory\n");
-	}
 	
-	while (dp)
+int handle_entry(const char *path, const struct stat *pstat, int flag, struct FTW *pftw)
+{
+	void *ret;
+	size_t size;
+	struct stat statbuf;
+	char target_path[2048];
+	
+	switch (flag)
 	{
-		//Skip "." and "..", also skips dot files, stone cold.
-		if ((strncmp(dp->d_name, ".", 1) != 0))
-		{
-			filename_len = strlen(dp->d_name);
-			root_dir_len = strlen(root_dir);
-			
+		case FTW_F:
+			strcpy(fs_path, path + strlen(root_dir) - 1);
+			info(" File %s -> %s.\n", path, fs_path);
+			ret = create_file_entry(path, fs_path);
+			add_fs_entry(ret);
+			fs_path[pftw->base - strlen(root_dir)] = '\0';
+			break;
+		case FTW_D:
+			strcpy(fs_path, path + strlen(root_dir) - 1);
+			info(" Directory %s -> %s.\n", path, fs_path);
+			break;
+		case FTW_SL:
 			errno = 0;
-			filename = malloc(root_dir_len + filename_len + 1);
-			if (errno > 0)
+			if (stat(path, &statbuf) == -1)
 			{
-				die("Could not allocate memory for new path.");
+				die("Could not read link target information.\n");
 			}
-			strcpy(filename, root_dir);
-			strcat(filename, dp->d_name);
-			filename[root_dir_len + filename_len] = '\0';
-			entryname = malloc(filename_len + 1);
-			if (errno > 0)
+			switch (statbuf.st_mode & S_IFMT)
 			{
-				die("Could not allocate memory for entry name.");
+				case S_IFDIR:
+					info(" Link target is a directory.\n");
+					linked_dir = true;
+					strcpy(fs_path, path + strlen(root_dir) - 1);
+					break;
+				case S_IFLNK:
+					info(" Link target is a link.\n");
+					linked_dir = false;
+					break;
+				case S_IFREG:
+					info(" Link target is a file.\n");
+					linked_dir = false;
+					strcpy(fs_path, path + strlen(root_dir) - 1);
+					break;
+				default:
+					info(" Target type unknown %d.\n", statbuf.st_mode & S_IFMT);
+					break;
 			}
-			strcpy(entryname, dp->d_name);
-			printf("%s, ", filename);
-			create_entry(filename, entryname);
-			entries++;
-			free(filename);
-		}
-		errno = 0;
-		dp = readdir(dir);
-		if (errno > 0)
-		{
-			die("Could not read directory contents.");
-		}
+			info(" Link %s -> %s.\n", path, fs_path);
+			//Copy current path without current entry.
+			memcpy(target_path, path, pftw->base);
+			//Add path to the link target.
+			size = readlink(path, target_path + pftw->base, 2048 - pftw->base);
+			if (size < 0)
+			{
+				perror("Error reading link target.");
+				return(1);
+			}
+			//Terminate string, now containing the path to the link target.
+			target_path[pftw->base + size] = '\0';
+			info(" Link target %s.\n", target_path);
+			current_root = target_path;
+			nftw(target_path, handle_link_entry, 10, FTW_PHYS);
+			break;
+		default:
+			info("Unsupported type %d, skipping %s -> %s.\n", flag, path, fs_path);
 	}
-	errno = 0;
-	closedir(dir);
-	if (errno > 0)
-	{
-		die("Could not close directory.");
-	}
-	return(entries);
+	return(0);
 }
 
-unsigned short count_dir_entries(const char* root_dir)
-{
-	DIR *dir;
-    struct dirent *dp;
-    unsigned int ret = 0;
-    
-    errno = 0;
-    if (!(dir = opendir(root_dir)))
-    {
-        die("Cannot open directory.");
-    }
-    errno = 0;
-    if (!(dp = readdir(dir)))
-    {
-        die("Cannot read directory\n");
-	}
-	
-	while (dp)
-	{
-		//Skip "." and "..", also skips dot files, stone cold.
-		if ((strncmp(dp->d_name, ".", 1) != 0))
-		{
-			ret++;
-			if (ret > 65535)
-			{
-				die("More than 65536 entries in diectory.");
-			}
-		}
-		errno = 0;
-		dp = readdir(dir);
-		if (errno > 0)
-		{
-			die("Could not read directory contents.");
-		}
-	}
-	errno = 0;
-	closedir(dir);
-	if (errno > 0)
-	{
-		die("Could not close directory.");
-	}
-	return((unsigned short)ret);
-}

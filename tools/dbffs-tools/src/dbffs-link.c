@@ -20,6 +20,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
+/**
+ * @brief Use X/Open 5, incorporating POSIX 1995 (for nftw).
+ */
+#define _XOPEN_SOURCE 500 //For nftw.
 #include <errno.h> //errno
 #include <stdio.h> //printf
 #include <string.h>
@@ -32,62 +36,10 @@
 #include "dbffs-gen.h"
 #include "dbffs-file.h"
 
-/**
- * @brief Get the contents of a symbolic link.
- * 
- * @param path Path to the link.
- * @return Link target path or NULL.
- */
-static char *db_readlink(const char *path)
-{
-    int ret;
-    char *link;
-    int link_size = 33;
-    
-    //Get initial mem.
-	errno = 0;
-	link = malloc(link_size);
-	if (!link || (errno > 0))
-	{
-		die("Could not allocate memory for link target.");
-	}    
-
-	//Stop trying before memory reallocation runs havoc.
-	while (link_size < 65536)
-	{
-		errno = 0;
-		ret = readlink(path, link, link_size - 1);
-		if ((ret < 1) || (errno > 1))
-		{
-			die("Error getting symbolic link target.");
-		}
-		if (ret < link_size) 
-		{
-			link[ret] = '\0';
-			return(link);
-		}
-		//Not enough mem, get some more.
-		link_size += 32;
-		errno = 0;
-		if ((realloc(link, link_size) == NULL) || (errno > 0))
-		{
-			die("Could not expand memory for link target.");
-		}
-	}
-    return(NULL);
-}
-
-struct dbffs_link_hdr *create_link_entry(const char *path, char *entryname)
+struct dbffs_link_hdr *create_link_entry(const char *entryname, const char *target)
 {
 	struct dbffs_link_hdr *entry;
-	char *link_target;
 	
-	link_target = db_readlink(path);
-	if (!link_target)
-	{
-		die("Could not get the link target.");
-	}
-    printf("-> %s, link\n", link_target);
 	//Get mem and start populating a dir entry.
 	errno = 0;
 	entry = calloc(sizeof(struct dbffs_link_hdr), sizeof(uint8_t));
@@ -96,15 +48,24 @@ struct dbffs_link_hdr *create_link_entry(const char *path, char *entryname)
 		die("Could not allocate memory for link entry.");
 	}
 	entry->signature = DBFFS_LINK_SIG;
-	entry->name = entryname;
+	if (!(entry->name = calloc(strlen(entryname) + 1, sizeof(char))))
+	{
+		die("Could not allocate memory for link entry name.");
+	}
+	strcpy(entry->name, entryname);
 	entry->name_len  = strlen(entryname);
-	entry->target = link_target;
-	entry->target_len = strlen(link_target);
+	if (!(entry->target = calloc(strlen(target) + 1, sizeof(char))))
+	{
+		die("Could not allocate memory for link entry target.");
+	}
+	strcpy(entry->target, target);
+	info("  Creating link %s -> %s.\n", entry->name, entry->target);
+	entry->target_len = strlen(target);
 
 	return(entry);
 }
 
-void write_link_entry(const struct dbffs_link_hdr *entry, FILE *fp)
+uint32_t write_link_entry(const struct dbffs_link_hdr *entry, FILE *fp)
 {
 	size_t ret;
 	uint32_t dword;
@@ -163,4 +124,5 @@ void write_link_entry(const struct dbffs_link_hdr *entry, FILE *fp)
 	{
 		die("Could not write target name.");
 	}
+	return(dword);
 }

@@ -24,6 +24,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
+/**
+ * @brief Use X/Open 5, incorporating POSIX 1995 (for nftw).
+ */
+#define _XOPEN_SOURCE 500 //For nftw.
+
 #include <errno.h> //errno
 #include <stdio.h> //printf
 #include <stddef.h> //size_t
@@ -34,13 +39,13 @@
 #include "dbffs.h"
 #include "dbffs-gen.h"
 
-struct dbffs_file_hdr *create_file_entry(const char *path, char *entryname)
+struct dbffs_file_hdr *create_file_entry(const char *path, const char *entryname)
 {
 	FILE *fp;
 	size_t bytes_read;
 	struct dbffs_file_hdr *entry;	
 	
-	printf("file\n");
+	info("  Creating file %s source ", entryname);
 	//Get mem and start populating a file entry.
 	errno = 0;
 	entry = calloc(sizeof(struct dbffs_file_hdr), sizeof(uint8_t));
@@ -49,9 +54,14 @@ struct dbffs_file_hdr *create_file_entry(const char *path, char *entryname)
 		die("Could not allocate memory for file entry.");
 	}
 	entry->signature = DBFFS_FILE_SIG;
-	entry->name = entryname;
+	if (!(entry->name = calloc(strlen(entryname) + 1, sizeof(char))))
+	{
+		die("Could not allocate memory for file entry name.");
+	}
+	strcpy(entry->name, entryname);
 	entry->name_len  = strlen(entryname);
 	//Find file data length.
+	info("%s.\n", path);
 	errno = 0;
 	fp = fopen(path, "r");
 	if (!fp || (errno > 0))
@@ -102,7 +112,7 @@ struct dbffs_file_hdr *create_file_entry(const char *path, char *entryname)
 	return(entry);
 }
 
-void write_file_entry(const struct dbffs_file_hdr *entry, FILE *fp)
+uint32_t write_file_entry(const struct dbffs_file_hdr *entry, FILE *fp)
 {
 	size_t ret;
 	uint32_t offset;
@@ -162,4 +172,5 @@ void write_file_entry(const struct dbffs_file_hdr *entry, FILE *fp)
 	{
 		die("Could not write file data.");
 	}
+	return(offset);
 }
