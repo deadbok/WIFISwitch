@@ -28,7 +28,7 @@
 /**
  * @brief DBFFS version.
  */
-#define DBFFS_VERSION "0.1.0"
+#define DBFFS_VERSION "0.2.0"
 
 /**
  * @brief File system signature.
@@ -93,9 +93,9 @@ struct dbffs_file_hdr
 	 */
 	uint32_t signature;
 	/**
-	 * @brief Offset from start of the entry to next entry.
+	 * @brief Pointer to next entry.
 	 */
-	uint32_t next;
+	void *next;
 	/**
 	 * @brief File name length.
 	 */
@@ -108,6 +108,12 @@ struct dbffs_file_hdr
 	 * @brief Size of file data.
 	 */
 	uint32_t size;
+	/**
+	 * @brief Size of compressed file data.
+	 * 
+	 * *Zero means the data is not compressed.*
+	 */
+	uint32_t csize;
 	/**
 	 * @brief The address of the file data.
 	 */

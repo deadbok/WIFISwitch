@@ -57,9 +57,9 @@ LIBS		= c gcc hal pp phy net80211 lwip wpa main json
 
 # compiler flags using during compilation of source files
 ifndef DEBUG
-CFLAGS		= -O2 -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		= -O2 -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH
 else
-CFLAGS		= -g -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals  -D__ets__ -DICACHE_FLASH
+CFLAGS		= -g -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH
 endif
 
 # linker flags used to generate the main object file

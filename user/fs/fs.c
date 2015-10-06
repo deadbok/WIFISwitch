@@ -33,6 +33,10 @@
 */
 struct fs_file
 {
+	/**
+	 * @brief Pointer to file system data.
+	 */
+	void *fs_data;
     /**
      * @brief Start position of the file data.
      */
@@ -137,13 +141,17 @@ FS_FILE_H ICACHE_FLASH_ATTR fs_open(char *filename)
    
     //Get some memory for file house keeping, and fill in the data.
     file = db_malloc(sizeof(struct fs_file), "file fs_open");
+	if (!file)
+	{
+		error("Could not allocate memory for file handle infos.\n");
+		return(-1);
+	}
+	debug(" Saving file header at %p", file_hdr);
+    file->fs_data = file_hdr;
     file->pos = 0;
     file->start_pos = file_hdr->data_addr;
     file->size = file_hdr->size;
     file->eof = false;
-    
-    //Free up the file header, since we don't need it anymore.
-    dbffs_free_file_header(file_hdr);
     
     //Find the first free file handle
     for(i = 0; ((i < FS_MAX_OPEN_FILES) && (fs_open_files[i] != NULL)); i++);
@@ -175,6 +183,10 @@ void ICACHE_FLASH_ATTR fs_close(FS_FILE_H handle)
     }
     if (fs_open_files[handle])
     {
+		if (fs_open_files[handle]->fs_data)
+		{
+			db_free(fs_open_files[handle]->fs_data);
+		}
 		db_free(fs_open_files[handle]);
 	}
     fs_open_files[handle] = NULL;
@@ -206,7 +218,7 @@ size_t ICACHE_FLASH_ATTR fs_read(void *buffer, size_t size, size_t count, FS_FIL
         total_size = fs_open_files[handle]->size - fs_open_files[handle]->pos;
     }
 
-    if (!aflash_read(buffer, abs_pos, total_size))
+    if (!dbffs_read(fs_open_files[handle]->fs_data, buffer, abs_pos, total_size))
     {
         error("Failed reading %d bytes from %d.\n", total_size, handle);
         return(0);
@@ -234,11 +246,11 @@ int ICACHE_FLASH_ATTR fs_getc(FS_FILE_H handle)
     }
     
     //Read the char.
-    if (!aflash_read(&ch, abs_pos, sizeof(char)))
-    {
+    if (!dbffs_read(fs_open_files[handle]->fs_data, &ch, abs_pos, sizeof(char)))
+    /*{
         error("Failed reading %d bytes from %d.\n", sizeof(char), handle);
         return(FS_EOF);
-    }
+    }*/
     //Adjust position.
     fs_open_files[handle]->pos += sizeof(char);
     return(ch);
@@ -272,11 +284,11 @@ char ICACHE_FLASH_ATTR *fs_gets(char *str, size_t count, FS_FILE_H handle)
     do
     {
         //Read the char.
-        if (!aflash_read(&ch, abs_pos + i, sizeof(char)))
+        /*if (!dbffs_read(fs_open_files[handle]->fs_data, &ch, abs_pos + i, sizeof(char)))
         {
             error("Failed reading %d bytes from %d.\n", sizeof(char), handle);
             return(NULL);
-        }
+        }*/
         //Update position.
         fs_open_files[handle]->pos += sizeof(char);
         //Add char.

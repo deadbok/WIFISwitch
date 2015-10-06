@@ -1,11 +1,28 @@
+2015-10-06 Martin Grønholdt
+
+* user_config.h: Added assert function.
+* Toolchain ESP8266 SDK now version 1.4.
+* tools/missing_dec.h: Corrected for SDK 1.4 changes for their leak detection stuff.
+2015-10-05 Martin Grønholdt
+
+* fs/fs.c (fs_open): Added memory allocation check.
+
+
 2015-10-01 Martin Grønholdt
 
+* fs/fs.c (fs_file): Added fs_data entry.
+		  (fs_open): Save file system header in fs_file.
+		  (fs_free): Deallocate fs_data in fs_file.
+* fs/heatshrink_*.*: Added files.
+* fs/dbffs.*: Actual working implementation.
+* tools/dbffs-tools/src/heatshrink: Forked heatshrink compression into code as sub-module.
 * tools/dbffs-tools/README.me: Added file.
 * tools/dbffs-tools/src/*: Removed directory support.
 						   Writes absolute links.
 						   Added verbose command line option.						   
-						   DBFFS at version 0.1.0.
-						   dbffs-iamge at version 0.2.0.
+						   Heatshrink compression.
+						   DBFFS at version 0.2.0.
+						   dbffs-image at version 0.2.0.
 
 
 2015-09-21 Martin Grønholdt

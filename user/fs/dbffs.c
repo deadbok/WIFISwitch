@@ -9,6 +9,7 @@
 #include "user_config.h"
 #include "int_flash.h"
 #include "dbffs.h"
+#include "heatshrink_decoder.h"
 
 /**
  * @brief Load type and offset to next header.
@@ -108,6 +109,70 @@ void ICACHE_FLASH_ATTR dbffs_free_file_header(struct dbffs_file_hdr *entry)
 	}
 }
 
+static size_t decode_file_data(uint8_t *data, size_t data_size, uint8_t *buf, size_t buf_size)
+{
+	heatshrink_decoder *hdec = NULL;
+	HSD_sink_res sink_res;
+	HSD_poll_res poll_res;
+	HSD_finish_res finish_res;
+	uint8_t *buf_pos = buf;
+	size_t sunk;
+	size_t polled;
+	size_t ret = 0;
+	
+	debug("Decompressing %d bytes at %p into %p (%d bytes).\n", data_size, data, buf, buf_size);
+	hdec = heatshrink_decoder_alloc(data_size, 10, 5);
+	if (!hdec)
+	{
+		error("Could not allocate Heatshrink decoder.");
+		return(0);
+	}
+
+	//Go, till the output buffer is filled.
+	while (0 < buf_size)
+	{
+		debug(" Sinking %d bytes into Heatshrink.\n", data_size);
+		sink_res = heatshrink_decoder_sink(hdec, data, data_size, &sunk);
+		if (sink_res != HSDR_SINK_OK)
+		{
+			error("Error buffering file data.");
+			return(ret);
+		}
+		data_size -= sunk;
+		data += sunk;
+		do
+		{
+			if (data_size == 0)
+			{
+				finish_res = heatshrink_decoder_finish(hdec);
+				if (finish_res == HSDR_FINISH_DONE)
+				{
+					debug("Done decompressing.\n");
+					break;
+				}
+				if (finish_res != HSDR_FINISH_MORE)
+				{
+					error("Error closing decoder.");
+					return(ret);
+				}
+			}
+			debug(" Heatshrink decoding %d bytes at &p.\n", buf_size, buf_pos);
+			poll_res = heatshrink_decoder_poll(hdec, buf_pos, buf_size, &polled);
+			if ((poll_res != HSDR_POLL_MORE) &&
+			    (poll_res != HSDR_POLL_EMPTY))
+			{
+				error("Error decoding file data.");
+				return(ret);
+			}
+			buf_pos += polled;
+			buf_size -= polled;
+			ret += polled;
+		} while (poll_res == HSDR_POLL_MORE);
+		debug("Decompressing %d bytes of input left.\n", data_size);
+	}
+    return(ret);
+}
+
 /**
  * @brief Load a file header.
  * @brief address Address to load the data from.
@@ -147,7 +212,14 @@ static struct dbffs_file_hdr ICACHE_FLASH_ATTR *load_file_header(unsigned int ad
         dbffs_free_file_header(ret);
         return(NULL);
 	}
-	ret->data_addr = offset + sizeof(ret->size);
+	offset += sizeof(ret->size);
+	if (!aflash_read(&ret->csize, offset, sizeof(ret->csize)))
+    {
+        debug("Could not read compressed data size at 0x%x.\n", offset);
+        dbffs_free_file_header(ret);
+        return(NULL);
+	}
+	ret->data_addr = offset + sizeof(ret->csize);
 	
 	return(ret);
 }
@@ -312,6 +384,55 @@ struct dbffs_file_hdr ICACHE_FLASH_ATTR *dbffs_find_file_header(char *path)
 }
 
 /**
+ * @brief Read data from an arbitrary position in the FS portion of the flash.
+ * 
+ * @param data Pointer to a buffer to place the data in.
+ * @param read_addr Address to read from.
+ * @param size Bytes to read.
+ * @return True if everything went well, false otherwise.
+ */
+bool ICACHE_FLASH_ATTR dbffs_read(const struct dbffs_file_hdr *file_hdr, void *data, unsigned int read_addr, size_t size)
+{
+	unsigned char cbuf[512];
+	uint32_t rpos = file_hdr->data_addr;
+	size_t ret;
+	
+	debug("Reading %d bytes from %s into %p.\n", size, file_hdr->name, data);
+	
+	if (file_hdr->csize == 0)
+	{
+		debug(" File data is not compressed.\n");
+		if (!aflash_read(data, read_addr, size))
+		{
+			error("Failed reading %d.\n", size);
+			return(false);
+		}
+	}
+	else
+	{
+		debug(" File data is compressed.\n");
+		
+		/* Read from the start till we have reached the data.
+		 * This is wasteful, but I don't know how to find the uncompressed
+		 * position smarter.
+		 */
+
+		debug(" Reading %d bytes at position 0x%x.\n", size, rpos);
+		 //Read data from file.
+		if (!aflash_read(cbuf, rpos, 512))
+		{
+			error("Failed reading %d.\n", size);
+			return(false);
+		}
+		ret = decode_file_data(cbuf, 512, data, size);
+		debug(" Decompressed %d bytes.\n", ret);
+		rpos += size;
+	}
+    return(true);
+}
+
+/**
+ * 
  * @brief Initialise the zip routines.
  */
 void ICACHE_FLASH_ATTR init_dbffs(void)

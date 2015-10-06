@@ -40,6 +40,15 @@
 #include "dbffs-gen.h"
 #include "heatshrink_encoder.h"
 
+/** 
+ * @brief Compress the file data using Heatshrink.
+ * 
+ * @param data Pointer to file data.
+ * @param data_size Size of file data.
+ * @param buf Pointer to output buffer.
+ * @param buf_size Buffer size.
+ * @return Number of compressed bytes in buf.
+ */
 static size_t encode_file_data(uint8_t *data, size_t data_size, uint8_t *buf, size_t buf_size)
 {
 	heatshrink_encoder *henc = NULL;

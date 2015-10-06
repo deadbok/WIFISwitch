@@ -32,4 +32,14 @@ extern void init_dbffs(void);
 extern void dbffs_free_file_header(struct dbffs_file_hdr *entry);
 extern struct dbffs_file_hdr *dbffs_find_file_header(char *path);
 
+/**
+ * @brief Read data from an arbitrary position in the FS portion of the flash.
+ * 
+ * @param data Pointer to a buffer to place the data in.
+ * @param read_addr Address to read from.
+ * @param size Bytes to read.
+ * @return True if everything went well, false otherwise.
+ */
+extern bool dbffs_read(const struct dbffs_file_hdr *file_hdr, void *data, unsigned int read_addr, size_t size);
+
 #endif //DBFFS

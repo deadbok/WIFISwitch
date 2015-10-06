@@ -124,9 +124,24 @@ extern void db_hexdump(void *mem, unsigned int len);
 #define warn(...)
 #endif
 
-//Macro for debugging. Prints the messag if debugging is enabled.
+//Macro for debugging. Prints the message if debugging is enabled.
 #ifdef DEBUG
 #define debug(...)     db_printf(__VA_ARGS__)
+
+#define stringize(s) #s
+#define XSTR(s) stringize(s)
+#define assert(expr) \
+			do { \
+				if (0 == (expr)) { \
+					debug( \
+						  "Assertion failed: %s, " \
+						  "%s(), %d at \'%s\'\n", \
+						  __FILE__, \
+						  __func__, \
+						  __LINE__, \
+						  XSTR(expr)); \
+				} \
+			} while (0)
 #else
 #define debug(...)
 #endif

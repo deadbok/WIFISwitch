@@ -44,7 +44,7 @@
  * value, is where the initialisation routine starts scanning for the
  * file system.
  */
-size_t fs_addr = 0xa000;
+size_t fs_addr = 0x6000;
 
 /**
  * @brief Return the flash chip's size, in bytes.
