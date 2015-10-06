@@ -80,11 +80,11 @@
 /**
  * @brief Print debug info on the serial port.
  */
-#define DEBUG
+//#define DEBUG
 /**
  * @brief Print memory allocation info.
  */
-#define DEBUG_MEM
+//#define DEBUG_MEM
 /**
  * @brief List memory allocations.
  */
