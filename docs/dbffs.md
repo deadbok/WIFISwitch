@@ -13,7 +13,7 @@ Structure.
 ----------
 
 The file system is an array of headers, and starts with a file system
-signature 4 bytes long.
+signature (0xDBFF5000) 4 bytes long.
 	
 	---------------------
 	|    FS signature   |
