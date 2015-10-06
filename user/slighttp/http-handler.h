@@ -64,7 +64,7 @@ extern http_handler_callback http_get_handler(
 	http_handler_callback start_handler
 );
 extern signed int http_status_handler(struct http_request *request);
-extern signed int ICACHE_FLASH_ATTR http_simple_GET_PUT_handler(
+extern signed int http_simple_GET_PUT_handler(
 	struct http_request *request, 
 	http_handler_callback get_cb,
 	http_handler_callback put_cb,

@@ -29,6 +29,7 @@
 #include "c_types.h"
 #include "user_interface.h"
 #include "user_config.h"
+#include "fs/dbffs.h"
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
 #include "slighttp/http-handler.h"
@@ -49,7 +50,7 @@ static signed int ICACHE_FLASH_ATTR create_get_response(struct http_request *req
 
 	if (!request->response.message)
 	{	
-		response = db_malloc(sizeof(char) * 62, "response create_response");
+		response = db_malloc(sizeof(char) * 93, "response create_response");
 		response_pos = response;
 		
 		os_strcpy(response_pos, "{ \"fw_ver\" : \"");
@@ -63,6 +64,12 @@ static signed int ICACHE_FLASH_ATTR create_get_response(struct http_request *req
 		
 		os_strcpy(response_pos, HTTP_SERVER_VERSION);
 		response_pos += os_strlen(HTTP_SERVER_VERSION); //Hopefully never more than xxxx.xxxx.xxxx
+
+		os_strcpy(response_pos, "\", \"dbffs_ver\": \"");
+		response_pos += 17;
+		
+		os_strcpy(response_pos, DBFFS_VERSION);
+		response_pos += os_strlen(DBFFS_VERSION); //Hopefully never more than xxxx.xxxx.xxxx
 			
 		os_strcpy(response_pos, "\" }");
 		response_pos += 3;

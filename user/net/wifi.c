@@ -295,6 +295,11 @@ static void ICACHE_FLASH_ATTR wifi_handle_event_cb(System_Event_t *event)
 			debug("WiFi " MACSTR " disconnected from AP.\n", 
 			          MAC2STR(event->event_info.sta_disconnected.mac));
 			break;
+				//Someone has disconnected to out configuration AP.
+		case     EVENT_SOFTAPMODE_PROBEREQRECVED:
+			debug("WiFi " MACSTR " probe from AP.\n", 
+			          MAC2STR(event->event_info.ap_probereqrecved.mac));
+			break;
 		default:
 			warn("Unknown event %d from WiFi system.\n", event->event);
 			break;

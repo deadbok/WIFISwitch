@@ -1,5 +1,11 @@
 2015-10-06 Martin Grønholdt
 
+* net/wifi.c (wifi_handle_event_cb): Added EVENT_SOFTAPMODE_PROBEREQRECVED event from SDK 1.4.
+* fs/css/custom.css: Added link-button styles.
+* fs/connect/index.html: Added file system version and setup button.
+* slighttp/http-handler.h (http_simple_GET_PUT_handler): Removed FLASH attribute cruft.
+* handlers/rest/version.c (create_get_response): Added file system version.
+* user_config.h (STRING_VERSION): Upped version to 0.1.0.
 * handlers/fs/http-fs.c (http_fs_open_file): Fixed a zero termination bug. This closes BUG #1.
 * fs/fs.c (fs_open): Added memory allocation check.
 * Toolchain ESP8266 SDK now version 1.4.

@@ -19,11 +19,13 @@
 		<h4>Info:</h4>
 		<p>Firmware version: <span id="fw_ver">0.0.0</span></p>
 		<p>HTTP server version: <span id="httpd_ver">0.0.0</span></p>
+		<p>DBFFS version: <span id="dbffs_ver">0.0.0</span></p>
 		<p>Free memory: <span id="free_mem">?</span> bytes</p>
 		<h4>Network config.</h4>
 		<p>IP address: <span id="ip_addr">none</span></p>
 		<p>Network name: <span id="network">none</span></p>
 		<p>Hostname: <span id="hostname">none</span></p>
+		<a href="nets.html" class="link-button">Setup</a>
 	<div class="footer inverted">
 		<small><span class="copyright">&copy; Copyright 2015 Martin Bo Kristensen Gr&oslash;nholdt.</span><a href="LICENSE" class="license inverted">Read license.</a></small>
 	</div>
@@ -31,6 +33,7 @@
 	<script type="text/javascript">
 		var fw_version = document.getElementById("fw_ver");
 		var httpd_version = document.getElementById("httpd_ver");
+				var dbffs_version = document.getElementById("dbffs_ver");
 		var free_mem = document.getElementById("free_mem");
 		var ip_addr = document.getElementById("ip_addr");
 		var network = document.getElementById("network");
@@ -38,9 +41,11 @@
 		
 		atomic.get('/rest/fw/version').success(function(data, xhr) {
 			fw_version.innerHTML = data.fw_ver;
+			dbffs_version.innerHTML = data.dbffs_ver;
 			httpd_version.innerHTML = data.httpd_ver;
 		}).error(function(data, xhr) {
 			fw_version.innerHTML = "Could not get firmware version.";
+			dbffs_version.innerHTML = "Could not get file system version.";
 			httpd_version.innerHTML = "Could not get HTTP server version.";
 		});
 		atomic.get('/rest/fw/mem').success(function(data, xhr) {

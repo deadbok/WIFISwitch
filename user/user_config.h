@@ -32,7 +32,7 @@
 /**
  * @brief Firmware version.
  */
-#define STRING_VERSION "0.0.4"
+#define STRING_VERSION "0.1.0"
 
 /**
  * @brief Name of the default network to try and connect to.
@@ -80,7 +80,7 @@
 /**
  * @brief Print debug info on the serial port.
  */
-//#define DEBUG
+#define DEBUG
 /**
  * @brief Print memory allocation info.
  */
