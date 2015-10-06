@@ -119,7 +119,7 @@ bool ICACHE_FLASH_ATTR http_fs_open_file(struct http_request *request, bool err)
 	if ((err) && (request->response.status_code > 399))
 	{
 		debug(" Error status %d.\n", request->response.status_code);
-		uri = db_malloc(sizeof(char) * 10, "uri http_fs_test");
+		uri = db_malloc(sizeof(char) * 10, "uri http_fs_open_file");
 		uri[0] = '/';
 		itoa(request->response.status_code, uri + 1, 10);
 		os_memcpy(uri + 4, ".html\0", 6);
@@ -129,11 +129,13 @@ bool ICACHE_FLASH_ATTR http_fs_open_file(struct http_request *request, bool err)
 	//Check if we've already done this.
 	if (!request->response.context)
 	{
-		//Skip first slash;
-		uri++;
-		//Change an '/' uri into 'index.html'.
-		uri_size = os_strlen(uri);
-		//If the last character before the zero byte is a slash, add index.html.
+		//Skip first slash.
+		uri_size = os_strlen(uri) - 1;
+		uri++;	
+		debug(" Raw URI length %d.\n", uri_size);
+		/*Change an '/' uri into 'index.html' if the last character
+		 * before the zero byte is a slash, add index.html.
+		 */
 		if ((uri[uri_size - 1] != '/') && (uri[uri_size] == '\0'))
 		{
 			index_size = 0;		
@@ -147,25 +149,24 @@ bool ICACHE_FLASH_ATTR http_fs_open_file(struct http_request *request, bool err)
 		
 		//Get size and mem.
 		fs_uri_size = root_size + uri_size + index_size;
-		fs_uri = db_malloc(fs_uri_size, "fs_uri http_fs_test");
+		fs_uri = db_zalloc(fs_uri_size + 1, "fs_uri http_fs_open_file");
 		
 		if (root_size)
 		{
-			debug(" Adding root %s.\n", http_fs_root);
-			os_memcpy(fs_uri, http_fs_root, root_size);
+			os_strcat(fs_uri, http_fs_root);
+			debug(" Added root %s URI %s.\n", http_fs_root, fs_uri);
 		}
 		
-		os_memcpy(fs_uri + root_size, uri, uri_size);
+		os_strcat(fs_uri + root_size, uri);
 		
 		if (index_size)
 		{
-			debug(" Adding index.html.\n");
-			os_memcpy(fs_uri + root_size + uri_size, "index.html", 10);
+			os_strcat(fs_uri + root_size + uri_size, "index.html");
+			debug(" Added index.html URI %s.\n", fs_uri);
 		}
-		fs_uri[fs_uri_size] = '\0';	
 		
 		//Save file name in context.
-		context = db_malloc(sizeof(struct http_fs_context), "context http_fs_test");
+		context = db_malloc(sizeof(struct http_fs_context), "context http_fs_open_file");
 		context->filename = fs_uri;
 		request->response.context = context;
 		

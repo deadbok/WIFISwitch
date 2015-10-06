@@ -137,6 +137,11 @@ FS_FILE_H ICACHE_FLASH_ATTR fs_open(char *filename)
    
     //Get some memory for file house keeping, and fill in the data.
     file = db_malloc(sizeof(struct fs_file), "file fs_open");
+    if (!file)
+    {
+		error("Could not allocate memory for file info.\n");
+		return(-1);
+	}
     file->pos = 0;
     file->start_pos = file_hdr->data_addr;
     file->size = file_hdr->size;

@@ -28,7 +28,7 @@
 /**
  * @brief DBFFS version.
  */
-#define DBFFS_VERSION "0.2.0"
+#define DBFFS_VERSION "0.1.0"
 
 /**
  * @brief File system signature.
@@ -89,16 +89,33 @@ struct dbffs_file_hdr
 	 * @brief The file data.
 	 */
 	uint8_t *data;
+}  __attribute__ ((__packed__));
+
+/**
+ * @brief File header.
+ */
+struct dbffs_dir_hdr
+{
 	/**
-	 * @brief Size of compressed file data.
-	 * 
-	 * *Zero means the data is not compressed.*
+	 * @brief Directory signature.
 	 */
-	uint32_t csize;
+	uint32_t signature;
 	/**
-	 * @brief The compressed file data.
+	 * @brief Pointer to next entry.
 	 */
-	uint8_t *cdata;
+	void *next;
+	/**
+	 * @brief Number of file entries.
+	 */
+	uint8_t name_len;
+	/**
+	 * @brief File name.
+	 */
+	char *name;
+	/**
+	 * @brief Entries in the directory.
+	 */
+	uint16_t entries;
 }  __attribute__ ((__packed__));
 
 /**

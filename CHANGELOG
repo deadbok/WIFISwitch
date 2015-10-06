@@ -1,3 +1,11 @@
+2015-10-06 Martin Grønholdt
+
+* handlers/fs/http-fs.c (http_fs_open_file): Fixed a zero termination bug. This closes BUG #1.
+* fs/fs.c (fs_open): Added memory allocation check.
+* Toolchain ESP8266 SDK now version 1.4.
+* tools/missing_dec.h: Corrected for SDK 1.4 changes for their leak detection stuff.
+
+
 2015-10-01 Martin Grønholdt
 
 * tools/dbffs-tools/README.me: Added file.
