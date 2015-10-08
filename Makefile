@@ -19,88 +19,41 @@
 # - 2015-05-07: docs target, to create HTML documentation with Doxygen.
 # - 2015-05-09: debug target to just run minicom.
 # - 2015-05-09: Saving of debug logs in separate files under LOG_DIR.
+# - 2015-10-07: Cleanup and split into multiply files.
 
-# Output directors to store intermediate compiled files
-# relative to the project directory
-BUILD_BASE	= build
-FW_BASE		= firmware
+#Include project configuration.
+include mk/config.mk
+#Include OS specific configuration.
+include mk/$(BUILD_OS).mk
 
-# base directory for the compiler
-XTENSA_TOOLS_ROOT ?= /home/oblivion/esp8266/esp-open-sdk/xtensa-lx106-elf/bin/
-
-# base directory of the ESP8266 SDK package, absolute
-SDK_BASE	?= /home/oblivion/esp8266/esp-open-sdk/sdk/
-
-# esptool.py path and port
-ESPTOOL		?= python2 $(XTENSA_TOOLS_ROOT)/esptool.py
-ESPPORT		?= /dev/ttyUSB0
-ESPSPEED	?= 230400
-
-# Baud rate of the firmware console
-FIRMWARE_CON_SPEED = 230400
-
-# name for the target project
-TARGET		= wifiswitch
-
-# which modules (subdirectories) of the project to include in compiling
-MODULES			= user user/fs user/net user/slighttp user/tools
-MODULES			+= user/driver user/handlers/fs 
-MODULES			+= user/handlers/deny
-MODULES			+= user/handlers/rest
-EXTRA_INCDIR    = $(XTENSA_TOOLS_ROOT)../xtensa-lx106-elf/sysroot/usr/include/
-
-# Directory to use when creating the file system image.
-FS_DIR		?= fs
-
-# libraries used in this project, mainly provided by the SDK
-LIBS		= c gcc hal pp phy net80211 lwip wpa main json
-
-# compiler flags using during compilation of source files
+# Compile flags.
 ifndef DEBUG
-CFLAGS		= -O2 -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH
+CFLAGS = -O2 -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH
 else
-CFLAGS		= -g -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH
+CFLAGS = -g -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH
 endif
 
-# linker flags used to generate the main object file
-LDFLAGS		= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
+# Linker flags used to generate the main object file
+LDFLAGS	= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
 
-# linker script used for the above linkier step
+# Linker script used for the above linker step.
 LD_SCRIPT	= eagle.app.v6.ld
 
-# various paths from the SDK used in this project
+# Various paths from the SDK used in this project
 SDK_LIBDIR	= lib
 SDK_LDDIR	= ld
 SDK_INCDIR	= include include/json
 
-# we create two different files for uploading into the flash
-# these are the names and options to generate them
+# We create two different files for uploading into the flash
+# These are the names and addresses of these.
 FW_FILE_1_ADDR	= 0x00000
 FW_FILE_2_ADDR	= 0x40000
-
-# select which tools to use as compiler, librarian and linker
-CC		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
-AR		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-ar
-LD		:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
-
-#Other tools
-CP 		?= cp
-MKDIR 	?= mkdir -p
-RM		?= rm -f
-ECHO	?= @echo
-ZIP		?= zip
-CD		?= cd
-GET_FILESIZE ?= stat --printf="%s"
-FS_CREATE ?= tools/dbffs-image
 
 ####
 #### no user configurable options below here
 ####
 SRC_DIR		 := $(MODULES)
 BUILD_DIR	 := $(addprefix $(BUILD_BASE)/,$(MODULES))
-LOG_DIR		 := logs
-TOOLS_DIR	 := tools
-FS_ROOT_DIR	 := $(BUILD_BASE)/fs_root
 
 SDK_LIBDIR	 := $(addprefix $(SDK_BASE)/,$(SDK_LIBDIR))
 SDK_INCDIR	 := $(addprefix -I$(SDK_BASE)/,$(SDK_INCDIR))
@@ -121,15 +74,17 @@ MODULE_INCDIR	:= $(addsuffix /include,$(INCDIR))
 FW_FILE_1		:= $(addprefix $(FW_BASE)/,$(FW_FILE_1_ADDR).bin)
 FW_FILE_2		:= $(addprefix $(FW_BASE)/,$(FW_FILE_2_ADDR).bin)
 
-FS_SIZE = $(shell printf '%d\n' $$($(GET_FILESIZE) $(FW_FILE_FS) ))
+# Get size of the file system image
+FS_SIZE = $(shell printf '%d\n' $$($(FILESIZE) $(FW_FILE_FS) ))
 
-#File system image flash location
-#FS_START_OFFSET = $(shell printf '0x%X\n' $$(( ($$($(GET_FILESIZE) $(FW_FILE_1)) + 16384 + 36864) & (0xFFFFC000) )) )
-FS_START_OFFSET = $(shell printf '0x%X\n' $$(( ($$($(GET_FILESIZE) $(FW_FILE_1)) + 0x4000) & (0xFFFFC000) )) )
+# File system image flash location, just after the code.
+FS_START_OFFSET = $(shell printf '0x%X\n' $$(( ($$($(FILESIZE) $(FW_FILE_1)) + 0x4000) & (0xFFFFC000) )) )
+# File system highest address.
 FS_END = 0x2E000
+# Maximum image size.
 FS_MAX_SIZE = $(shell printf '%d\n' $$(($(FS_END) - $(FS_START_OFFSET) - 1)))
-
-FW_FILE_FS		= $(FW_BASE)/$(FS_START_OFFSET).bin
+#File system image file name.
+FW_FILE_FS = $(FW_BASE)/$(FS_START_OFFSET).fs
 
 vpath %.c $(SRC_DIR)
 vpath %.h $(SRC_DIR)
@@ -142,7 +97,7 @@ endef
 .PHONY: all checkdirs flash flashblank clean debug debugflash docs flashfs
 
 all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2) $(FW_FILE_FS)
-	@./mem_usage.sh $(TARGET_OUT) 81920
+	@./$(TOOLS_DIR)/mem_usage.sh $(TARGET_OUT) 81920
 	$(ECHO) File system start offset: $(FS_START_OFFSET)
 	$(ECHO) File system end offset: $(FS_END)
 	$(ECHO) File system size: $(FS_SIZE)
@@ -170,12 +125,9 @@ $(LOG_DIR):
 
 $(TOOLS_DIR):
 	$(MKDIR) $@
-
-$(FS_ROOT_DIR):
-	$(MKDIR) $@
 	
 flash: all 
-	tools/testsize.sh $(FW_FILE_FS) $(FS_MAX_SIZE)
+	./$(TOOLS_DIR)/testsize.sh $(FW_FILE_FS) $(FS_MAX_SIZE)
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_2_ADDR) $(FW_FILE_2) $(FS_START_OFFSET) $(FW_FILE_FS)
 	
 flashblank:
@@ -188,7 +140,7 @@ clean:
 debug: $(LOG_DIR)
 #Remove the old log
 	> ./debug.log
-	minicom -D $(ESPPORT) -o -b $(FIRMWARE_CON_SPEED) -C ./debug.log
+	minicom -D $(ESPPORT) -o -b $(BAUD_RATE) -C ./debug.log
 #Make a copy of the new log before with a saner name.
 	cp ./debug.log $(LOG_DIR)/debug-$(shell date +%Y-%m-%d-%H-%M-%S).log
 
@@ -205,11 +157,7 @@ $(FS_CREATE):
 	$(MAKE) -C tools/dbffs-tools all install
 
 $(FW_FILE_FS): $(FS_FILES) $(FS_CREATE)
-ifndef DEBUG
-	$(FS_CREATE) fs/ $(FW_FILE_FS)
-else
-	$(FS_CREATE) -v fs/ $(FW_FILE_FS)
-endif
+	$(DBFFS_CREATE) $(FS_DIR) $(FW_FILE_FS)
 	
 flashfs: $(FW_FILE_FS)
 	tools/testsize.sh $(FW_FILE_FS) $(FS_MAX_SIZE)

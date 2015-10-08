@@ -68,7 +68,9 @@
 /**
  * @brief Baud rate of the serial console.
  */
-#define BAUD_RATE 230400
+#ifndef BAUD_RATE
+	#define BAUD_RATE 230400
+#endif
 
 /* Enable any of the following to have different levels of debug output on the
  * serial port. 
@@ -80,7 +82,7 @@
 /**
  * @brief Print debug info on the serial port.
  */
-#define DEBUG
+//#define DEBUG
 /**
  * @brief Print memory allocation info.
  */
