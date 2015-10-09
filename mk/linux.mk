@@ -8,15 +8,15 @@
 #
 # ChangeLog:
 #
-#  - 2015-10-07 Martin Grønholdt: Initial version.
+#  - 2015-10-07: Initial version.
+#  - 2015-10-09: Added LOG_FILE.
+#              : Added debug rule.
 
 ### Toolchain configuration. ###
 # Base directory for the compiler.
 XTENSA_TOOLS_ROOT ?= /home/oblivion/esp8266/esp-open-sdk/xtensa-lx106-elf/bin/
 # Base directory of the ESP8266 SDK package, absolute.
 SDK_BASE ?= /home/oblivion/esp8266/esp-open-sdk/sdk/
-# Libraries used in this project, mainly provided by the SDK
-LIBS = c gcc hal pp phy net80211 lwip wpa main json
 # Select which tools to use as compiler, librarian and linker
 CC	:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 AR	:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-ar
@@ -27,6 +27,8 @@ LD	:= $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 BUILD_BASE = build
 # Path to write the finished firmware build.
 FW_BASE	= firmware
+# Serial log file name.
+LOG_FILE = debug-$(shell date +%Y-%m-%d-%H-%M-%S).log
 
 ### esptool.py ESP8266 flash tool configuration.
 # Path.
@@ -60,3 +62,12 @@ ECHO := @echo
 CD := cd
 #Get size of file.
 FILESIZE := stat --printf="%s"
+
+### Rules. ###
+# Run minicom and save serial output in LOG_DIR.
+debug: $(LOG_DIR)
+#Remove the old log
+	> ./debug.log
+	minicom -D $(ESPPORT) -o -b $(BAUD_RATE) -C ./debug.log
+#Make a copy of the new log before with a saner name.
+	cp ./debug.log $(LOG_DIR)/$(LOG_FILE)

@@ -2,8 +2,15 @@
 
 * .gitignore: Added flash config tool exceptions.
 * Makefile: Rearranged a bit more, and add flash config.
+			Add the -L switch to SDK_LIBDIR when generated.
+			Removed archive generation step.
+			Lots of comments.
 * mk/config.mk: Comments.
+				Added variable LIBS.
 * mk/linux.mk: Smarter verbosity handling.
+			   Added LOG_FILE.
+			   Added debug rule.
+			   Removed variable LIBS.
 * tools/esp-config-tools/*: New binary flash configuration creater tool.
 * tools/testsize.sh: Changed console output to make tool generic.
 * config/*: New code to read firmware configuration from flash.
@@ -13,6 +20,8 @@
 				 Only do hexdumps when debugging.
 				 Added global config struct.
 * user_main.c: Use new config system.
+			   Removed included specreg.h, didn't seem to need it.
+
 
 2015-10-08 Martin Grønholdt
 

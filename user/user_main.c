@@ -75,7 +75,6 @@
 #include "handlers/fs//http-fs.h"
 #include "slighttp/http-handler.h"
 #include "handlers/deny/http-deny.h"
-#include <xtensa/config/specreg.h>
 
 struct config *cfg;
 

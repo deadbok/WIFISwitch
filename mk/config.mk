@@ -26,6 +26,8 @@ BAUD_RATE = 230400
 MODULES	= user user/fs user/net user/slighttp user/tools user/driver
 MODULES	+= user/handlers/fs user/handlers/deny user/handlers/rest
 MODULES += user/config
+# Libraries used in this project, mainly provided by the SDK
+LIBS = c gcc hal pp phy net80211 lwip wpa main json
 # Directory to use when creating the file system image.
 FS_DIR := fs/
 # Directory to copy log files of the ESP8266 serial output to.
