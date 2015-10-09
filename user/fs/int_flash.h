@@ -24,6 +24,8 @@
 #ifndef INT_FLASH_H
 #define INT_FLASH_H
 
+#include <stdint.h> //Fixed width integer types.
+
 /**
  *  @brief Highest address of the file system.
  */
@@ -44,13 +46,49 @@ union flash_data_u
 	unsigned char u8[4];
 };*/
 
+/**
+ * @brief Offset in the flash where the file system starts.
+ * 
+ * Offset into the flash, where the file system starts. The initial
+ * value, is where the initialisation routine starts scanning for the
+ * file system.
+ */
 extern size_t fs_addr;
 
 //Flash access functions.
+/**
+ * @brief Return the flash chip's size, in bytes.
+ * 
+ * From "draco" on http://www.esp8266.com/viewtopic.php?f=13&t=2506
+ * @return Size of flash in bytes.
+ */
 extern size_t flash_size(void);
+/**
+ * @brief Dump flash contents from an address until size bytes has been dumped.
+ * 
+ * Uses the Espressif API.
+ * 
+ * @param src_addr Start address.
+ * @param size Number of bytes to dump.
+ */
 extern void flash_dump(unsigned int src_addr, size_t size);
+/**
+ * @brief Dump flash contents from an address until size bytes has been dumped.
+ * 
+ * Uses mapped access.
+ * 
+ * @param src_addr Start address.
+ * @param size Number of bytes to dump.
+ */
 extern void flash_dump_mem(unsigned int src_addr, size_t size);
+/**
+ * @brief Read data from an arbitrary position in the FS portion of the flash.
+ * 
+ * @param data Pointer to a buffer to place the data in.
+ * @param read_addr Address to read from.
+ * @param size Bytes to read.
+ * @return True if everything wen well, false otherwise.
+ */
 extern bool aflash_read(const void *data, unsigned int read_addr, size_t size);
-
 
 #endif

@@ -38,20 +38,16 @@
 //Flash: W25Q32BV
 
 /**
- * @brief Offset in the flash where the file system starts.
- * 
- * Offset into the flash, where the file system starts. The initial
- * value, is where the initialisation routine starts scanning for the
- * file system.
+ * @brief Easy convert read bytes to printable format.
  */
+#define FLASH2STR(a) (a)[0], (a)[1], (a)[2], (a)[3]
+/**
+ * @brief Format string for printing the read bytes.
+ */
+#define FLASHSTR "%02x:%02x:%02x:%02x"
+
 size_t fs_addr = 0xa000;
 
-/**
- * @brief Return the flash chip's size, in bytes.
- * 
- * From "draco" on http://www.esp8266.com/viewtopic.php?f=13&t=2506
- * @return Size of flash in bytes.
- */
 size_t ICACHE_FLASH_ATTR flash_size(void)
 { 
 	unsigned int id = spi_flash_get_id(); 
@@ -66,23 +62,6 @@ size_t ICACHE_FLASH_ATTR flash_size(void)
 	return(1 << size_id);
 }
 
-/**
- * @brief Easy convert read bytes to printable format.
- */
-#define FLASH2STR(a) (a)[0], (a)[1], (a)[2], (a)[3]
-/**
- * @brief Format string for printing the read bytes.
- */
-#define FLASHSTR "%02x:%02x:%02x:%02x"
-
-/**
- * @brief Dump flash contents from an address until size bytes has been dumped.
- * 
- * Uses the Espressif API.
- * 
- * @param src_addr Start address.
- * @param size Number of bytes to dump.
- */
 void ICACHE_FLASH_ATTR flash_dump(unsigned int src_addr, size_t size)
 {
     size_t i;
@@ -99,14 +78,6 @@ void ICACHE_FLASH_ATTR flash_dump(unsigned int src_addr, size_t size)
     }
 }
 
-/**
- * @brief Dump flash contents from an address until size bytes has been dumped.
- * 
- * Uses mapped access.
- * 
- * @param src_addr Start address.
- * @param size Number of bytes to dump.
- */
 void ICACHE_FLASH_ATTR flash_dump_mem(unsigned int src_addr, size_t size)
 {
     size_t i;
@@ -147,7 +118,7 @@ static size_t ICACHE_FLASH_ATTR amemcpy(unsigned char *d, unsigned char *s, size
 		temp = *((unsigned int *)((unsigned int)(s) - unaligned));
 		//debug(" %p (align %d), %p: 0x%x  - ", d, unaligned, s, temp);
 
-		*d = (temp >> (8 * unaligned));
+		*d = (temp >> (unaligned << 3));
 		
 		//debug(" 0x%x.\n", *d);
 		
@@ -157,14 +128,6 @@ static size_t ICACHE_FLASH_ATTR amemcpy(unsigned char *d, unsigned char *s, size
 	return(i);
 }
 
-/**
- * @brief Read data from an arbitrary position in the FS portion of the flash.
- * 
- * @param data Pointer to a buffer to place the data in.
- * @param read_addr Address to read from.
- * @param size Bytes to read.
- * @return True if everything wen well, false otherwise.
- */
 bool ICACHE_FLASH_ATTR aflash_read(const void *data, unsigned int read_addr, size_t size)
 {
     unsigned int addr = 0x40200000 + fs_addr + read_addr;
@@ -179,4 +142,3 @@ bool ICACHE_FLASH_ATTR aflash_read(const void *data, unsigned int read_addr, siz
 		
     return(false);
 }
-

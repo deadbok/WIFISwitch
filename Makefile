@@ -21,23 +21,21 @@
 # - 2015-05-09: Saving of debug logs in separate files under LOG_DIR.
 # - 2015-10-07: Cleanup and split into multiply files.
 
+ESP_CFLAGS =
+
 #Include project configuration.
 include mk/config.mk
 #Include OS specific configuration.
 include mk/$(BUILD_OS).mk
 
 # Compile flags.
-ifndef DEBUG
-CFLAGS = -O2 -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH
-else
-CFLAGS = -g -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH
-endif
+ESP_CFLAGS += -O2 -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH
 
 # Linker flags used to generate the main object file
-LDFLAGS	= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
+ESP_LDFLAGS	= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
 
 # Linker script used for the above linker step.
-LD_SCRIPT	= eagle.app.v6.ld
+ESP_LD_SCRIPT	= eagle.app.v6.ld
 
 # Various paths from the SDK used in this project
 SDK_LIBDIR	= lib
@@ -48,6 +46,8 @@ SDK_INCDIR	= include include/json
 # These are the names and addresses of these.
 FW_FILE_1_ADDR	= 0x00000
 FW_FILE_2_ADDR	= 0x40000
+FW_FILE_1 := $(addprefix $(FW_BASE)/,$(FW_FILE_1_ADDR).bin)
+FW_FILE_2 := $(addprefix $(FW_BASE)/,$(FW_FILE_2_ADDR).bin)
 
 ####
 #### no user configurable options below here
@@ -65,15 +65,13 @@ APP_AR		 := $(addprefix $(BUILD_BASE)/,$(TARGET)_app.a)
 TARGET_OUT	 := $(addprefix $(BUILD_BASE)/,$(TARGET).out)
 FS_FILES	 := $(shell find $(FS_DIR) -type f -name '*')
 
-LD_SCRIPT		:= $(addprefix -T$(SDK_BASE)/$(SDK_LDDIR)/,$(LD_SCRIPT))
+ESP_LD_SCRIPT		:= $(addprefix -T$(SDK_BASE)/$(SDK_LDDIR)/,$(ESP_LD_SCRIPT))
 
 INCDIR			:= $(addprefix -I,$(SRC_DIR))
 EXTRA_INCDIR	:= $(addprefix -I,$(EXTRA_INCDIR))
 MODULE_INCDIR	:= $(addsuffix /include,$(INCDIR))
 
-FW_FILE_1		:= $(addprefix $(FW_BASE)/,$(FW_FILE_1_ADDR).bin)
-FW_FILE_2		:= $(addprefix $(FW_BASE)/,$(FW_FILE_2_ADDR).bin)
-
+### File system variables. ###
 # Get size of the file system image
 FS_SIZE = $(shell printf '%d\n' $$($(FILESIZE) $(FW_FILE_FS) ))
 
@@ -86,17 +84,26 @@ FS_MAX_SIZE = $(shell printf '%d\n' $$(($(FS_END) - $(FS_START_OFFSET) - 1)))
 #File system image file name.
 FW_FILE_FS = $(FW_BASE)/$(FS_START_OFFSET).fs
 
+### Config flash variables. ###
+FW_FILE_CONFIG_ADDR := 0x3C000
+FW_FILE_CONFIG := $(addprefix $(FW_BASE)/,$(FW_FILE_CONFIG_ADDR).bin)
+
+### Exports for sub-make. ###
+export DEBUG
+export PROJECT_NAME
+export ESP_CONFIG_SIG
+
 vpath %.c $(SRC_DIR)
 vpath %.h $(SRC_DIR)
 
 define compile-objects
 $1/%.o: %.c
-	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS) -MD -Wa,-ahls=$(basename $$@).lst -c $$< -o $$@
+	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(ESP_CFLAGS) -MD -Wa,-ahls=$(basename $$@).lst -c $$< -o $$@
 endef
 
-.PHONY: all checkdirs flash flashblank clean debug debugflash docs flashfs
+.PHONY: all checkdirs flash flashblank clean debug debugflash docs flashfs flashconfig
 
-all: checkdirs $(TARGET_OUT) $(FW_FILE_1) $(FW_FILE_2) $(FW_FILE_FS)
+all: checkdirs $(FW_FILE_1) $(FW_FILE_2) $(FW_FILE_FS) $(FW_FILE_CONFIG)
 	@./$(TOOLS_DIR)/mem_usage.sh $(TARGET_OUT) 81920
 	$(ECHO) File system start offset: $(FS_START_OFFSET)
 	$(ECHO) File system end offset: $(FS_END)
@@ -107,7 +114,7 @@ $(FW_BASE)/%.bin: $(TARGET_OUT) | $(FW_BASE)
 	$(ESPTOOL) elf2image -o $(FW_BASE)/ $(TARGET_OUT)
 
 $(TARGET_OUT): $(APP_AR)
-	$(LD) -L$(SDK_LIBDIR) $(LD_SCRIPT) $(LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group,-Map,$(basename $@).map -o $@
+	$(LD) -L$(SDK_LIBDIR) $(ESP_LD_SCRIPT) $(ESP_LDFLAGS) -Wl,--start-group $(LIBS) $(APP_AR) -Wl,--end-group,-Map,$(basename $@).map -o $@
 
 $(APP_AR): $(OBJ)
 	$(AR) cru $@ $^
@@ -128,7 +135,7 @@ $(TOOLS_DIR):
 	
 flash: all 
 	./$(TOOLS_DIR)/testsize.sh $(FW_FILE_FS) $(FS_MAX_SIZE)
-	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_2_ADDR) $(FW_FILE_2) $(FS_START_OFFSET) $(FW_FILE_FS)
+	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_CONFIG_ADDR) $(FW_FILE_CONFIG) $(FW_FILE_2_ADDR) $(FW_FILE_2) $(FS_START_OFFSET) $(FW_FILE_FS)
 	
 flashblank:
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash 0x7E000 bin/blank.bin
@@ -136,6 +143,7 @@ flashblank:
 clean:
 	$(RM) -R $(FW_BASE) $(BUILD_BASE)
 	$(MAKE) -C tools/dbffs-tools clean
+	$(MAKE) PROJECT_NAME=$(PROJECT_NAME) ESP_CONFIG_SIG=$(ESP_CONFIG_SIG) -C tools/esp-config-tools clean
 
 debug: $(LOG_DIR)
 #Remove the old log
@@ -146,11 +154,15 @@ debug: $(LOG_DIR)
 
 debugflash: flash debug
 
+### Documentation stuff. ###
+
 docs: doxygen
 
 doxygen: .doxyfile
 	doxygen .doxyfile
 	$(MAKE) -C tools/dbffs-tools/
+
+### Flash file system stuff. ###
 
 .PHONY: $(FS_CREATE)
 $(FS_CREATE):
@@ -162,6 +174,19 @@ $(FW_FILE_FS): $(FS_FILES) $(FS_CREATE)
 flashfs: $(FW_FILE_FS)
 	tools/testsize.sh $(FW_FILE_FS) $(FS_MAX_SIZE)
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FS_START_OFFSET) $(FW_FILE_FS)
+
+### ESP firmware binary configuration stuff. ###
+
+.PHONY: $(GEN_CONFIG)
+$(GEN_CONFIG):
+	$(MAKE) -C tools/esp-config-tools all install
+
+$(FW_FILE_CONFIG): $(GEN_CONFIG) $(FW_FILE_1) $(FW_FILE_2)
+	$(GEN_CONFIG) $(FW_FILE_CONFIG) $(FS_START_OFFSET)
+	
+flashconfig: $(FW_FILE_CONFIG)
+	tools/testsize.sh $(FW_FILE_CONFIG) 4096
+	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_CONFIG_ADDR) $(FW_FILE_CONFIG)
 
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
 

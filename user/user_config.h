@@ -25,23 +25,16 @@
 #define USER_CONFIG_H
 
 #include "mem.h"
-#include "tools/missing_dec.h"
 #include "osapi.h"
 #include "user_interface.h"
+#include "tools/missing_dec.h"
+#include "config.h"
 
 /**
  * @brief Firmware version.
  */
-#define STRING_VERSION "0.1.0"
+#define STRING_VERSION "0.2.0"
 
-/**
- * @brief Name of the default network to try and connect to.
- */
-#define SSID "default"
-/**
- * @brief Password for the default network.
- */
-#define SSID_PASSWORD "password"
 /**
  * @brief Network connection time-out.
  * 
@@ -70,6 +63,15 @@
  */
 #ifndef BAUD_RATE
 	#define BAUD_RATE 230400
+#endif
+
+/**
+ * @brief Address in flash of configuration data.
+ * 
+ * *Default value for a 512kb Flash.*
+ */
+#ifndef CONFIG_FLASH_ADDR
+	#define CONFIG_FLASH_ADDR 0x3c
 #endif
 
 /* Enable any of the following to have different levels of debug output on the
@@ -111,26 +113,27 @@
 #define db_printf(...) 	ets_printf(__VA_ARGS__)
 #endif
 
-//Hexdump some memory.
-extern void db_hexdump(void *mem, unsigned int len);
-
 /**
  * @brief Print an error message.
  */
 #define error(...)     db_printf("ERROR: " __VA_ARGS__ )
 
-//Macro for debugging. Prints the message if warnings is enabled.
+//Macro for debugging. Prints the message if warnings are enabled.
 #ifdef WARNINGS
 #define warn(...)     db_printf("WARN: " __VA_ARGS__)
 #else
 #define warn(...)
 #endif
 
-//Macro for debugging. Prints the messag if debugging is enabled.
+//Macro for debugging. Prints the message if debugging is enabled.
 #ifdef DEBUG
 #define debug(...)     db_printf(__VA_ARGS__)
+
+//Hexdump some memory.
+extern void db_hexdump(void *mem, unsigned int len);
 #else
 #define debug(...)
+#define db_hexdump(mem, len)
 #endif
 
 //Debug memory de-/allocation if enabled.
@@ -148,10 +151,15 @@ extern void db_dealloc(void *ptr);
 extern void db_mem_list(void);
                         
 #else
-#define db_malloc(ARG, INFO)      os_malloc(ARG)
-#define db_free(ARG)        os_free(ARG)
-#define db_zalloc(ARG, INFO)      os_zalloc(ARG)
+#define db_malloc(ARG, INFO)	os_malloc(ARG)
+#define db_free(ARG)	os_free(ARG)
+#define db_zalloc(ARG, INFO)	os_zalloc(ARG)
 #define db_mem_list(ARG)
 #endif
+
+/**
+ * @brief Firmware configuration, loaded from flash.
+ */
+extern struct config *cfg;
 
 #endif //USER_CONFIG_H

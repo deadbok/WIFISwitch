@@ -319,24 +319,19 @@ void ICACHE_FLASH_ATTR init_dbffs(void)
     uint32_t signature;
 
     debug("Initialising DBBFS support.\n");
-	debug(" Searching for file system.\n");
-	//Find the root directory.
-	while (fs_addr < MAX_FS_ADDR)
+	fs_addr = cfg->fs_addr;
+	debug(" File system at address 0x%x.\n", fs_addr + 0x40200000);
+	signature = load_signature(0);
+	if (signature == DBFFS_FS_SIG)
 	{
-		debug(" Trying 0x%x.\n", fs_addr);
-		signature = load_signature(0);
-		if (signature == DBFFS_FS_SIG)
-		{
-			//Address of first header.
-			fs_addr += sizeof(uint32_t);
-			break;
-		}
-		fs_addr += 0x1000;
+		//Address of first header.
+		fs_addr += sizeof(uint32_t);
 	}
-	if (fs_addr == MAX_FS_ADDR)
+	else
 	{
 		error(" Could not find file system.\n");
 		return;
 	}
+
 	debug(" Found file system at 0x%x.\n", fs_addr - sizeof(uint32_t)); 
 }

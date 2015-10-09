@@ -77,6 +77,8 @@
 #include "handlers/deny/http-deny.h"
 #include <xtensa/config/specreg.h>
 
+struct config *cfg;
+
 /**
  * @brief Timer for handling events.
  */
@@ -208,6 +210,8 @@ void ICACHE_FLASH_ATTR user_init(void)
     //system_print_meminfo();
     db_printf("SDK version %s.\n", system_get_sdk_version());
     db_printf("Free heap %u\n", system_get_free_heap_size());
+
+	cfg = read_cfg_flash();
 
     fs_init();
 

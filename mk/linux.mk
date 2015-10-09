@@ -36,24 +36,27 @@ ESPPORT	:= /dev/ttyUSB0
 # Programming baud rate.
 ESPSPEED := 230400
 
-### DBFFS configuration. ###
-ifndef DEBUG
-	DBFFS_CREATE := ./$(TOOLS_DIR)/dbffs-image
-else
-	DBFFS_CREATE := ./$(TOOLS_DIR)/dbffs-image -v
+#Set verbose flags on DEBUG.
+ifdef DEBUG
+ VFLAG = -v
 endif
+
+### DBFFS configuration. ###
+DBFFS_CREATE := ./$(TOOLS_DIR)/dbffs-image $(VFLAG)
+
+### ESP8266 firmware binary configuration. ###
+GEN_CONFIG := ./$(TOOLS_DIR)/gen_config $(VFLAG)
 
 ### Misc tools. ###
 # Copy.
-CP := cp
+CP := cp $(VFLAG)
 #Create directory.
-MKDIR := mkdir -p
+MKDIR := mkdir $(VFLAG) -p
 #Delete file.
-RM := rm -f
+RM := rm $(VFLAG) -f
 #Echo.
 ECHO := @echo
 #Change directory.
-CD	:= cd
+CD := cd
 #Get size of file.
 FILESIZE := stat --printf="%s"
-

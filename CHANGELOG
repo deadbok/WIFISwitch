@@ -1,4 +1,32 @@
+2015-10-09 Martin Grønholdt
+
+* .gitignore: Added flash config tool exceptions.
+* Makefile: Rearranged a bit more, and add flash config.
+* mk/config.mk: Comments.
+* mk/linux.mk: Smarter verbosity handling.
+* tools/esp-config-tools/*: New binary flash configuration creater tool.
+* tools/testsize.sh: Changed console output to make tool generic.
+* config/*: New code to read firmware configuration from flash.
+* fs/dbffs.c (init_dbffs): Use file system address from flash config.
+* user_config.h: Include config/config.h.
+				 Upped version to 0.2.0.
+				 Only do hexdumps when debugging.
+				 Added global config struct.
+* user_main.c: Use new config system.
+
+2015-10-08 Martin Grønholdt
+
+* fs/int_flash.c (amemcpy): Use shift instead of mul.
+* Makefile: Moved a lot of stuff to mk/linux.mk and mk/config.mk.
+* mk/config.mk: New file with project build time configuration.
+* mk/linux.mk: New file with build system stuff for Linux.
+* mem_usage.sh: Moved to tools/mem_usage.sh.
+* tools/mem_usage.sh: New file.
+
+
 2015-10-06 Martin Grønholdt
+
+* Toolchain ESP8266 SDK now version 1.4. *
 
 * net/wifi.c (wifi_handle_event_cb): Added EVENT_SOFTAPMODE_PROBEREQRECVED event from SDK 1.4.
 * fs/css/custom.css: Added link-button styles.
@@ -8,7 +36,6 @@
 * user_config.h (STRING_VERSION): Upped version to 0.1.0.
 * handlers/fs/http-fs.c (http_fs_open_file): Fixed a zero termination bug. This closes BUG #1.
 * fs/fs.c (fs_open): Added memory allocation check.
-* Toolchain ESP8266 SDK now version 1.4.
 * tools/missing_dec.h: Corrected for SDK 1.4 changes for their leak detection stuff.
 
 
@@ -19,7 +46,7 @@
 						   Writes absolute links.
 						   Added verbose command line option.						   
 						   DBFFS at version 0.1.0.
-						   dbffs-iamge at version 0.2.0.
+						   dbffs-image at version 0.2.0.
 
 
 2015-09-21 Martin Grønholdt
