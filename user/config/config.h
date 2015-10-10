@@ -38,13 +38,13 @@
  * 
  * *Change this if new version breaks backward compatibility.*
  */
-#define CONFIG_MAJOR_VERSION 0
+#define CONFIG_MAJOR_VERSION 1
 /**
  * @brief Minor configuration data version.
  * 
  * *Change this if new version does not break backward compatibility.*
  */
-#define CONFIG_MINOR_VERSION 1
+#define CONFIG_MINOR_VERSION 0
 /**
  * @brief Entries in config data including version and signature.
  */
@@ -75,12 +75,12 @@ struct config
 	/**
 	 * @brief Address of the file system.
 	 */
-	uint16_t fs_addr;
+	uint32_t fs_addr;
 #ifdef DB_ESP8266
 	/**
 	 * @brief Padding to align on 4 byte boundary.
 	 */
-	uint8_t padding[2];
+	//uint8_t padding[2];
 #endif //DB_ESP8266
 }  __attribute__ ((__packed__));
 
@@ -136,7 +136,7 @@ struct cfg_entry config_entries[CONFIG_ENTRIES] = {
 	{4, 'u', "signature", "Configuration signature"},
 	{2, 'u', "bver", "Breaking version"},
 	{2, 'u', "cver", "Compatible version"},
-	{2, 'u', "fs_addr", "Address in flash of the file system"}
+	{4, 'u', "fs_addr", "Address in flash of the file system"}
 };
 #endif //DB_ESP8266
 

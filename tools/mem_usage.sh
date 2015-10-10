@@ -33,13 +33,13 @@ function print_usage {
 	addr_end=`$objdump_cmd | grep " $end_sym" | cut -d " " -f1 | tr 'a-f' 'A-F'`
 	size=`printf "ibase=16\n$addr_end - $addr_start\n" | bc`
 	used=$(($used+$size))
-	echo $name: $size
+	#echo $name: $size
 }
  
 print_usage data
 print_usage rodata
 print_usage bss
-echo total: $used
+echo Firmware uses $used bytes of RAM.
 if [[ ! -z "$total_size" ]]; then
-	echo free: $(($total_size-$used))
+	echo $(($total_size-$used)) bytes free.
 fi

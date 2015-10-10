@@ -10,16 +10,18 @@
 #
 #  - 2015-10-07 Martin Grønholdt: Initial version.
 
-#Project name.
-PROJECT_NAME ?= wifiswitch
-#Unique configuration signature (4 bytes).
-ESP_CONFIG_SIG ?= 0xCF60BEEF
-#Build OS type only linux for now.
+# Project name.
+PROJECT_NAME = wifiswitch
+# Unique configuration signature (4 bytes).
+ESP_CONFIG_SIG = 0xCF60BEEF
+# Build OS type only linux for now.
 BUILD_OS ?= linux
-# name for the target project
+# Name of the project target.
 TARGET = wifiswitch
 # Baud rate of the ESP8266 serial console.
-BAUD_RATE = 230400
+BAUD_RATE ?= 230400
+# Flash size, 512 or 1024.
+FLASH_SIZE ?= 512
 
 ### Project directory configuration. ###
 # Modules (subdirectories) of the project to include when compiling.
@@ -36,10 +38,6 @@ LOG_DIR := logs
 TOOLS_DIR := tools
 
 ### Set defines for the different build time debug configuration variables. ###
-# Debug output on serial.
-ifdef DEBUG
-ESP_CFLAGS += -DDEBUG
-endif
 # Warnings on serial.
 ifdef WARNINGS
 ESP_CFLAGS += -DWARNINGS
@@ -57,10 +55,7 @@ ifdef DEBUG_MEM_LIST
 ESP_CFLAGS += DEBUG_MEM_LIST
 endif
 
-#Add project name
-ESP_CFLAGS += -DPROJECT_NAME="$(PROJECT_NAME)"
-
-#Configuration signature.
+# Configuration signature.
 ESP_CFLAGS += -DESP_CONFIG_SIG=$(ESP_CONFIG_SIG)
 
 

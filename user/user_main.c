@@ -76,6 +76,8 @@
 #include "slighttp/http-handler.h"
 #include "handlers/deny/http-deny.h"
 
+extern uint32_t _irom0_text_end;
+
 struct config *cfg;
 
 /**
@@ -205,10 +207,11 @@ void ICACHE_FLASH_ATTR user_init(void)
     //os_delay_us(1000);
 
     //Print banner
-    db_printf("\nWIFISwitch version %s.\n", STRING_VERSION);
+    db_printf("\n%s version %s (%s).\n", PROJECT_NAME, STRING_VERSION, GIT_VERSION);
     //system_print_meminfo();
     db_printf("SDK version %s.\n", system_get_sdk_version());
     db_printf("Free heap %u\n", system_get_free_heap_size());
+    db_printf("ROM firmware portion ends at %p.\n", &_irom0_text_end);
 
 	cfg = read_cfg_flash();
 

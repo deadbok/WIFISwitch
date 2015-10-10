@@ -35,6 +35,10 @@
  */
 #define STRING_VERSION "0.2.0"
 
+#ifndef GIT_VERSION
+	#define GIT_VERSION "none"
+#endif
+
 /**
  * @brief Network connection time-out.
  * 

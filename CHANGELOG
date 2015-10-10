@@ -1,3 +1,28 @@
+2015-10-11 Martin Grønholdt
+
+* Makefile: Added project name to compiler defines.
+		  : Added compiler debug define.
+		  : Will only build for boards with 512KB flash.
+		  : Reordered console output.
+		  : Moved debug rule back here, to re-establish all as the first target.
+* mk/config.mk: Added FLASH_SIZE.
+			  : No longer set debug compiler define.
+			  : No longer set project name compiler define.
+* mk/linux.mk: Add OBJDUMP and OBJCOPY.
+			 : Add variables to get version from github.
+			 : Corrected the path of esptool.py.
+			 : Added TERM_CMD.
+			 : Removed debug rule.
+* tools/mem_usage.sh: Changed output for the better.
+* config/config.h: Version 1.0.
+				  (struct config): fs_addr changed to uint32_t.
+							     : No need for padding.
+				  (config_entries): Changed size of fs_addr to 4.
+* user_config.h: Added support for GIT_VERSION.
+* user_main.c: Print code end address and git version.
+* docs/flashmap.md: New doc of flash use.
+
+		  
 2015-10-09 Martin Grønholdt
 
 * .gitignore: Added flash config tool exceptions.
@@ -7,10 +32,12 @@
 			Lots of comments.
 * mk/config.mk: Comments.
 				Added variable LIBS.
+				Added FLASH_SIZE.
 * mk/linux.mk: Smarter verbosity handling.
 			   Added LOG_FILE.
 			   Added debug rule.
 			   Removed variable LIBS.
+			   Added GIT_VERSION generation.
 * tools/esp-config-tools/*: New binary flash configuration creater tool.
 * tools/testsize.sh: Changed console output to make tool generic.
 * config/*: New code to read firmware configuration from flash.
@@ -19,8 +46,10 @@
 				 Upped version to 0.2.0.
 				 Only do hexdumps when debugging.
 				 Added global config struct.
+				 Added GIT_VERSION.
 * user_main.c: Use new config system.
 			   Removed included specreg.h, didn't seem to need it.
+			   Added printing of GIT_VERSION.
 
 
 2015-10-08 Martin Grønholdt

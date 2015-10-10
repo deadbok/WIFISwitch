@@ -31,21 +31,6 @@
  */
 #define MAX_FS_ADDR 0x2E000
 
-//Interesting places.
-/*extern void *_text_start;
-extern void *_text_end;
-extern void *_lit4_start;
-extern void *_lit4_end;
-extern void *_irom0_text_start;
-extern void *_irom0_text_end;
-
-union flash_data_u
-{
-	unsigned int u32;
-	unsigned short u16[2];
-	unsigned char u8[4];
-};*/
-
 /**
  * @brief Offset in the flash where the file system starts.
  * 
