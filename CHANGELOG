@@ -1,3 +1,18 @@
+2015-10-13 Martin Grønholdt
+
+* fs/LICENSE: Removed.
+* fs/LICENSE.zip: License now zip compressed.
+* fs/connect/LICENSE: Removed.
+* fs/connect/LICENSE.zip: Link to /LICENSE_zip
+* fs/*.html: Use compressed license.
+* fs/connect/*.html: Use compressed license.
+
+
+2015-10-12 Martin Grønholdt
+
+* docs/flashmap.md: Formatting.
+
+
 2015-10-11 Martin Grønholdt
 
 * build.sh: Added, build with log file output.
