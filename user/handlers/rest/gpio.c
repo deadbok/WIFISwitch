@@ -65,7 +65,7 @@ static signed char current_gpio = -1;
  * @param entries Number of entries in the array.
  * @return Pointer to the JSON array.
  */
-static char ICACHE_FLASH_ATTR *json_create_int_array(long *values, size_t entries)
+static char *json_create_int_array(long *values, size_t entries)
 {
 	size_t i;
 	size_t total_length = 0;
@@ -171,7 +171,7 @@ static signed int create_pin_response(struct http_request *request)
  * @param request The request that we're handling.
  * @return Bytes send.
  */
-signed int ICACHE_FLASH_ATTR http_rest_gpio_handler(struct http_request *request)
+signed int http_rest_gpio_handler(struct http_request *request)
 {
 	int type;
 	size_t size = 0;

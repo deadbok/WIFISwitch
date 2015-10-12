@@ -42,7 +42,7 @@
  * @param connection Pointer to the connection used.
  * @return Size of the method string.
  */
-static size_t ICACHE_FLASH_ATTR http_get_request_type(struct tcp_connection *connection)
+static size_t http_get_request_type(struct tcp_connection *connection)
 {
     struct http_request *request = connection->user;
     size_t offset = 0;
@@ -115,7 +115,7 @@ static size_t ICACHE_FLASH_ATTR http_get_request_type(struct tcp_connection *con
  * @param raw_headers Pointer to the raw headers to parse. 
  * @return Size of the headers in bytes.
  */
-static size_t ICACHE_FLASH_ATTR http_get_headers_size(
+static size_t http_get_headers_size(
 	struct http_request *request,
 	char* raw_headers
 )
@@ -173,7 +173,7 @@ static size_t ICACHE_FLASH_ATTR http_get_headers_size(
  * @param connection Pointer to the connection data.
  * @return `true`on success.
  */
-bool ICACHE_FLASH_ATTR http_parse_request(struct tcp_connection *connection, unsigned short length)
+bool http_parse_request(struct tcp_connection *connection, unsigned short length)
 {
     struct http_request *request = connection->user;
     char *request_entry, *next_entry;
@@ -268,7 +268,7 @@ bool ICACHE_FLASH_ATTR http_parse_request(struct tcp_connection *connection, uns
  * 
  * @param request Pointer to the request to free.
  */
-void ICACHE_FLASH_ATTR http_free_request(struct http_request *request)
+void http_free_request(struct http_request *request)
 {
 	debug("Freeing request data at %p.\n", request);
 	if (request)

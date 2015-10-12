@@ -67,7 +67,7 @@ struct http_fs_context
  * @param root Directory to use as root for serving files.
  * @return True on success.
  */
-bool ICACHE_FLASH_ATTR http_fs_init(char *root)
+bool http_fs_init(char *root)
 {
 	debug("Initialising file system support using %s.\n", root);
 	if (!root)
@@ -95,7 +95,7 @@ bool ICACHE_FLASH_ATTR http_fs_init(char *root)
  * @param err Handles only error statuses if `true`. 
  * @return True on success.
  */
-bool ICACHE_FLASH_ATTR http_fs_open_file(struct http_request *request, bool err)
+bool http_fs_open_file(struct http_request *request, bool err)
 {
 	char *uri = request->uri;
 	char *fs_uri = NULL;
@@ -207,7 +207,7 @@ bool ICACHE_FLASH_ATTR http_fs_open_file(struct http_request *request, bool err)
  * 
  * Does nothing is an error status is set.
  */
-signed int ICACHE_FLASH_ATTR http_fs_handler(struct http_request *request)
+signed int http_fs_handler(struct http_request *request)
 {
 	struct http_fs_context *context = request->response.context;
 	size_t data_left, buffer_free, bytes;
@@ -351,7 +351,7 @@ signed int ICACHE_FLASH_ATTR http_fs_handler(struct http_request *request)
  * If called with an error status, the handler will search the for a
  * html file with the same name as the status code (e.g. 404.html).
  */
-signed int ICACHE_FLASH_ATTR http_fs_error_handler(struct http_request *request)
+signed int http_fs_error_handler(struct http_request *request)
 {
 	struct http_fs_context *context = request->response.context;
 	size_t data_left, buffer_free, bytes;

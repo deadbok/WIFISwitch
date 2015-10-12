@@ -43,7 +43,7 @@ static char *capture_domain = NULL;
  * @param value Value to convert.
  * @return Swapped value.
  */
-static unsigned int ICACHE_FLASH_ATTR swap16(unsigned short value)
+static unsigned int swap16(unsigned short value)
 {
 	return(((value & 0xff) << 8) | ((value & 0xff00) >> 8));
 }
@@ -53,7 +53,7 @@ static unsigned int ICACHE_FLASH_ATTR swap16(unsigned short value)
  *
  * @param connection Connection that received the data.
  */
-static void ICACHE_FLASH_ATTR dns_recv(struct udp_connection *connection)
+static void dns_recv(struct udp_connection *connection)
 {
 	char domain[255];
 	unsigned char response[512];
@@ -176,7 +176,7 @@ static void ICACHE_FLASH_ATTR dns_recv(struct udp_connection *connection)
  *
  * @param connection Connection that sent the data.
  */
-static void ICACHE_FLASH_ATTR dns_sent(struct udp_connection *connection)
+static void dns_sent(struct udp_connection *connection)
 {
 	debug(" DNS UDP sent on %p.\n", connection);
 }
@@ -187,7 +187,7 @@ static void ICACHE_FLASH_ATTR dns_sent(struct udp_connection *connection)
  * @param domain Answers any DNS request that start with this.
  * @return True on success.
  */
-bool ICACHE_FLASH_ATTR init_captive_portal(char *domain)
+bool init_captive_portal(char *domain)
 {
 	size_t domain_length = os_strlen(domain);
 	db_printf("Starting captive portal for domain \"%s\".\n", domain);

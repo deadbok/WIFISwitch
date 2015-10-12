@@ -85,7 +85,7 @@ char *http_status_line_501 = HTTP_STATUS_501;
  * @param code Status code to use in the status line.
  * @return Size of data that has been sent.
  */
-unsigned char ICACHE_FLASH_ATTR http_send_status_line(struct tcp_connection *connection, unsigned short status_code)
+unsigned char http_send_status_line(struct tcp_connection *connection, unsigned short status_code)
 {
 	size_t size;
 	char *response;
@@ -150,7 +150,7 @@ unsigned char ICACHE_FLASH_ATTR http_send_status_line(struct tcp_connection *con
  * @param value The value of the header.
  * @return Size of data sent.
  */
-unsigned short ICACHE_FLASH_ATTR http_send_header(struct tcp_connection *connection, char *name, char *value)
+unsigned short http_send_header(struct tcp_connection *connection, char *name, char *value)
 {
 	char header[512];
 	size_t size;
@@ -171,7 +171,7 @@ unsigned short ICACHE_FLASH_ATTR http_send_header(struct tcp_connection *connect
  * @param mime Mime type file extension.
  * @return Size of send data.
  */
-signed int ICACHE_FLASH_ATTR http_send_default_headers(
+signed int http_send_default_headers(
 	struct http_request *request,
 	size_t size,
 	char *mime
@@ -228,7 +228,7 @@ signed int ICACHE_FLASH_ATTR http_send_default_headers(
  * @param size Size (in bytes) of the data to send.
  * @return Number of bytes buffered.
  */
-size_t ICACHE_FLASH_ATTR http_send(struct tcp_connection *connection, char *data, size_t size)
+size_t http_send(struct tcp_connection *connection, char *data, size_t size)
 {
     struct http_request *request;
     size_t buffer_free;
@@ -254,7 +254,7 @@ size_t ICACHE_FLASH_ATTR http_send(struct tcp_connection *connection, char *data
  * 
  * @return true if nothing went wrong.
  */
-static bool ICACHE_FLASH_ATTR send_buffer(struct http_request *request)
+static bool send_buffer(struct http_request *request)
 {
 	size_t buffer_use;
 
@@ -270,7 +270,7 @@ static bool ICACHE_FLASH_ATTR send_buffer(struct http_request *request)
 	
 }
 
-signed int ICACHE_FLASH_ATTR http_handle_response(struct http_request *request)
+signed int http_handle_response(struct http_request *request)
 {
 	signed int ret = 0;
 	

@@ -43,7 +43,7 @@
  * @param request Request to respond to..
  * @return Size of the response.
  */
-static signed int ICACHE_FLASH_ATTR create_get_response(struct http_request *request)
+static signed int create_get_response(struct http_request *request)
 {
 	struct station_config wifi_config;
 	char *response;
@@ -113,7 +113,7 @@ static signed int ICACHE_FLASH_ATTR create_get_response(struct http_request *req
  * @param request Request to respond to..
  * @return Size of the response.
  */
-static signed int ICACHE_FLASH_ATTR create_put_response(struct http_request *request)
+static signed int create_put_response(struct http_request *request)
 {
 	int type;
 	char name[32];
@@ -168,7 +168,7 @@ static signed int ICACHE_FLASH_ATTR create_put_response(struct http_request *req
  * @param request The request that we're handling.
  * @return Bytes send.
  */
-signed int ICACHE_FLASH_ATTR http_rest_network_handler(struct http_request *request)
+signed int http_rest_network_handler(struct http_request *request)
 {
 	if (!request)
 	{

@@ -56,12 +56,12 @@ static unsigned char n_tcp_connections;
 static struct tcp_connection *tcp_connections = NULL;
 
 //Forward declaration of callback functions.
-static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg);
-static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err);
-static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg);
-static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg);
-static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short length);
-static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg);
+static void tcp_connect_cb(void *arg);
+static void tcp_reconnect_cb(void *arg, sint8 err);
+static void tcp_disconnect_cb(void *arg);
+static void tcp_write_finish_cb(void *arg);
+static void tcp_recv_cb(void *arg, char *data, unsigned short length);
+static void tcp_sent_cb(void *arg);
 
 /**
  * @brief Find a connection from the SDK pointer.
@@ -72,7 +72,7 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg);
  * @param listening Includes listening connections if `true` else skip them.
  * @return Pointer to a struct #tcp_connection for conn.
  */
-static struct tcp_connection ICACHE_FLASH_ATTR *find_connection(struct espconn *conn, bool listening)
+static struct tcp_connection *find_connection(struct espconn *conn, bool listening)
 {
 	struct tcp_connection *connection = tcp_connections;
 
@@ -129,7 +129,7 @@ static struct tcp_connection ICACHE_FLASH_ATTR *find_connection(struct espconn *
  * @param conn Pointer to a `struct espconn`.
  * @return Pointer to a struct #tcp_connection for conn.
  */
-static struct tcp_connection ICACHE_FLASH_ATTR *find_listening_connection(unsigned int port)
+static struct tcp_connection *find_listening_connection(unsigned int port)
 {
 	struct tcp_connection *connection = tcp_connections;
 
@@ -160,7 +160,7 @@ static struct tcp_connection ICACHE_FLASH_ATTR *find_listening_connection(unsign
  * 
  * @param connection Pointer to the connection to add.
  */
-static void ICACHE_FLASH_ATTR add_active_connection(struct tcp_connection *connection)
+static void add_active_connection(struct tcp_connection *connection)
 {
 	struct tcp_connection *connections = tcp_connections;
 	
@@ -185,7 +185,7 @@ static void ICACHE_FLASH_ATTR add_active_connection(struct tcp_connection *conne
  * 
  * @param status Status to print.
  */
-static void ICACHE_FLASH_ATTR print_status(const int status)
+static void print_status(const int status)
 {
     switch(status)
     {
@@ -231,7 +231,7 @@ static void ICACHE_FLASH_ATTR print_status(const int status)
 /**
  * @brief Print the status of all connections in the list.
  */
-void ICACHE_FLASH_ATTR tcp_print_connection_status(void)
+void tcp_print_connection_status(void)
 {
 	struct tcp_connection *connection = tcp_connections;
 	unsigned int connections = 0;
@@ -299,7 +299,7 @@ void ICACHE_FLASH_ATTR tcp_print_connection_status(void)
  * 
  * @param arg Pointer to an espconn connection structure.
  */
-static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
+static void tcp_connect_cb(void *arg)
 {
 	struct espconn *conn = arg;
     struct tcp_connection *connection;
@@ -362,7 +362,7 @@ static void ICACHE_FLASH_ATTR tcp_connect_cb(void *arg)
  * @param arg Pointer to an espconn connection structure.
  * @param err Error code.
  */
-static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err)
+static void tcp_reconnect_cb(void *arg, sint8 err)
 {
     struct espconn *conn = arg;
     struct tcp_connection *connection;
@@ -418,7 +418,7 @@ static void ICACHE_FLASH_ATTR tcp_reconnect_cb(void *arg, sint8 err)
  * 
  * @param arg Pointer to an espconn connection structure.
  */
-static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
+static void tcp_disconnect_cb(void *arg)
 {
     struct espconn *conn = arg;
     struct tcp_connection *connection;
@@ -468,7 +468,7 @@ static void ICACHE_FLASH_ATTR tcp_disconnect_cb(void *arg)
  * 
  * @param arg Pointer to an espconn connection structure.
  */
-static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg)
+static void tcp_write_finish_cb(void *arg)
 {
     struct espconn *conn = arg;
     struct tcp_connection *connection;
@@ -511,7 +511,7 @@ static void ICACHE_FLASH_ATTR tcp_write_finish_cb(void *arg)
  * 
  * @param arg Pointer to an espconn connection structure.
  */
-static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short length)
+static void tcp_recv_cb(void *arg, char *data, unsigned short length)
 {
     struct espconn  *conn = arg;
     struct tcp_connection *connection;
@@ -557,7 +557,7 @@ static void ICACHE_FLASH_ATTR tcp_recv_cb(void *arg, char *data, unsigned short 
  * 
  * @param arg Pointer to an espconn connection structure.
  */
-static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
+static void tcp_sent_cb(void *arg)
 {
     struct espconn *conn = arg;
     struct tcp_connection *connection;
@@ -614,7 +614,7 @@ static void ICACHE_FLASH_ATTR tcp_sent_cb(void *arg)
  * @param sent_cb Callback when something has been sent.
  * @return `true` on success.
  */
-bool ICACHE_FLASH_ATTR tcp_listen(unsigned int port,
+bool tcp_listen(unsigned int port,
 								  tcp_callback connect_cb, 
 								  tcp_callback disconnect_cb,
 								  tcp_callback write_finish_cb,
@@ -728,7 +728,7 @@ bool ICACHE_FLASH_ATTR tcp_listen(unsigned int port,
  * 
  * @return `true` on success.
  */
-bool ICACHE_FLASH_ATTR init_tcp(void)
+bool init_tcp(void)
 {
     debug("TCP init.\n");
     if (tcp_connections != NULL)
@@ -750,7 +750,7 @@ bool ICACHE_FLASH_ATTR init_tcp(void)
  * @param port Port to stop listening on.
  * @return True on success, false on failure.
  */
-bool ICACHE_FLASH_ATTR tcp_stop(unsigned int port)
+bool tcp_stop(unsigned int port)
 {
 	int ret;
 	struct tcp_connection *listening_connection;
@@ -788,7 +788,7 @@ bool ICACHE_FLASH_ATTR tcp_stop(unsigned int port)
  * 
  * @return Pointer to a struct #tcp_connection.
  */
-struct tcp_connection ICACHE_FLASH_ATTR *tcp_get_connections(void)
+struct tcp_connection *tcp_get_connections(void)
 {
 	return(tcp_connections);
 }
@@ -802,7 +802,7 @@ struct tcp_connection ICACHE_FLASH_ATTR *tcp_get_connections(void)
  * 
  * @return true on success, false otherwise.
  */
-bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, size_t size)
+bool tcp_send(struct tcp_connection *connection, char *data, size_t size)
 {
 	signed char ret;
 	
@@ -844,7 +844,7 @@ bool ICACHE_FLASH_ATTR tcp_send(struct tcp_connection *connection, char *data, s
  * 
  * @param connection Connection to disconnect.
  */
-void ICACHE_FLASH_ATTR tcp_disconnect(struct tcp_connection *connection)
+void tcp_disconnect(struct tcp_connection *connection)
 {
 	int ret;
 	
@@ -864,7 +864,7 @@ void ICACHE_FLASH_ATTR tcp_disconnect(struct tcp_connection *connection)
  * clean up after itself.
  * @param connection Pointer to the data to free.
  */
-void ICACHE_FLASH_ATTR tcp_free(struct tcp_connection *connection)
+void tcp_free(struct tcp_connection *connection)
 {
 	struct tcp_connection *connections = tcp_connections;
 	

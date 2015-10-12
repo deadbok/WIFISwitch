@@ -1,5 +1,23 @@
 2015-10-11 Martin Grønholdt
 
+* build.sh: Added, build with log file output.
+* ld/eagle.app.v6.ld: Linker script that moves code into ROM.
+* tools/esp-config-tools/src/gen_config.c (main): Added "I've done good." message.
+* mk/config.mk: Added VERSION.
+* user/user_config.h: Enable DEBUG_MEM when DEBUG is defined.
+* Makefile: Added linker -gc-sections t remove unused functions from the firmware
+		  : Fixed a variable name in flashfs.
+		  : Added compiler flags -ffunction-sections -fdata-sections to
+		    generate sections for everything so tha the linker can
+		    remove unused stuff.
+		  : Use local linker script.
+		  : Nicer size output.
+		  : Reintroduced the archive generation step.
+* user/*: Removed ICACHE_FLASH_ATTR. Now accomplished by the linker scripts.
+
+
+2015-10-11 Martin Grønholdt
+
 * Makefile: Added project name to compiler defines.
 		  : Added compiler debug define.
 		  : Will only build for boards with 512KB flash.

@@ -52,7 +52,7 @@ int http_response_mutex = 0;
  * 
 * @param connection Pointer to the connection that has connected.
  */
-void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
+void tcp_connect_cb(struct tcp_connection *connection)
 {
     struct http_request *request;
     
@@ -73,7 +73,7 @@ void ICACHE_FLASH_ATTR tcp_connect_cb(struct tcp_connection *connection)
  * 
  * @param connection Pointer to the connection that has had an error.
  */
-void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
+void tcp_reconnect_cb(struct tcp_connection *connection)
 {  
     debug("HTTP reconnect (%p).\n", connection);
 }
@@ -86,7 +86,7 @@ void ICACHE_FLASH_ATTR tcp_reconnect_cb(struct tcp_connection *connection)
  * 
  * @param connection Pointer to the connection that has disconnected. 
  */
-void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
+void tcp_disconnect_cb(struct tcp_connection *connection)
 {
     debug("HTTP disconnect (%p).\n", connection);
 }
@@ -96,7 +96,7 @@ void ICACHE_FLASH_ATTR tcp_disconnect_cb(struct tcp_connection *connection)
  * 
  * @param connection Pointer to the connection that is finished.
  */
-void ICACHE_FLASH_ATTR tcp_write_finish_cb(struct tcp_connection *connection)
+void tcp_write_finish_cb(struct tcp_connection *connection)
 {
 	debug("Done writing (%p).\n", connection);
 }
@@ -108,7 +108,7 @@ void ICACHE_FLASH_ATTR tcp_write_finish_cb(struct tcp_connection *connection)
  * 
  * @param connection Pointer to the connection that received the data.
  */
-void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
+void tcp_recv_cb(struct tcp_connection *connection)
 {
 	void *buffer_ptr;
 	signed int ret;
@@ -166,7 +166,7 @@ void ICACHE_FLASH_ATTR tcp_recv_cb(struct tcp_connection *connection)
     debug(" Request %p done.\n", request);
 }
 
-void ICACHE_FLASH_ATTR tcp_sent_cb(struct tcp_connection *connection )
+void tcp_sent_cb(struct tcp_connection *connection )
 {
 	struct http_request *request = connection->user;
 	signed int ret = 0;

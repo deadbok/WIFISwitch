@@ -33,7 +33,7 @@
  * 
  * This is supposed to be called before the web server is started.
  */
-bool ICACHE_FLASH_ATTR rest_init(void)
+bool rest_init(void)
 {
 	return(true);
 }

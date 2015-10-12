@@ -41,7 +41,7 @@
  * @param request Request to respond to..
  * @return Size of the response.
  */
-static signed int ICACHE_FLASH_ATTR create_get_response(struct http_request *request)
+static signed int create_get_response(struct http_request *request)
 {
 	char *response;
 	char *response_pos;
@@ -82,7 +82,7 @@ static signed int ICACHE_FLASH_ATTR create_get_response(struct http_request *req
  * @param request The request that we're handling.
  * @return Bytes send.
  */
-signed int ICACHE_FLASH_ATTR http_rest_mem_handler(struct http_request *request)
+signed int http_rest_mem_handler(struct http_request *request)
 {
 	if (!request)
 	{

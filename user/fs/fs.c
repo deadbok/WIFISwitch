@@ -63,7 +63,7 @@ static FS_FILE_H n_open_files = 0;
 /**
  * @brief Initialise stuff for file system access.
  */
-void ICACHE_FLASH_ATTR fs_init(void)
+void fs_init(void)
 {
 	db_printf("ROM size %d KiB.\n", flash_size() >> 10);
 	init_dbffs();
@@ -75,7 +75,7 @@ void ICACHE_FLASH_ATTR fs_init(void)
  * @param handle The handle to test.
  * @return True if this is a valid handle, false otherwise.
  */
-static bool ICACHE_FLASH_ATTR fs_test_handle(FS_FILE_H handle)
+static bool fs_test_handle(FS_FILE_H handle)
 {
     if ((handle > -1) && (handle < FS_MAX_OPEN_FILES))
     {
@@ -95,7 +95,7 @@ static bool ICACHE_FLASH_ATTR fs_test_handle(FS_FILE_H handle)
  * @param handle The handle of the file to check.
  * @return True on end of file, false otherwise.
  */
-static bool ICACHE_FLASH_ATTR fs_check_eof(FS_FILE_H handle)
+static bool fs_check_eof(FS_FILE_H handle)
 {
     //End of file?
     if (fs_open_files[handle]->pos >= fs_open_files[handle]->size)
@@ -115,7 +115,7 @@ static bool ICACHE_FLASH_ATTR fs_check_eof(FS_FILE_H handle)
  * @param filename Name of the file to open.
  * @return A handle to the newly opened file, or -1 on error.
  */
-FS_FILE_H ICACHE_FLASH_ATTR fs_open(char *filename)
+FS_FILE_H fs_open(char *filename)
 {
     struct dbffs_file_hdr *file_hdr;
     struct fs_file *file;
@@ -170,7 +170,7 @@ FS_FILE_H ICACHE_FLASH_ATTR fs_open(char *filename)
  * 
  * @param handle Handle of the file to close.
  */
-void ICACHE_FLASH_ATTR fs_close(FS_FILE_H handle)
+void fs_close(FS_FILE_H handle)
 {
     debug("Closing file handle %d.\n", handle);
     
@@ -194,7 +194,7 @@ void ICACHE_FLASH_ATTR fs_close(FS_FILE_H handle)
  * @param handle The handle of the file to read from.
  * @return The count of objects read.
  */
-size_t ICACHE_FLASH_ATTR fs_read(void *buffer, size_t size, size_t count, FS_FILE_H handle)
+size_t fs_read(void *buffer, size_t size, size_t count, FS_FILE_H handle)
 {
     size_t total_size = size * count;
     unsigned int abs_pos = fs_open_files[handle]->start_pos + fs_open_files[handle]->pos;
@@ -227,7 +227,7 @@ size_t ICACHE_FLASH_ATTR fs_read(void *buffer, size_t size, size_t count, FS_FIL
  * @param handle A handle to the file to read from.
  * @return The character read, or #FS_EOF on failure.
  */ 
-int ICACHE_FLASH_ATTR fs_getc(FS_FILE_H handle)
+int fs_getc(FS_FILE_H handle)
 {
     int ch;
     unsigned int abs_pos = fs_open_files[handle]->start_pos + fs_open_files[handle]->pos;
@@ -261,7 +261,7 @@ int ICACHE_FLASH_ATTR fs_getc(FS_FILE_H handle)
  * @param handle A handle to the file to read from.
  * @return The string read, or NULL on error.
  */ 
-char ICACHE_FLASH_ATTR *fs_gets(char *str, size_t count, FS_FILE_H handle)
+char *fs_gets(char *str, size_t count, FS_FILE_H handle)
 {
     unsigned int abs_pos = fs_open_files[handle]->start_pos + fs_open_files[handle]->pos;
     unsigned int i = 0;
@@ -304,7 +304,7 @@ char ICACHE_FLASH_ATTR *fs_gets(char *str, size_t count, FS_FILE_H handle)
  * @param handle Handle to a file.
  * @return Position or FS_EOF 
  */
-long ICACHE_FLASH_ATTR fs_tell( FS_FILE_H handle)
+long fs_tell( FS_FILE_H handle)
 {
     if (!fs_test_handle(handle))
     {
@@ -320,7 +320,7 @@ long ICACHE_FLASH_ATTR fs_tell( FS_FILE_H handle)
  * @param handle Handle to a file.
  * @return Size of file or FS_EOF 
  */
-long ICACHE_FLASH_ATTR fs_size( FS_FILE_H handle)
+long fs_size( FS_FILE_H handle)
 {
     if (!fs_test_handle(handle))
     {
@@ -344,7 +344,7 @@ long ICACHE_FLASH_ATTR fs_size( FS_FILE_H handle)
  *               offset.
  * @return Position or FS_EOF 
  */
-int ICACHE_FLASH_ATTR fs_seek(FS_FILE_H handle, long offset, fs_seek_pos_t origin)
+int fs_seek(FS_FILE_H handle, long offset, fs_seek_pos_t origin)
 {
     if (!fs_test_handle(handle))
     {
@@ -373,7 +373,7 @@ int ICACHE_FLASH_ATTR fs_seek(FS_FILE_H handle, long offset, fs_seek_pos_t origi
  * @param handle Handle to a file.
  * @return 0 if the end is not reached or FS_EOF
  */
-int ICACHE_FLASH_ATTR fs_eof(FS_FILE_H handle)
+int fs_eof(FS_FILE_H handle)
 {
     if (!fs_test_handle(handle))
     {

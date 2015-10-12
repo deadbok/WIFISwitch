@@ -16,7 +16,7 @@
  * @brief address Address to load the data from.
  * @return An array of 8 bytes with type and offset information or NULL.
  */
-static uint32_t ICACHE_FLASH_ATTR load_signature(unsigned int address)
+static uint32_t  load_signature(unsigned int address)
 {
 	uint32_t ret;
 	
@@ -35,7 +35,7 @@ static uint32_t ICACHE_FLASH_ATTR load_signature(unsigned int address)
  * 
  * @param entry Pointer to the entry to free.
  */
-static void ICACHE_FLASH_ATTR free_generic_header(struct dbffs_generic_hdr *entry)
+static void  free_generic_header(struct dbffs_generic_hdr *entry)
 {
 	if (entry)
 	{
@@ -54,7 +54,7 @@ static void ICACHE_FLASH_ATTR free_generic_header(struct dbffs_generic_hdr *entr
  * @brief address Address to load the data from.
  * @return A pointer to the general header part.
  */
-static struct dbffs_generic_hdr ICACHE_FLASH_ATTR *load_generic_header(unsigned int address)
+static struct dbffs_generic_hdr  *load_generic_header(unsigned int address)
 {
 	struct dbffs_generic_hdr *ret;
 	
@@ -87,7 +87,7 @@ static struct dbffs_generic_hdr ICACHE_FLASH_ATTR *load_generic_header(unsigned 
  * 
  * @param entry Pointer to the entry to free.
  */
-void ICACHE_FLASH_ATTR dbffs_free_file_header(struct dbffs_file_hdr *entry)
+void  dbffs_free_file_header(struct dbffs_file_hdr *entry)
 {
 	if (entry)
 	{
@@ -113,7 +113,7 @@ void ICACHE_FLASH_ATTR dbffs_free_file_header(struct dbffs_file_hdr *entry)
  * @brief address Address to load the data from.
  * @return A pointer to the file header.
  */
-static struct dbffs_file_hdr ICACHE_FLASH_ATTR *load_file_header(unsigned int address)
+static struct dbffs_file_hdr  *load_file_header(unsigned int address)
 {
 	struct dbffs_file_hdr *ret;
 	uint32_t offset = address;
@@ -157,7 +157,7 @@ static struct dbffs_file_hdr ICACHE_FLASH_ATTR *load_file_header(unsigned int ad
  * 
  * @param entry Pointer to the entry to free.
  */
-static void ICACHE_FLASH_ATTR free_link_header(struct dbffs_link_hdr *entry)
+static void  free_link_header(struct dbffs_link_hdr *entry)
 {
 	if (entry)
 	{
@@ -189,7 +189,7 @@ static void ICACHE_FLASH_ATTR free_link_header(struct dbffs_link_hdr *entry)
  * @brief address Address to load the data from.
  * @return A pointer to the link header.
  */
-static struct dbffs_link_hdr ICACHE_FLASH_ATTR *load_link_header(unsigned int address)
+static struct dbffs_link_hdr  *load_link_header(unsigned int address)
 {
 	struct dbffs_link_hdr *ret;
 	uint32_t offset = address;
@@ -243,7 +243,7 @@ static struct dbffs_link_hdr ICACHE_FLASH_ATTR *load_link_header(unsigned int ad
 /**
  * @brief Find a file header.
  */
-struct dbffs_file_hdr ICACHE_FLASH_ATTR *dbffs_find_file_header(char *path)
+struct dbffs_file_hdr  *dbffs_find_file_header(char *path)
 {
 	struct dbffs_generic_hdr *gen_hdr;
 	struct dbffs_file_hdr *file_hdr;
@@ -314,7 +314,7 @@ struct dbffs_file_hdr ICACHE_FLASH_ATTR *dbffs_find_file_header(char *path)
 /**
  * @brief Initialise the zip routines.
  */
-void ICACHE_FLASH_ATTR init_dbffs(void)
+void  init_dbffs(void)
 {
     uint32_t signature;
 

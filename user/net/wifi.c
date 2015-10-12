@@ -117,7 +117,7 @@ static bool ICACHE_FLASH_ATTR wifi_disconnect(void)
  * @param channel Channel for the AP.
  * @return true on success, false on failurre.
  */
-static bool ICACHE_FLASH_ATTR create_softap(char *ssid, char *passwd, unsigned char channel)
+static bool create_softap(char *ssid, char *passwd, unsigned char channel)
 {
     unsigned char           ret;
 
@@ -165,7 +165,7 @@ static bool ICACHE_FLASH_ATTR create_softap(char *ssid, char *passwd, unsigned c
  * 
  * @return true on success, false on failure.
  */
-static bool ICACHE_FLASH_ATTR wifi_config_mode(void)
+static bool wifi_config_mode(void)
 {
     unsigned char           mac[6];
     char                    ssid[32];
@@ -227,7 +227,7 @@ static bool ICACHE_FLASH_ATTR wifi_config_mode(void)
  * 
  * @param event Event data from SDK.
  */
-static void ICACHE_FLASH_ATTR wifi_handle_event_cb(System_Event_t *event)
+static void wifi_handle_event_cb(System_Event_t *event)
 {
 	switch (event->event)
 	{
@@ -309,7 +309,7 @@ static void ICACHE_FLASH_ATTR wifi_handle_event_cb(System_Event_t *event)
 /**
  * @brief Timer call back to check for connection timeout.
  */
-static void ICACHE_FLASH_ATTR timeout_check(void)
+static void timeout_check(void)
 {
 	timeout--;
 	if (timeout == 0)
@@ -330,7 +330,7 @@ static void ICACHE_FLASH_ATTR timeout_check(void)
  * @brief Connect to the configured Access Point.
  *
  */
-static bool ICACHE_FLASH_ATTR wifi_connect_default(void)
+static bool wifi_connect_default(void)
 {
     unsigned char   ret = 0;
 
@@ -384,7 +384,7 @@ static bool ICACHE_FLASH_ATTR wifi_connect_default(void)
  * 
  * @return `true`on connection.
  */
-bool ICACHE_FLASH_ATTR wifi_check_connection(void)
+bool wifi_check_connection(void)
 {
 	unsigned char ret = 0;
 	
@@ -415,7 +415,7 @@ bool ICACHE_FLASH_ATTR wifi_check_connection(void)
  * @param connect_cb Function to call when a connection is made.
  * @param disconnect_cb Function to call when a disconnect happens.
  */
-bool ICACHE_FLASH_ATTR wifi_init(char *hostname, 
+bool wifi_init(char *hostname, 
 								 void (*connect_cb)(unsigned char wifi_mode),
 								 void (*disconnect_cb)())
 {

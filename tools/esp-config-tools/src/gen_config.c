@@ -231,5 +231,6 @@ int main(int argc, char *argv[])
 	{
 		die("Error closing image file.");
 	}
+	printf("Configuration image written.\n");
 	return(EXIT_SUCCESS);
 }

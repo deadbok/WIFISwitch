@@ -45,7 +45,7 @@
  * @param chrs A string consisting af all individual characters to look for.
  * @return A pointer to the first occurrence of any char in @p chrs or NULL.
  */
-char ICACHE_FLASH_ATTR *strchrs(char *str, char *chrs)
+char *strchrs(char *str, char *chrs)
 {
     unsigned int n_ch = 0;
     char *ptr = str;
@@ -76,7 +76,7 @@ char ICACHE_FLASH_ATTR *strchrs(char *str, char *chrs)
  * @param str Pointer to the string to work on.
  * @return Pointer to the string.
  */
-char ICACHE_FLASH_ATTR *strlwr(char *str)
+char *strlwr(char *str)
 {
     char    *ptr = str;
     
@@ -101,7 +101,7 @@ char ICACHE_FLASH_ATTR *strlwr(char *str)
  * @return The number of characters needed for the string version of
  *         the number.
  */
-unsigned short ICACHE_FLASH_ATTR digits(long n)
+unsigned short digits(long n)
 {
 	unsigned short i = 1;
 	unsigned long digit = 1;
@@ -132,7 +132,7 @@ unsigned short ICACHE_FLASH_ATTR digits(long n)
  * @return The number of characters needed for the string version of
  *         the number.
  */
-unsigned short ICACHE_FLASH_ATTR digits_f(float n, unsigned char fractional_digits)
+unsigned short digits_f(float n, unsigned char fractional_digits)
 {
 	long int_part = n;
 	
@@ -150,7 +150,7 @@ unsigned short ICACHE_FLASH_ATTR digits_f(float n, unsigned char fractional_digi
  * @param pos Position from where to start overwriting the old string.
  * @return Pointer to `src` or NULL on error.
  */
-char ICACHE_FLASH_ATTR *strrpl(char *src, char *rpl, size_t pos)
+char *strrpl(char *src, char *rpl, size_t pos)
 {
 	size_t src_size, rpl_size;
 	

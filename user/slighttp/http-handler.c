@@ -67,7 +67,7 @@ static unsigned int n_handlers = 0;
  *            when another rule, *added before this*, will handle it.
  * @param handler Pointer to the callback.
  */
-bool ICACHE_FLASH_ATTR http_add_handler(char *uri, http_handler_callback handler)
+bool http_add_handler(char *uri, http_handler_callback handler)
 {
 	struct http_handler_entry *handlers = response_handlers;
 	struct http_handler_entry *entry = NULL;
@@ -116,7 +116,7 @@ bool ICACHE_FLASH_ATTR http_add_handler(char *uri, http_handler_callback handler
  * 
  * @param handler Pointer to a the callback.
  */
-bool ICACHE_FLASH_ATTR http_remove_handler(http_handler_callback handler)
+bool http_remove_handler(http_handler_callback handler)
 {
 	struct http_handler_entry *entry = response_handlers;
 	struct http_handler_entry *handlers = response_handlers;
@@ -160,7 +160,7 @@ bool ICACHE_FLASH_ATTR http_remove_handler(http_handler_callback handler)
  * @param start_handler If not NULL, search the list only after this handler-
  * @return Function pointer to a handler.
  */
-http_handler_callback ICACHE_FLASH_ATTR http_get_handler(
+http_handler_callback http_get_handler(
 	struct http_request *request,
 	http_handler_callback start_handler
 )
@@ -253,7 +253,7 @@ http_handler_callback ICACHE_FLASH_ATTR http_get_handler(
  * @param request Request to handle.
  * @return Bytes send.
  */
-signed int ICACHE_FLASH_ATTR http_status_handler(struct http_request *request)
+signed int http_status_handler(struct http_request *request)
 {
 	size_t size = 0;
 	char str_size[5];
@@ -349,7 +349,7 @@ signed int ICACHE_FLASH_ATTR http_status_handler(struct http_request *request)
  * @param put_cb Callback to handle put requests
  * @return Bytes send.
  */
-signed int ICACHE_FLASH_ATTR http_simple_GET_PUT_handler(
+signed int http_simple_GET_PUT_handler(
 	struct http_request *request, 
 	http_handler_callback get_cb,
 	http_handler_callback put_cb,

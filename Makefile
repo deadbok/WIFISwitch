@@ -34,9 +34,9 @@ include mk/$(BUILD_OS).mk
 
 ### Compiler and linker configuration. ###
 # Compile flags.
-ESP_CFLAGS += -O2 -std=c99 -Wall -Wl,-EL -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH -DPROJECT_NAME='"$(PROJECT_NAME)"'
+	ESP_CFLAGS += -Os -std=c99 -Wall -Wl,-EL -ffunction-sections -fdata-sections -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH -DPROJECT_NAME='"$(PROJECT_NAME)"'
 # Linker flags used to generate the main object file
-ESP_LDFLAGS	= -nostdlib -Wl,--no-check-sections -u call_user_start -Wl,-static
+ESP_LDFLAGS	= -nostdlib -Wl,--gc-sections -Wl,--no-check-sections -u call_user_start -Wl,-static
 # Linker script used for the above linker step.
 ESP_LD_SCRIPT	= eagle.app.v6.ld
 # Possibly enable debug flag.
@@ -56,11 +56,13 @@ SDK_INCDIR	= include include/json
 ifeq ("$(FLASH_SIZE)","512")
 	# These two files contain the actual program code.
 	# Flash address and file name of firmware resident code.
+	FW_FILE_1 = $(addprefix $(FW_BASE)/,$(FW_FILE_1_ADDR).bin)
 	FW_FILE_1_ADDR := 0x00000
-	FW_FILE_1 := $(addprefix $(FW_BASE)/,$(FW_FILE_1_ADDR).bin)
+	FW_FILE_1_SIZE = $(shell $(FILESIZE) $(FW_FILE_1))
 	# Flash address and file name of firmware ROM code.
+	FW_FILE_2 = $(addprefix $(FW_BASE)/,$(FW_FILE_2_ADDR).bin)
 	FW_FILE_2_ADDR := 0x40000
-	FW_FILE_2 := $(addprefix $(FW_BASE)/,$(FW_FILE_2_ADDR).bin)
+	FW_FILE_2_SIZE = $(shell $(FILESIZE) $(FW_FILE_2))
 	#Max size of any of the firmware files. 512Kb / 2 - 4KB at the start - 16Kb at the end.
 	FW_FILE_MAX := 241664
 else 
@@ -82,12 +84,14 @@ SRC	:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.c))
 OBJ	:= $(patsubst %.c,$(BUILD_BASE)/%.o,$(SRC))
 # Add -l prefix to generate link flags.
 LIBS := $(addprefix -l,$(LIBS))
+# Generate firmware archive file name.
+TARGET_AR := $(addprefix $(BUILD_BASE)/,$(TARGET).a)
 # Add build base directory to target name.
 TARGET := $(addprefix $(BUILD_BASE)/,$(TARGET))
 # Generate a list of all files to be included in the flash file system.
 FS_FILES := $(shell find $(FS_DIR) -type f -name '*')
 # Add path and flag to generate linker flags.
-ESP_LD_SCRIPT := $(addprefix -T$(SDK_BASE)/$(SDK_LDDIR)/,$(ESP_LD_SCRIPT))
+ESP_LD_SCRIPT := $(addprefix -Tld/,$(ESP_LD_SCRIPT))
 # Look for include files in module directories
 INCDIR := $(addprefix -I,$(SRC_DIR))
 # Generate compiler flags from EXTRA_INCDIR.
@@ -136,23 +140,29 @@ endef
 
 # Generate firmware.
 all: checkdirs $(FW_FILE_1) $(FW_FILE_2) $(FW_FILE_FS) $(FW_FILE_CONFIG)
+	$(ECHO) Memory usage:
 	@./$(TOOLS_DIR)/mem_usage.sh $(TARGET) 81920
-	$(ECHO) File system size $(FS_SIZE)KB of $(FS_MAX_SIZE)KB.
-	$(ECHO) Resident firmware size $(shell $(FILESIZE) $(FW_FILE_1))KB of $(FW_FILE_MAX)KB.
-	$(ECHO) ROM firmware size $(shell $(FILESIZE) $(FW_FILE_2))KB of $(FW_FILE_MAX)KB.
+	$(ECHO) Flash usage:
+	$(ECHO) File system size $(FS_SIZE)KB of $(FS_MAX_SIZE)KB, $$(( $(FS_MAX_SIZE) - $(FS_SIZE) ))KB free.
+	$(ECHO) Resident firmware size $(FW_FILE_1_SIZE)KB of $(FW_FILE_MAX)KB, $$(( $(FW_FILE_MAX) - $(FW_FILE_1_SIZE) ))KB free.
+	$(ECHO) ROM firmware size $(FW_FILE_2_SIZE)KB of $(FW_FILE_MAX)KB, $$(( $(FW_FILE_MAX) - $(FW_FILE_2_SIZE) ))KB free.
 
 # Generate the firmware image from the final ELF file.
 $(FW_BASE)/%.bin: $(TARGET) | $(FW_BASE)
 	$(ESPTOOL) elf2image -o $(FW_BASE)/ $(TARGET)
 
 # Link the target ELF file.
-$(TARGET): $(OBJ)
+$(TARGET): $(TARGET_AR)
 	$(LD) $(SDK_LIBDIR) $(ESP_LD_SCRIPT) $(ESP_LDFLAGS) -Wl,--start-group $(LIBS) $(OBJ) -Wl,--end-group,-Map,$(basename $@).map -o $@
 # This is for future OTA support.
 #	$(OBJCOPY) --only-section .text -O binary $(TARGET) $(BUILD_BASE)/eagle.app.v6.text.bin
 #	$(OBJCOPY) --only-section .data -O binary $(TARGET) $(BUILD_BASE)/eagle.app.v6.data.bin
 #	$(OBJCOPY) --only-section .rodata -O binary $(TARGET) $(BUILD_BASE)/eagle.app.v6.rodata.bin
 #	$(OBJCOPY) --only-section .irom0.text -O binary $(TARGET) $(BUILD_BASE)/eagle.app.v6.irom0text.bin
+
+
+$(TARGET_AR): $(OBJ)
+	$(AR) cru $@ $^
 	
 #### Create directories. ####
 checkdirs: $(BUILD_DIR) $(FW_BASE) $(LOG_DIR) $(TOOLS_DIR)
@@ -221,7 +231,7 @@ $(FW_FILE_FS): $(FS_FILES) $(FS_CREATE)
 # Flash file system.	
 flashfs: $(FW_FILE_FS)
 	tools/testsize.sh $(FW_FILE_FS) $(FS_MAX_SIZE)
-	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FS_START_OFFSET) $(FW_FILE_FS)
+	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FS_FILE_ADDR) $(FW_FILE_FS)
 
 #### ESP firmware binary configuration stuff. ####
 # Build the configuration tools.

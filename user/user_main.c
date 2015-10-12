@@ -88,7 +88,7 @@ os_timer_t status_timer;
 /**
  * @brief Called by the timer to check the status.
  */
-static void ICACHE_FLASH_ATTR status_check(void)
+static void status_check(void)
 {
 	db_mem_list();
 	udp_print_connection_status();
@@ -98,7 +98,7 @@ static void ICACHE_FLASH_ATTR status_check(void)
 /**
  * @brief Called when the WIFI is connected or in AP mode.
  */
-static void ICACHE_FLASH_ATTR connected(unsigned char mode)
+static void connected(unsigned char mode)
 {
 	//Start status task.
 	//Disarm timer.
@@ -164,7 +164,7 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
  * Simply reset the chip.
  * @todo Stop HTTP server instead.
  */
- static void ICACHE_FLASH_ATTR disconnected(void)
+ static void disconnected(void)
  {
 	if (http_get_status())
 	{
@@ -178,7 +178,7 @@ static void ICACHE_FLASH_ATTR connected(unsigned char mode)
  *
  * Starts the connection task.
  */
-static void ICACHE_FLASH_ATTR start_connection(void)
+static void start_connection(void)
 {
     db_printf("Running...\n");
     wifi_init("wifiswitch", connected, disconnected);
@@ -187,7 +187,7 @@ static void ICACHE_FLASH_ATTR start_connection(void)
 /**
  * @brief Main entry point and init code.
  */
-void ICACHE_FLASH_ATTR user_init(void)
+void user_init(void)
 {
     //Register function to run when done.
     system_init_done_cb(start_connection);
@@ -207,7 +207,7 @@ void ICACHE_FLASH_ATTR user_init(void)
     //os_delay_us(1000);
 
     //Print banner
-    db_printf("\n%s version %s (%s).\n", PROJECT_NAME, STRING_VERSION, GIT_VERSION);
+    db_printf("\n%s version %s (%s).\n", PROJECT_NAME, VERSION, GIT_VERSION);
     //system_print_meminfo();
     db_printf("SDK version %s.\n", system_get_sdk_version());
     db_printf("Free heap %u\n", system_get_free_heap_size());

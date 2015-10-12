@@ -40,7 +40,7 @@
  * @param request Request that got us here.
  * @return Return unused.
  */
-signed int ICACHE_FLASH_ATTR http_deny_handler(struct http_request *request)
+signed int http_deny_handler(struct http_request *request)
 {
 	debug("Denying access to %s.\n", request->uri);
 	request->response.status_code = 403;

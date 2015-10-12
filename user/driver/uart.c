@@ -50,7 +50,7 @@ LOCAL void uart0_rx_intr_handler(void *para);
  * Parameters   : uart_no, use UART0 or UART1 defined ahead
  * Returns      : NONE
 *******************************************************************************/
-LOCAL void ICACHE_FLASH_ATTR uart_config(uint8 uart_no)
+LOCAL void uart_config(uint8 uart_no)
 {
     if (uart_no == UART1)
     {
@@ -135,7 +135,7 @@ STATUS uart_tx_one_char(uint8 uart, uint8 TxChar)
  * Parameters   : char c - character to tx
  * Returns      : NONE
 *******************************************************************************/
-LOCAL void ICACHE_FLASH_ATTR uart1_write_char(char c)
+LOCAL void uart1_write_char(char c)
 {
     if (c == '\n')
     {
@@ -153,7 +153,7 @@ LOCAL void ICACHE_FLASH_ATTR uart1_write_char(char c)
 }
 
 //os_printf output to fifo or to the tx buffer
-LOCAL void ICACHE_FLASH_ATTR uart0_write_char_no_wait(char c)
+LOCAL void uart0_write_char_no_wait(char c)
 {
 #if UART_BUFF_EN    //send to uart0 fifo but do not wait 
     uint8 chr;
@@ -196,7 +196,7 @@ LOCAL void ICACHE_FLASH_ATTR uart0_write_char_no_wait(char c)
  *                uint16 len - buffer len
  * Returns      :
 *******************************************************************************/
-void ICACHE_FLASH_ATTR uart0_tx_buffer(uint8 *buf, uint16 len)
+void uart0_tx_buffer(uint8 *buf, uint16 len)
 {
     uint16 i;
     for (i = 0; i < len; i++)
@@ -212,7 +212,7 @@ void ICACHE_FLASH_ATTR uart0_tx_buffer(uint8 *buf, uint16 len)
  *                uint16 len - buffer len
  * Returns      :
 *******************************************************************************/
-void ICACHE_FLASH_ATTR uart0_sendStr(const char *str)
+void uart0_sendStr(const char *str)
 {
     while(*str)
     {
@@ -304,7 +304,7 @@ uart_test_rx()
 }
 #endif
 
-LOCAL void ICACHE_FLASH_ATTR ///////
+LOCAL void ///////
 uart_recvTask(os_event_t *events)
 {
     if(events->sig == 0){

@@ -23,7 +23,7 @@
 #include "user_interface.h"
 #include "config.h"
 
-struct config ICACHE_FLASH_ATTR *read_cfg_flash(void)
+struct config *read_cfg_flash(void)
 {
 	struct config *cfg;
 	
@@ -63,7 +63,7 @@ struct config ICACHE_FLASH_ATTR *read_cfg_flash(void)
 	return(cfg);
 }
 
-bool ICACHE_FLASH_ATTR write_cfg_flash(struct config cfg)
+bool write_cfg_flash(struct config cfg)
 {
 	debug("Saving configuration at 0x%x.\n", CONFIG_FLASH_ADDR);
 	

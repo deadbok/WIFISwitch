@@ -12,6 +12,8 @@
 
 # Project name.
 PROJECT_NAME = wifiswitch
+# Version x.y.z.
+VERSION ?= 0.2.0
 # Unique configuration signature (4 bytes).
 ESP_CONFIG_SIG = 0xCF60BEEF
 # Build OS type only linux for now.
@@ -40,23 +42,30 @@ TOOLS_DIR := tools
 ### Set defines for the different build time debug configuration variables. ###
 # Warnings on serial.
 ifdef WARNINGS
-ESP_CFLAGS += -DWARNINGS
+	ESP_CFLAGS += -DWARNINGS
 endif
 # SDK debug output on serial.
 ifdef SDK_DEBUG
-ESP_CFLAGS += -DSDK_DEBUG
+	ESP_CFLAGS += -DSDK_DEBUG
 endif
 # Memory de-/allocation info on serial.
 ifdef DEBUG_MEM
-ESP_CFLAGS += -DDEBUG_MEM
+	ESP_CFLAGS += -DDEBUG_MEM
 endif
 # List memory allocations info on serial.
 ifdef DEBUG_MEM_LIST
-ESP_CFLAGS += DEBUG_MEM_LIST
+	ESP_CFLAGS += DEBUG_MEM_LIST
 endif
 
 # Configuration signature.
 ESP_CFLAGS += -DESP_CONFIG_SIG=$(ESP_CONFIG_SIG)
 
+ifdef DEBUG
+	VERSION := $(VERSION)+debug
+endif
+#Version
+ESP_CFLAGS += -DVERSION='"$(VERSION)"'
 
+# Configuration signature.
+ESP_CFLAGS += -DESP_CONFIG_SIG=$(ESP_CONFIG_SIG)
 

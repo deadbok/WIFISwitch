@@ -74,7 +74,7 @@ struct rest_net_names_context
  * @param entries Number of strings in array.
  * @return The JSON array.
  */
-static char ICACHE_FLASH_ATTR *json_create_string_array(char **values, size_t entries)
+static char *json_create_string_array(char **values, size_t entries)
 {
 	size_t i;
 	size_t total_length = 0;
@@ -245,7 +245,7 @@ static void scan_net_names(struct http_request *request)
  * @param request The request that we're handling.
  * @return Bytes send.
  */
-signed int ICACHE_FLASH_ATTR http_rest_net_names_handler(struct http_request *request)
+signed int http_rest_net_names_handler(struct http_request *request)
 {
 	signed int ret = 0;
 		

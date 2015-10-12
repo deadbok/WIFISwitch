@@ -49,7 +49,7 @@ static bool passwd_changed = false;
  * @param request The request that we're handling.
  * @return Bytes send.
  */
-signed int ICACHE_FLASH_ATTR http_rest_net_passwd_handler(struct http_request *request)
+signed int http_rest_net_passwd_handler(struct http_request *request)
 {
 	int type;
 	char passwd[64];

@@ -33,7 +33,9 @@
 /**
  * @brief Firmware version.
  */
-#define STRING_VERSION "0.2.0"
+#ifndef VERSION
+	#define VERSION "unknown"
+#endif
 
 #ifndef GIT_VERSION
 	#define GIT_VERSION "none"
@@ -89,10 +91,13 @@
  * @brief Print debug info on the serial port.
  */
 //#define DEBUG
+
+#ifdef DEBUG
 /**
  * @brief Print memory allocation info.
  */
-//#define DEBUG_MEM
+#define DEBUG_MEM
+#endif
 /**
  * @brief List memory allocations.
  */

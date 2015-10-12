@@ -41,7 +41,7 @@
  * @param request Request to respond to..
  * @return Size of the response.
  */
-static signed int ICACHE_FLASH_ATTR create_get_response(struct http_request *request)
+static signed int create_get_response(struct http_request *request)
 {
 	char *response;
 	char *response_pos;
@@ -56,8 +56,8 @@ static signed int ICACHE_FLASH_ATTR create_get_response(struct http_request *req
 		os_strcpy(response_pos, "{ \"fw_ver\" : \"");
 		response_pos += 14;
 
-		os_strcpy(response_pos, STRING_VERSION);
-		response_pos += os_strlen(STRING_VERSION); //Hopefully never more than xxxx.xxxx.xxxx
+		os_strcpy(response_pos, VERSION);
+		response_pos += os_strlen(VERSION); //Hopefully never more than xxxx.xxxx.xxxx
 	
 		os_strcpy(response_pos, "\", \"httpd_ver\": \"");
 		response_pos += 17;
@@ -90,7 +90,7 @@ static signed int ICACHE_FLASH_ATTR create_get_response(struct http_request *req
  * @param request The request that we're handling.
  * @return Bytes send.
  */
-signed int ICACHE_FLASH_ATTR http_rest_version_handler(struct http_request *request)
+signed int http_rest_version_handler(struct http_request *request)
 {
 	if (!request)
 	{

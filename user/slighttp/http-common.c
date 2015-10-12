@@ -46,7 +46,7 @@
  * 
  * See [CLF](https://en.wikipedia.org/wiki/Common_Log_Format).
  */
-void ICACHE_FLASH_ATTR http_print_clf_status(struct http_request *request)
+void http_print_clf_status(struct http_request *request)
 {
     char *unknown = "-";
     

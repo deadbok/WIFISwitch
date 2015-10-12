@@ -48,7 +48,7 @@
 
 size_t fs_addr = 0xa000;
 
-size_t ICACHE_FLASH_ATTR flash_size(void)
+size_t flash_size(void)
 { 
 	unsigned int id = spi_flash_get_id(); 
 	unsigned char mfg_id = id & 0xff;
@@ -62,7 +62,7 @@ size_t ICACHE_FLASH_ATTR flash_size(void)
 	return(1 << size_id);
 }
 
-void ICACHE_FLASH_ATTR flash_dump(unsigned int src_addr, size_t size)
+void flash_dump(unsigned int src_addr, size_t size)
 {
     size_t i;
     unsigned int buf;
@@ -78,7 +78,7 @@ void ICACHE_FLASH_ATTR flash_dump(unsigned int src_addr, size_t size)
     }
 }
 
-void ICACHE_FLASH_ATTR flash_dump_mem(unsigned int src_addr, size_t size)
+void flash_dump_mem(unsigned int src_addr, size_t size)
 {
     size_t i;
     unsigned int *buf = (unsigned int *)(0x40200000 + src_addr);
@@ -102,7 +102,7 @@ void ICACHE_FLASH_ATTR flash_dump_mem(unsigned int src_addr, size_t size)
  * @param len Bytes to copy.
  * @return Bytes actually copied.
  */
-static size_t ICACHE_FLASH_ATTR amemcpy(unsigned char *d, unsigned char *s, size_t len)
+static size_t amemcpy(unsigned char *d, unsigned char *s, size_t len)
 {
 	unsigned int i;
 	unsigned int temp;
@@ -128,7 +128,7 @@ static size_t ICACHE_FLASH_ATTR amemcpy(unsigned char *d, unsigned char *s, size
 	return(i);
 }
 
-bool ICACHE_FLASH_ATTR aflash_read(const void *data, unsigned int read_addr, size_t size)
+bool aflash_read(const void *data, unsigned int read_addr, size_t size)
 {
     unsigned int addr = 0x40200000 + fs_addr + read_addr;
     size_t ret;

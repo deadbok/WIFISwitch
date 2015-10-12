@@ -51,8 +51,8 @@ static unsigned char n_udp_connections;
 static struct udp_connection *udp_connections = NULL;
 
 //Forward declaration of callback functions.
-static void ICACHE_FLASH_ATTR udp_recv_cb(void *arg, char *data, unsigned short length);
-static void ICACHE_FLASH_ATTR udp_sent_cb(void *arg);
+static void udp_recv_cb(void *arg, char *data, unsigned short length);
+static void udp_sent_cb(void *arg);
 
 /**
  * @brief Find a connection using its local port.
@@ -60,7 +60,7 @@ static void ICACHE_FLASH_ATTR udp_sent_cb(void *arg);
  * @param conn Pointer to a `struct espconn`.
  * @return Pointer to a struct #udp_connection for conn.
  */
-static struct udp_connection ICACHE_FLASH_ATTR *find_listening_connection(unsigned int port)
+static struct udp_connection *find_listening_connection(unsigned int port)
 {
 	struct udp_connection *connection = udp_connections;
 
@@ -92,7 +92,7 @@ static struct udp_connection ICACHE_FLASH_ATTR *find_listening_connection(unsign
  * 
  * @param connection Pointer to the connection to add.
  */
-static void ICACHE_FLASH_ATTR add_active_connection(struct udp_connection *connection)
+static void add_active_connection(struct udp_connection *connection)
 {
 	struct udp_connection *connections = udp_connections;
 	
@@ -115,7 +115,7 @@ static void ICACHE_FLASH_ATTR add_active_connection(struct udp_connection *conne
 /**
  * @brief Print the status of all connections in the list.
  */
-void ICACHE_FLASH_ATTR udp_print_connection_status(void)
+void udp_print_connection_status(void)
 {
 	struct udp_connection *connection = udp_connections;
 	unsigned int connections = 0;
@@ -157,7 +157,7 @@ void ICACHE_FLASH_ATTR udp_print_connection_status(void)
  * 
  * @param arg Pointer to an espconn connection structure.
  */
-static void ICACHE_FLASH_ATTR udp_recv_cb(void *arg, char *data, unsigned short length)
+static void udp_recv_cb(void *arg, char *data, unsigned short length)
 {
     struct espconn  *conn = arg;
     struct udp_connection *connection;
@@ -196,7 +196,7 @@ static void ICACHE_FLASH_ATTR udp_recv_cb(void *arg, char *data, unsigned short 
  * 
  * @param arg Pointer to an espconn connection structure.
  */
-static void ICACHE_FLASH_ATTR udp_sent_cb(void *arg)
+static void udp_sent_cb(void *arg)
 {
     struct espconn *conn = arg;
     struct udp_connection *connection;
@@ -237,7 +237,7 @@ static void ICACHE_FLASH_ATTR udp_sent_cb(void *arg)
  * @param sent_cb Callback when something has been sent.
  * @return `true` on success.
  */
-bool ICACHE_FLASH_ATTR udp_listen(unsigned int port,
+bool udp_listen(unsigned int port,
 								  udp_callback recv_cb,
 								  udp_callback sent_cb)
 {
@@ -330,7 +330,7 @@ bool ICACHE_FLASH_ATTR udp_listen(unsigned int port,
  * 
  * @return `true` on success.
  */
-bool ICACHE_FLASH_ATTR init_udp(void)
+bool init_udp(void)
 {
     debug("UDP init.\n");
     if (udp_connections != NULL)
@@ -352,7 +352,7 @@ bool ICACHE_FLASH_ATTR init_udp(void)
  * @param port Port to stop listening on.
  * @return True on success, false on failure.
  */
-bool ICACHE_FLASH_ATTR udp_stop(unsigned int port)
+bool udp_stop(unsigned int port)
 {
 	int ret;
 	struct udp_connection *listening_connection;
@@ -380,7 +380,7 @@ bool ICACHE_FLASH_ATTR udp_stop(unsigned int port)
  * 
  * @return Pointer to a struct #udp_connection.
  */
-struct udp_connection ICACHE_FLASH_ATTR *udp_get_connections(void)
+struct udp_connection *udp_get_connections(void)
 {
 	return(udp_connections);
 }
@@ -396,7 +396,7 @@ struct udp_connection ICACHE_FLASH_ATTR *udp_get_connections(void)
  * 
  * @return true on success, false otherwise.
  */
-bool ICACHE_FLASH_ATTR db_udp_send(struct udp_connection *connection, char *data, size_t size)
+bool db_udp_send(struct udp_connection *connection, char *data, size_t size)
 {
     debug("Sending %d bytes of UDP data (%p using %p),\n", size, data, connection);
 	debug(" espconn pointer %p.\n", connection->conn);
@@ -426,7 +426,7 @@ bool ICACHE_FLASH_ATTR db_udp_send(struct udp_connection *connection, char *data
  * 
  * @param connection Connection to disconnect.
  */
-void ICACHE_FLASH_ATTR db_udp_disconnect(struct udp_connection *connection)
+void db_udp_disconnect(struct udp_connection *connection)
 {
 	int ret;
 	
@@ -444,7 +444,7 @@ void ICACHE_FLASH_ATTR db_udp_disconnect(struct udp_connection *connection)
  * clean up after itself.
  * @param connection Pointer to the data to free.
  */
-void ICACHE_FLASH_ATTR udp_free(struct udp_connection *connection)
+void udp_free(struct udp_connection *connection)
 {
 	struct udp_connection *connections = udp_connections;
 	

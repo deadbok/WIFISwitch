@@ -74,7 +74,7 @@ static bool status = false;
  * @param n_builtin_uris Number of URI handlers.
  * @return `true`on success.
  */
-bool ICACHE_FLASH_ATTR init_http(unsigned int port)
+bool init_http(unsigned int port)
 {
 	debug("Initialising HTTP server on port %d.\n", port);
     //Initialise TCP and listen on port 80.
@@ -95,7 +95,7 @@ bool ICACHE_FLASH_ATTR init_http(unsigned int port)
 	return(true);
 }
 
-bool ICACHE_FLASH_ATTR http_get_status(void)
+bool http_get_status(void)
 {
 	return(status);
 }

@@ -18,7 +18,7 @@
  * @param base The base used to convert the value.
  * @return A pointer to #result, or NULL on error.
  */ 
-char ICACHE_FLASH_ATTR *itoa(long value, char *result, const unsigned char base)
+char *itoa(long value, char *result, const unsigned char base)
 {
 	const char *chr_map = "0123456789abcdef";
 	char *ptr = result;

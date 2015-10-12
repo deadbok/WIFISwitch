@@ -35,7 +35,7 @@
  * @param mem Pointer to the memory to dump.
  * @param len Length of memory block to dump.
  */
-void ICACHE_FLASH_ATTR db_hexdump(void *mem, unsigned int len)
+void db_hexdump(void *mem, unsigned int len)
 {
 	unsigned char cols = 8;
 	unsigned int i, j;
@@ -127,7 +127,7 @@ static struct dbg_mem_alloc_info dbg_mem_alloc_infos[DBG_MEM_MAX_INFOS];
  * @param info A string with info on the allocated memory.
  * @return A pointer to the allocated memory.
  */
-void ICACHE_FLASH_ATTR *db_alloc(size_t size, bool zero, char *info)
+void *db_alloc(size_t size, bool zero, char *info)
 {
 	void *ptr;
 	size_t free;
@@ -171,7 +171,7 @@ void ICACHE_FLASH_ATTR *db_alloc(size_t size, bool zero, char *info)
  * 
  * @param ptr Pointer to the memory to deallocate.
  */
-void ICACHE_FLASH_ATTR db_dealloc(void *ptr)
+void db_dealloc(void *ptr)
 {
 	unsigned short i = 0;
 
@@ -214,7 +214,7 @@ void ICACHE_FLASH_ATTR db_dealloc(void *ptr)
 /**
  * @brief List data for a max. of the first 500 memory allocations.
  */
-void ICACHE_FLASH_ATTR db_mem_list(void)
+void db_mem_list(void)
 {
 	unsigned short i = 0;
 

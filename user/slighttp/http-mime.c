@@ -48,7 +48,7 @@ struct http_mime_type http_mime_types[HTTP_N_MIME_TYPES] =
  * @param filename The file name to work on.
  * @return Extension or NULL if none if found.
  */
-char ICACHE_FLASH_ATTR *http_mime_get_ext(char *filename)
+char *http_mime_get_ext(char *filename)
 {
 	size_t length;
 	char *ret;

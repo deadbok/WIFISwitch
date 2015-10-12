@@ -33,7 +33,7 @@
  * @param capacity Desired capacity of the buffer.
  * @return
  */
-void ICACHE_FLASH_ATTR init_ring(struct ring_buffer *rb, size_t size, size_t capacity)
+void init_ring(struct ring_buffer *rb, size_t size, size_t capacity)
 {
 	debug("Creating ring buffer at %p.\n", rb);
 	rb->data = db_malloc(size * capacity, "rb->data init_ring");
@@ -52,7 +52,7 @@ void ICACHE_FLASH_ATTR init_ring(struct ring_buffer *rb, size_t size, size_t cap
  * 
  * @param rb Pointer to a buffer to add the item to.
  */
-void ICACHE_FLASH_ATTR *ring_push_back(struct ring_buffer *rb)
+void *ring_push_back(struct ring_buffer *rb)
 {
 	void *ret;
 	
@@ -86,7 +86,7 @@ void ICACHE_FLASH_ATTR *ring_push_back(struct ring_buffer *rb)
  * 
  * @param rb Pointer to a buffer to get the item from.
  */
-void ICACHE_FLASH_ATTR *ring_pop_front(struct ring_buffer *rb)
+void *ring_pop_front(struct ring_buffer *rb)
 {
 	void *new_head;
 	void *ret;

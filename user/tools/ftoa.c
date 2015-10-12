@@ -17,7 +17,7 @@
  * @param fractional_digits Digits after the point.
  * @return A pointer to #result, or NULL on error.
  */ 
-char ICACHE_FLASH_ATTR *ftoa(float value, char *result, unsigned char fractional_digits)
+char *ftoa(float value, char *result, unsigned char fractional_digits)
 {
 	const char *chr_map = "0123456789";
 	unsigned long int_part;
