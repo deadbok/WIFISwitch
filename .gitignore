@@ -67,3 +67,7 @@ tools/esp-config-tools/docs
 tools/esp-config-tools/src/*.d
 tools/esp-config-tools/bin
 
+#File system
+fs/root_out/
+fs/tools/
+

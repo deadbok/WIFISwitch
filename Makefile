@@ -34,7 +34,7 @@ include mk/$(BUILD_OS).mk
 
 ### Compiler and linker configuration. ###
 # Compile flags.
-	ESP_CFLAGS += -Os -std=c99 -Wall -Wl,-EL -ffunction-sections -fdata-sections -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH -DPROJECT_NAME='"$(PROJECT_NAME)"'
+ESP_CFLAGS += -Os -std=c99 -Wall -Wl,-EL -ffunction-sections -fdata-sections -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH -DPROJECT_NAME='"$(PROJECT_NAME)"'
 # Linker flags used to generate the main object file
 ESP_LDFLAGS	= -nostdlib -Wl,--gc-sections -Wl,--no-check-sections -u call_user_start -Wl,-static
 # Linker script used for the above linker step.
@@ -167,16 +167,7 @@ $(TARGET_AR): $(OBJ)
 #### Create directories. ####
 checkdirs: $(BUILD_DIR) $(FW_BASE) $(LOG_DIR) $(TOOLS_DIR)
 
-$(BUILD_DIR):
-	$(MKDIR) $@
-
-$(FW_BASE):
-	$(MKDIR) $@
-
-$(LOG_DIR):
-	$(MKDIR) $@
-
-$(TOOLS_DIR):
+$(BUILD_DIR) $(FW_BASE) $(LOG_DIR) $(TOOLS_DIR):
 	$(MKDIR) $@
 
 #### Generic flashing. ####
@@ -194,6 +185,7 @@ clean:
 	$(RM) -R $(FW_BASE) $(BUILD_BASE)
 	$(MAKE) -C tools/dbffs-tools clean
 	$(MAKE) PROJECT_NAME=$(PROJECT_NAME) ESP_CONFIG_SIG=$(ESP_CONFIG_SIG) -C tools/esp-config-tools clean
+	$(MAKE) -C fs clean
 
 # Run minicom and save serial output in LOG_DIR.
 debug: $(LOG_DIR)
@@ -223,7 +215,8 @@ $(FS_CREATE):
 
 # Build the file system image.
 $(FW_FILE_FS): $(FS_FILES) $(FS_CREATE)
-	$(DBFFS_CREATE) $(FS_DIR) $(FW_FILE_FS)
+	$(MAKE) -C $(FS_DIR)
+	$(DBFFS_CREATE) $(FS_ROOT_DIR) $(FW_FILE_FS)
 	$(ECHO) File system start offset: $(FS_FILE_ADDR)
 	$(ECHO) File system end offset: $(FS_END)
 	$(ECHO) File system maximum size: $(FS_MAX_SIZE)

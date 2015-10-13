@@ -32,8 +32,12 @@ MODULES	+= user/handlers/fs user/handlers/deny user/handlers/rest
 MODULES += user/config
 # Libraries used in this project, mainly provided by the SDK
 LIBS = c gcc hal pp phy net80211 lwip wpa main json
-# Directory to use when creating the file system image.
+# Directory for generating the file system root. A Makefile is expected
+# reside in this directory, that does whatever is needed, before creating
+# the image.
 FS_DIR := fs/
+# Directory to use, as root, when creating the file system image.
+FS_ROOT_DIR := fs/root_out/
 # Directory to copy log files of the ESP8266 serial output to.
 LOG_DIR := logs
 # Directory with custom build tools.

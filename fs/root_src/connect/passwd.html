@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Device hostname setup.</title>
+<title>Network connection password setup.</title>
 <link href="css/normalize.css" rel="stylesheet" type="text/css" />
 <link href="css/custom.css" rel="stylesheet" type="text/css" />
 <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
@@ -15,11 +15,11 @@
 		</ul>
 	</div>
 	<div class="main">
-		<h3>Device hostname setup</h3>
-		<form onsubmit="setHostname()">
-		Hostname:<br />
-		<input type="text" id="hostname" maxlength="32">
-		<input type="button" onclick="setHostname()" value="Set">
+		<h3>Network connection password setup</h3>
+		<form onsubmit="setPasswd()">
+		Password:<br />
+		<input type="password" id="passwd" maxlength="64">
+		<input type="button" onclick="setPasswd()" value="Set">
 		</form>
 		<div class="message" id="state">
 		</div>
@@ -27,34 +27,26 @@
 	<div class="footer inverted">
 		<small><span class="copyright">&copy; Copyright 2015 Martin Bo Kristensen Gr&oslash;nholdt.</span><a href="LICENSE.zip" class="license inverted">Read license (compressed).</a></small>
 	</div>		
-<script src="js/atomic.min.js"></script>
+<script src="js/atomic.js"></script>
 <script>
-function setHostname()
+function setPasswd()
 {
-	var hostname = document.getElementById("hostname").value;
+	var passwd = document.getElementById("passwd").value;
 	var state = document.getElementById("state");
 	
-	atomic.put('/rest/net/network', "{ \"hostname\" : \"" + hostname + "\" }")
+	atomic.put('/rest/net/password', "{ \"password\" : \"" + passwd + "\" }")
 	.success(function (data, xhr) 
 	{
 		state.className += " success";
-		state.innerHTML = "<strong>Done!</strong> Host name saved.";
-		window.location.assign("/index.html");
+		state.innerHTML = "<strong>Done!</strong> WIFI password saved.";
+		window.location.assign("/hostname.html");
 	})
 	.error(function (data, xhr) 
 	{
 		state.className += " error";
-		state.innerHTML = "<strong>Error!</strong> Could not update host name.";
+		state.innerHTML = "<strong>Error!</strong> Could not update password.";
 	});
-}
-
-var hostname = document.getElementById("hostname").value
-
-atomic.get('/rest/net/network').success(function(data, xhr) {
-	hostname = data.hostname;
-}).error(function(data, xhr) {
-	hostname.innerHTML = "";
-});
+} 
 </script>
 </body>
 </html>

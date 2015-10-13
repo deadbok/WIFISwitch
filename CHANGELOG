@@ -1,5 +1,9 @@
 2015-10-13 Martin Grønholdt
 
+* mk/config.mk: Added FS_ROOT_DIR.
+* Makefile: Added file system subdir Makefile call.
+* fs/Makefile: Added, that runs a custom version of css-html-js-minify, to minify files.
+* fs/root_src/: Moved file system here.
 * fs/LICENSE: Removed.
 * fs/LICENSE.zip: License now zip compressed.
 * fs/connect/LICENSE: Removed.
