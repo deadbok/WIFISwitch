@@ -30,7 +30,7 @@
 #include "c_types.h"
 #include "ip_addr.h"
 #include "user_interface.h"
-#include "json/jsonparse.h"
+#include "tools/jsmn.h"
 #include "user_config.h"
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
@@ -115,50 +115,69 @@ static signed int create_get_response(struct http_request *request)
  */
 static signed int create_put_response(struct http_request *request)
 {
-	int type;
-	char name[32];
-	struct station_config sc;
-	struct jsonparse_state json_state;
+	unsigned int i;
 	
 	debug("Creating network REST PUT response.\n");
 	debug(" Request message: %s.\n", request->message);
 	
-	jsonparse_setup(&json_state, request->message, os_strlen(request->message));
-	while ((type = jsonparse_next(&json_state)) != 0)
-	{
-		if (type == JSON_TYPE_PAIR_NAME)
-		{
-			if (jsonparse_strcmp_value(&json_state, "network") == 0)
-			{
-				debug(" Found network value in JSON.\n");
-				jsonparse_next(&json_state);
-				jsonparse_next(&json_state);
-				jsonparse_copy_value(&json_state, name, sizeof(name));
-				debug(" Name: %s.\n", name);
+	jsmn_parser parser;
+	jsmntok_t tokens[3];
+	int n_tokens;
 
-				sc.bssid_set = 0;
-				os_memcpy(&sc.ssid, name, 32);
-				sc.password[0] = '\0';
-				if (!wifi_station_set_config(&sc))
+	jsmn_init(&parser);
+	n_tokens  = jsmn_parse(&parser, request->message, os_strlen(request->message), tokens, 3);
+	//We expect 3 tokens in an object.
+	if ( (n_tokens < 3) || tokens[0].type != JSMN_OBJECT)
+	{
+		warn("Could not parse JSON request.\n");
+		return(RESPONSE_DONE_ERROR);				
+	}
+	for (i = 1; i < n_tokens; i++)
+	{
+		debug(" JSON token %d.\n", i);
+		if (tokens[i].type == JSMN_STRING)
+		{
+			debug(" JSON token start with a string.\n");
+			if (strncmp(request->message + tokens[i].start, "network", 5) == 0)
+			{
+				debug(" JSON network name.\n");
+				i++;
+				if (tokens[i].type == JSMN_STRING)
 				{
-					error("Could not network name.\n");
+					debug(" JSON string comes next.\n");
+					struct station_config sc;
+					
+					sc.bssid_set = 0;
+					os_memcpy(&sc.ssid, request->message + tokens[i].start, tokens[i].end - tokens[i].start);
+					sc.ssid[tokens[i].end - tokens[i].start] = '\0';
+					debug(" Network name %s.\n", sc.ssid);
+					if (!wifi_station_set_config(&sc))
+					{
+						error("Could not network name.\n");
+					}
 				}
 			}
-			if (jsonparse_strcmp_value(&json_state, "hostname") == 0)
+			if (strncmp(request->message + tokens[i].start, "hostname", 5) == 0)
 			{
-				debug(" Found hostname value in JSON.\n");
-				jsonparse_next(&json_state);
-				jsonparse_next(&json_state);
-				jsonparse_copy_value(&json_state, name, sizeof(name));
-				debug(" Hostname: %s.\n", name);
-
-				if (!wifi_station_set_hostname(name))
+				debug(" JSON host name.\n");
+				i++;
+				if (tokens[i].type == JSMN_STRING)
 				{
-					error("Could not set hostname.\n");
+					debug(" JSON string comes next.\n");
+					char name[32];
+					
+					os_memcpy(name, request->message + tokens[i].start, tokens[i].end - tokens[i].start);
+					name[tokens[i].end - tokens[i].start] = '\0';
+					debug(" Hostname %s.\n", name);
+					if (!wifi_station_set_hostname(name))
+					{
+						error("Could not set hostname.\n");
+					}
 				}
 			}
 		}
 	}
+
 	return(0);
 }
 

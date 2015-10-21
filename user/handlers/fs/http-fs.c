@@ -203,15 +203,115 @@ bool http_fs_open_file(struct http_request *request, bool err)
 }
 
 /**
+ * @brief Send a file.
+ * 
+ * *This function is stupid, and does not do much checking, please make
+ * sure that the supllied request is valid and sound.*
+ * 
+ * Check and headers should be over, when calling this.
+ * 
+ * @param request The request to respond to.
+ * @return The size of what has been sent, or one of the 
+ *         RESPONSE_DONE_* values.
+ */
+static signed int do_message(struct http_request *request)
+{
+	/* We are only called by nice responsible functions that would never
+	 * pass a NULL pointer ;).
+	 */
+	struct http_fs_context *context  = request->response.context;
+	size_t data_left, buffer_free, bytes;
+	char buffer[HTTP_FILE_CHUNK_SIZE];
+	signed int ret = 0;
+
+	//Message.
+	if (request->response.state == HTTP_STATE_MESSAGE)
+	{
+		data_left = context->total_size - request->response.message_size;
+		debug(" Sending %s, %d bytes left.\n", context->filename, data_left);
+		buffer_free = HTTP_SEND_BUFFER_SIZE - (request->response.send_buffer_pos - request->response.send_buffer);
+		//Read a chunk of data and send it.
+		if (data_left > HTTP_FILE_CHUNK_SIZE)
+		{
+			//There is still more than HTTP_FILE_CHUNK_SIZE to read.
+			if (buffer_free < HTTP_FILE_CHUNK_SIZE)
+			{
+				bytes = buffer_free;
+				debug(" Truncating read to match send buffer space of %d bytes.\n", bytes);
+			}
+			else
+			{
+				bytes = HTTP_FILE_CHUNK_SIZE;
+			}
+		}
+		else
+		{
+			//Last block.
+			if (buffer_free < data_left)
+			{
+				bytes = buffer_free;
+				debug(" Truncating read to match send buffer space of %d bytes.\n", bytes);
+			}
+			else
+			{
+				bytes = data_left;
+			}
+		}
+		if (bytes)
+		{
+			fs_read(buffer, bytes, sizeof(char), context->file);
+			ret += http_send(request->connection, buffer, bytes);
+			request->response.message_size += bytes;
+			//Might send status and header data as well.
+			if (ret >= bytes)
+			{
+				return(ret);
+			}
+			warn(" Not all data was sent (message %d, sent %d bytes).\n", bytes, ret);
+			return(ret);
+		}
+		else
+		{
+			//We're done sending the message.
+			request->response.state = HTTP_STATE_DONE;
+		}
+	}
+	
+	//Free memory.
+	if (request->response.state == HTTP_STATE_DONE)
+	{
+		if (ret)
+		{
+			warn("Did not sent full message.\n");
+		}
+		fs_close(context->file);
+		debug("Freeing data for file response.\n");
+		if (context)
+		{
+			if (context->filename)
+			{
+				debug("Deallocating file name %s.\n", context->filename);
+				db_free(context->filename);
+			}
+			debug("Deallocating request handler context.\n");
+			db_free(context);
+			request->response.context = NULL;
+		}
+	}
+	debug("Response done.\n");
+	return(RESPONSE_DONE_FINAL);
+}
+
+/**
  * @brief Handle HTTP file system responses.
  * 
- * Does nothing is an error status is set.
+ * Does nothing if an error status is set.
  */
 signed int http_fs_handler(struct http_request *request)
 {
-	struct http_fs_context *context = request->response.context;
-	size_t data_left, buffer_free, bytes;
-	char buffer[HTTP_FILE_CHUNK_SIZE];
+	struct http_fs_context *context;
+	
+	
 	signed int ret = 0;
 	char *ext;
 	
@@ -222,6 +322,7 @@ signed int http_fs_handler(struct http_request *request)
 		warn("Empty request.\n");
 		return(RESPONSE_DONE_ERROR);
 	}
+	context = request->response.context;
 	
 	//Skip on error.
 	if (request->response.status_code > 399)
@@ -267,82 +368,7 @@ signed int http_fs_handler(struct http_request *request)
 		}
 	}
 	
-	//Message.
-	if (request->response.state == HTTP_STATE_MESSAGE)
-	{
-		data_left = context->total_size - request->response.message_size;
-		debug(" Sending %s, %d bytes left.\n", context->filename, data_left);
-		buffer_free = HTTP_SEND_BUFFER_SIZE - (request->response.send_buffer_pos - request->response.send_buffer);
-		//Read a chunk of data and send it.
-		if (data_left > HTTP_FILE_CHUNK_SIZE)
-		{
-			//There is still more than HTTP_FILE_CHUNK_SIZE to read.
-			if (buffer_free < HTTP_FILE_CHUNK_SIZE)
-			{
-				bytes = buffer_free;
-				debug(" Truncating read to match send buffer space of %d bytes.\n", bytes);
-			}
-			else
-			{
-				bytes = HTTP_FILE_CHUNK_SIZE;
-			}
-		}
-		else
-		{
-			//Last block.
-			if (buffer_free < data_left)
-			{
-				bytes = buffer_free;
-				debug(" Truncating read to match send buffer space of %d bytes.\n", bytes);
-			}
-			else
-			{
-				bytes = data_left;
-			}
-		}
-		if (bytes)
-		{
-			fs_read(buffer, bytes, sizeof(char), context->file);
-			ret += http_send(request->connection, buffer, bytes);
-			request->response.message_size += bytes;
-			//Might send status and header data as well.
-			if (ret >= bytes)
-			{
-				return(ret);
-			}
-			warn(" Not all data send (message %d, and sent data %d bytes).\n", bytes, ret);
-			return(ret);
-		}
-		else
-		{
-			//We're done sending the message.
-			request->response.state = HTTP_STATE_DONE;
-		}
-	}
-	
-	//Free memory.
-	if (request->response.state == HTTP_STATE_DONE)
-	{
-		if (ret)
-		{
-			warn("Did not sent full message.\n");
-		}
-		fs_close(context->file);
-		debug("Freeing data for file response.\n");
-		if (context)
-		{
-			if (context->filename)
-			{
-				debug("Deallocating file name %s.\n", context->filename);
-				db_free(context->filename);
-			}
-			debug("Deallocating request handler context.\n");
-			db_free(context);
-			request->response.context = NULL;
-		}
-	}
-	debug("Response done.\n");
-	return(RESPONSE_DONE_FINAL);
+	return(do_message(request));
 }
 
 /**
@@ -353,9 +379,7 @@ signed int http_fs_handler(struct http_request *request)
  */
 signed int http_fs_error_handler(struct http_request *request)
 {
-	struct http_fs_context *context = request->response.context;
-	size_t data_left, buffer_free, bytes;
-	char buffer[HTTP_FILE_CHUNK_SIZE];
+	struct http_fs_context *context;
 	signed int ret = 0;
 	char *ext;
 	
@@ -366,6 +390,7 @@ signed int http_fs_error_handler(struct http_request *request)
 		warn("Empty request.\n");
 		return(RESPONSE_DONE_ERROR);
 	}
+	context = request->response.context;
 	
 	//Set error status is to error since we got here.
 	if (request->response.status_code < 400)
@@ -404,80 +429,5 @@ signed int http_fs_error_handler(struct http_request *request)
 		}
 	}
 	
-	//Message.
-	if (request->response.state == HTTP_STATE_MESSAGE)
-	{
-		data_left = context->total_size - request->response.message_size;
-		debug(" Sending %s, %d bytes left.\n", context->filename, data_left);
-		buffer_free = HTTP_SEND_BUFFER_SIZE - (request->response.send_buffer_pos - request->response.send_buffer);
-		//Read a chunk of data and send it.
-		if (data_left > HTTP_FILE_CHUNK_SIZE)
-		{
-			//There is still more than HTTP_FILE_CHUNK_SIZE to read.
-			if (buffer_free < HTTP_FILE_CHUNK_SIZE)
-			{
-				bytes = buffer_free;
-				debug(" Truncating read to match send buffer space of %d bytes.\n", bytes);
-			}
-			else
-			{
-				bytes = HTTP_FILE_CHUNK_SIZE;
-			}
-		}
-		else
-		{
-			//Last block.
-			if (buffer_free < data_left)
-			{
-				bytes = buffer_free;
-				debug(" Truncating read to match send buffer space of %d bytes.\n", bytes);
-			}
-			else
-			{
-				bytes = data_left;
-			}
-		}
-		if (bytes)
-		{
-			fs_read(buffer, bytes, sizeof(char), context->file);
-			ret += http_send(request->connection, buffer, bytes);
-			request->response.message_size += bytes;
-			//Might send status and header data as well.
-			if (ret >= bytes)
-			{
-				return(ret);
-			}
-			warn(" Not all data send (message %d, and sent data %d bytes).\n", bytes, ret);
-			return(ret);
-		}
-		else
-		{
-			//We're done sending the message.
-			request->response.state = HTTP_STATE_DONE;
-		}
-	}
-	
-	//Free memory.
-	if (request->response.state == HTTP_STATE_DONE)
-	{
-		if (ret)
-		{
-			warn("Did not sent full message.\n");
-		}
-		fs_close(context->file);
-		debug("Freeing data for file response.\n");
-		if (context)
-		{
-			if (context->filename)
-			{
-				debug("Deallocating file name %s.\n", context->filename);
-				db_free(context->filename);
-			}
-			debug("Deallocating request handler context.\n");
-			db_free(context);
-			request->response.context = NULL;
-		}
-	}
-	debug("Response done.\n");
-	return(RESPONSE_DONE_FINAL);
+	return(do_message(request));
 }

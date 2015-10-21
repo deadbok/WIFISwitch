@@ -120,7 +120,7 @@ enum response_states
  * 1. This makes it possible to send the data in chunks.
  * 
  * @param request The request that led us here.
- * @return The size of the of what has been sent, or one of the 
+ * @return The size of what has been sent, or one of the 
  *         RESPONSE_DONE_* values.
  */
 typedef signed int (*http_handler_callback)(struct http_request *request);

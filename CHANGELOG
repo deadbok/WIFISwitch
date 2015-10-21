@@ -1,3 +1,32 @@
+2015-10-21 Martin Grønholdt
+
+* Makefile: Changed size report printing.
+			Don't minify web sources in debug build.
+* ld/eagle.app.v6.ld: Added more specific sections to IROM.
+* mk/config.mk: Removed SDK JSON library.
+			  : Added jsmn for JSON parsing (http://zserge.com/jsmn.html).
+* tools/mem_usage.sh: Added ROM size output.
+* user/driver/uart.c: Updated source from SDK.
+* user/driver/uart.h: Updated source from SDK.
+* user/fs/dbffs.c (dbffs_find_file_header): Added some error checking.
+* user/handlers/fs/http-fs.c (do_message): Added function, that handles
+										   sending both normal and error
+										   request.
+							 (http_fs_handler): Use do_message.
+							 (http_fs_error_handler): Use do_message.
+* user/handlers/rest/gpio.c (http_rest_gpio_handler): Use jsmn.
+* user/handlers/rest/net-passwd.c (create_put_response): Added for http_simple_GET_PUT_handler.
+								  (create_put_response): Use jsmn
+								  (http_rest_net_passwd_handler): Use http_simple_GET_PUT_handler.
+* user/handlers/rest/network.c (create_put_response): Use jsmn.
+* user/net/capport.c (dns_recv): Fixed an an error.
+* user/slighttp/http-response.c: Removed status line declarations as they were redundant.
+								(http_send_status_line): Removed status
+														 line declarations
+														 as they were redundant.
+* user/user_main.c (user_init): Use uart_init to initialise serial port.
+
+
 2015-10-13 Martin Grønholdt
 
 * mk/config.mk: Added FS_ROOT_DIR.

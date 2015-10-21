@@ -91,7 +91,7 @@ static void dns_recv(struct udp_connection *connection)
 			domain[i++] = '.';
 		}
 	}
-	domain[i++] = '\0';
+	domain[i] = '\0';
 	debug("\n Query domain %s.\n", domain);
 	
 	if (os_strncmp(domain, capture_domain, os_strlen(capture_domain)) == 0)
@@ -151,7 +151,7 @@ static void dns_recv(struct udp_connection *connection)
 		//Set class to “IN”.
 		response[i++] = 0x00;
 		response[i++] = 0x01;
-		//Only use response for name resolution yhis one time.		
+		//Only use response for name resolution this one time.		
 		response[i++] = 0x00;
 		response[i++] = 0x01;
 		response[i++] = 0x00;

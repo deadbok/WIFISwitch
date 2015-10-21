@@ -29,9 +29,9 @@ FLASH_SIZE ?= 512
 # Modules (subdirectories) of the project to include when compiling.
 MODULES	= user user/fs user/net user/slighttp user/tools user/driver
 MODULES	+= user/handlers/fs user/handlers/deny user/handlers/rest
-MODULES += user/config
+MODULES += user/config user/jsmn
 # Libraries used in this project, mainly provided by the SDK
-LIBS = c gcc hal pp phy net80211 lwip wpa main json
+LIBS = c gcc hal pp phy net80211 lwip wpa main
 # Directory for generating the file system root. A Makefile is expected
 # reside in this directory, that does whatever is needed, before creating
 # the image.

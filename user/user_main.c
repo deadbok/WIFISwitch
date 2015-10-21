@@ -197,8 +197,8 @@ void user_init(void)
     wifi_station_set_reconnect_policy(false);
 
     // Set baud rate of debug port
-    uart_div_modify(0,UART_CLK_FREQ / BAUD_RATE);
-    //uart_init(115200, 115200);
+    //uart_div_modify(0,UART_CLK_FREQ / BAUD_RATE);
+    uart_init(BAUD_RATE, BAUD_RATE);
 
 #ifndef SDK_DEBUG
 	system_set_os_print(false);

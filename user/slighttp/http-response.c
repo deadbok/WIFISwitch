@@ -37,39 +37,6 @@
 #include "http-handler.h"
 
 /**
- * @brief 200 status-line.
- */
-char *http_status_line_200 = HTTP_STATUS_200;
-/**
- * @brief 204 status-line.
- */
-char *http_status_line_204 = HTTP_STATUS_204;
-/**
- * @brief 400 status-line.
- */
-char *http_status_line_400 = HTTP_STATUS_400;
-/**
- * @brief 403 status-line.
- */
-char *http_status_line_403 = HTTP_STATUS_403;
-/**
- * @brief 404 status-line.
- */
-char *http_status_line_404 = HTTP_STATUS_404;
-/**
- * @brief 405 status-line.
- */
-char *http_status_line_405 = HTTP_STATUS_405;
-/**
- * @brief 500 status-line.
- */
-char *http_status_line_500 = HTTP_STATUS_500;
-/**
- * @brief 501 status-line.
- */
-char *http_status_line_501 = HTTP_STATUS_501;
-
-/**
  * @brief Pointer to a pointer to the connection.
  * 
  * Pointer to connection pointer, from the response queue.
@@ -99,32 +66,32 @@ unsigned char http_send_status_line(struct tcp_connection *connection, unsigned 
 			size = os_strlen(HTTP_STATUS_200);
 			break;
 		case 204: 
-			response = http_status_line_204;
-			size = os_strlen(http_status_line_204);
+			response = HTTP_STATUS_204;
+			size = os_strlen(HTTP_STATUS_204);
 			break;
 		case 400: 
-			response = http_status_line_400;
-			size = os_strlen(http_status_line_400);
+			response = HTTP_STATUS_400;
+			size = os_strlen(HTTP_STATUS_400);
 			break;
 		case 403: 
-			response = http_status_line_403;
-			size = os_strlen(http_status_line_403);
+			response = HTTP_STATUS_403;
+			size = os_strlen(HTTP_STATUS_403);
 			break;
 		case 404: 
-			response = http_status_line_404;
-			size = os_strlen(http_status_line_404);
+			response = HTTP_STATUS_404;
+			size = os_strlen(HTTP_STATUS_404);
 			break;
 		case 405: 
-			response = http_status_line_405;
-			size = os_strlen(http_status_line_405);
+			response = HTTP_STATUS_405;
+			size = os_strlen(HTTP_STATUS_405);
 			break;				  
 		case 500: 
-			response = http_status_line_500;
-			size = os_strlen(http_status_line_500);
+			response = HTTP_STATUS_500;
+			size = os_strlen(HTTP_STATUS_500);
 			break;
 		case 501: 
-			response = http_status_line_501;
-			size = os_strlen(http_status_line_501);
+			response = HTTP_STATUS_501;
+			size = os_strlen(HTTP_STATUS_501);
 			break;
 		default:  
 			debug(" Unknown response code: %d.\n", status_code);
@@ -202,16 +169,17 @@ signed int http_send_default_headers(
 				break;
 			}
 		}
+		if ((i >= HTTP_N_MIME_TYPES) || (!mime))
+		{
+			debug(" Did not find a usable MIME type, using application/octet-stream.\n");
+			ret += http_send_header(request->connection, "Content-Type", "application/octet-stream");
+		}
+		else
+		{
+			ret += http_send_header(request->connection, "Content-Type", http_mime_types[i].type);
+		}
 	}
-	if ((i >= HTTP_N_MIME_TYPES) || (!mime))
-	{
-		debug(" Did not find a usable MIME type, using application/octet-stream.\n");
-		ret += http_send_header(request->connection, "Content-Type", "application/octet-stream");
-	}
-	else
-	{
-		ret += http_send_header(request->connection, "Content-Type", http_mime_types[i].type);
-	}
+
 	//Send end of headers.
 	ret += http_send(request->connection, "\r\n", 2);
 

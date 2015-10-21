@@ -36,8 +36,8 @@
 #include "osapi.h"
 #include "gpio.h"
 #include "user_interface.h"
-#include "json/jsonparse.h"
 #include "user_config.h"
+#include "tools/jsmn.h"
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
 #include "slighttp/http-response.h"
@@ -173,11 +173,10 @@ static signed int create_pin_response(struct http_request *request)
  */
 signed int http_rest_gpio_handler(struct http_request *request)
 {
-	int type;
 	size_t size = 0;
 	signed int ret = 0;
+	unsigned int i;
 	unsigned int gpio_state;
-	struct jsonparse_state json_state;
 		
 	if (!request)
 	{
@@ -188,7 +187,7 @@ signed int http_rest_gpio_handler(struct http_request *request)
 		(request->type != HTTP_HEAD) &&
 		(request->type != HTTP_PUT))
 	{
-		debug(" File system handler only supports HEAD, GET, and PUT.\n");
+		debug(" Rest GPIO handler only supports HEAD, GET, and PUT.\n");
 		return(RESPONSE_DONE_CONTINUE);
 	}
     if (os_strncmp(request->uri, "/rest/gpios", 11) == 0)
@@ -300,20 +299,37 @@ signed int http_rest_gpio_handler(struct http_request *request)
 			else
 			{
 				debug(" GPIO selected: %s.\n", request->message);
+				jsmn_parser parser;
+				jsmntok_t tokens[3];
+				int n_tokens;
 			
-				jsonparse_setup(&json_state, request->message, os_strlen(request->message));
-				while ((type = jsonparse_next(&json_state)) != 0)
+				jsmn_init(&parser);
+				n_tokens  = jsmn_parse(&parser, request->message, os_strlen(request->message), tokens, 3);
+				//We expect 3 tokens in an object.
+				if ( (n_tokens < 3) || tokens[0].type != JSMN_OBJECT)
 				{
-					if (type == JSON_TYPE_PAIR_NAME)
+					warn("Could not parse JSON request.\n");
+					return(RESPONSE_DONE_ERROR);				
+				}
+				for (i = 1; i < n_tokens; i++)
+				{
+					debug(" JSON token %d.\n", i);
+					if (tokens[i].type == JSMN_STRING)
 					{
-						if (jsonparse_strcmp_value(&json_state, "state") == 0)
+						debug(" JSON token start with a string.\n");
+						if (strncmp(request->message + tokens[i].start, "state", 5) == 0)
 						{
-							debug(" Found GPIO state in JSON.\n");
-							jsonparse_next(&json_state);
-							jsonparse_next(&json_state);
-							gpio_state = jsonparse_get_value_as_int(&json_state);
-							debug(" State: %d.\n", gpio_state);
-							GPIO_OUTPUT_SET(current_gpio, gpio_state);
+							i++;
+							if (tokens[i].type == JSMN_PRIMITIVE)
+							{
+								debug(" JSON primitive comes next.\n");
+								if (isdigit(*(request->message + tokens[i].start)) || (*(request->message + tokens[i].start) == '-'))
+								{
+									gpio_state = atoi(request->message + tokens[i].start);
+									debug(" State: %d.\n", gpio_state);
+									GPIO_OUTPUT_SET(current_gpio, gpio_state);
+								}
+							}
 						}
 					}
 				}

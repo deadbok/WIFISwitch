@@ -178,7 +178,7 @@ typedef enum {
     BLOCK = 1,
 } TCPState;
 
-//void uart_test_rx();
+//void ICACHE_FLASH_ATTR uart_test_rx();
 STATUS uart_tx_one_char(uint8 uart, uint8 TxChar);
 STATUS uart_tx_one_char_no_wait(uint8 uart, uint8 TxChar);
 void  uart1_sendStr_no_wait(const char *str);

@@ -36,12 +36,12 @@ include mk/$(BUILD_OS).mk
 # Compile flags.
 ESP_CFLAGS += -Os -std=c99 -Wall -Wl,-EL -ffunction-sections -fdata-sections -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH -DPROJECT_NAME='"$(PROJECT_NAME)"'
 # Linker flags used to generate the main object file
-ESP_LDFLAGS	= -nostdlib -Wl,--gc-sections -Wl,--no-check-sections -u call_user_start -Wl,-static
+ESP_LDFLAGS = -nostdlib -Wl,--gc-sections -Wl,--no-check-sections -u call_user_start -Wl,-static
 # Linker script used for the above linker step.
 ESP_LD_SCRIPT	= eagle.app.v6.ld
 # Possibly enable debug flag.
 ifdef DEBUG
-ESP_CFLAGS += -DDEBUG
+ESP_CFLAGS += -DDEBUG -g
 endif
 
 ### SDK directories used to build the firmware. ###
@@ -140,12 +140,9 @@ endef
 
 # Generate firmware.
 all: checkdirs $(FW_FILE_1) $(FW_FILE_2) $(FW_FILE_FS) $(FW_FILE_CONFIG)
-	$(ECHO) Memory usage:
-	@./$(TOOLS_DIR)/mem_usage.sh $(TARGET) 81920
-	$(ECHO) Flash usage:
-	$(ECHO) File system size $(FS_SIZE)KB of $(FS_MAX_SIZE)KB, $$(( $(FS_MAX_SIZE) - $(FS_SIZE) ))KB free.
-	$(ECHO) Resident firmware size $(FW_FILE_1_SIZE)KB of $(FW_FILE_MAX)KB, $$(( $(FW_FILE_MAX) - $(FW_FILE_1_SIZE) ))KB free.
-	$(ECHO) ROM firmware size $(FW_FILE_2_SIZE)KB of $(FW_FILE_MAX)KB, $$(( $(FW_FILE_MAX) - $(FW_FILE_2_SIZE) ))KB free.
+	./$(TOOLS_DIR)/mem_usage.sh $(TARGET) 81920 $(FW_FILE_MAX)
+	$(ECHO) File system size $(FS_SIZE)KB, $$(( $(FS_MAX_SIZE) - $(FS_SIZE) ))KB free of $(FS_MAX_SIZE)KB.
+	$(ECHO) Resident firmware size $(FW_FILE_1_SIZE)KB, $$(( $(FW_FILE_MAX) - $(FW_FILE_1_SIZE) ))KB free of $(FW_FILE_MAX)KB.
 
 # Generate the firmware image from the final ELF file.
 $(FW_BASE)/%.bin: $(TARGET) | $(FW_BASE)
@@ -153,7 +150,7 @@ $(FW_BASE)/%.bin: $(TARGET) | $(FW_BASE)
 
 # Link the target ELF file.
 $(TARGET): $(TARGET_AR)
-	$(LD) $(SDK_LIBDIR) $(ESP_LD_SCRIPT) $(ESP_LDFLAGS) -Wl,--start-group $(LIBS) $(OBJ) -Wl,--end-group,-Map,$(basename $@).map -o $@
+	$(LD) $(SDK_LIBDIR) $(ESP_LD_SCRIPT) $(ESP_LDFLAGS) -Wl,--start-group $(LIBS) $(TARGET_AR) -Wl,--end-group,-Map,$(basename $@).map -o $@
 # This is for future OTA support.
 #	$(OBJCOPY) --only-section .text -O binary $(TARGET) $(BUILD_BASE)/eagle.app.v6.text.bin
 #	$(OBJCOPY) --only-section .data -O binary $(TARGET) $(BUILD_BASE)/eagle.app.v6.data.bin
@@ -184,15 +181,15 @@ flashblank:
 clean:
 	$(RM) -R $(FW_BASE) $(BUILD_BASE)
 	$(MAKE) -C tools/dbffs-tools clean
-	$(MAKE) PROJECT_NAME=$(PROJECT_NAME) ESP_CONFIG_SIG=$(ESP_CONFIG_SIG) -C tools/esp-config-tools clean
+	$(MAKE) -C tools/esp-config-tools clean
 	$(MAKE) -C fs clean
 
 # Run minicom and save serial output in LOG_DIR.
 debug: $(LOG_DIR)
-#Remove the old log
+# Remove the old log
 	> ./debug.log
 	$(TERM_CMD)
-	#Make a copy of the new log before with a saner name.
+	# Make a copy of the new log before with a saner name.
 	$(CP) ./debug.log $(LOG_DIR)/$(LOG_FILE)
 
 # Flash and start debugging.

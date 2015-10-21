@@ -37,7 +37,7 @@
 #include "osapi.h"
 
 /**
- *  @brief Find a character in a string.
+ * @brief Find a character in a string.
  * 
  * Find any of the characters in @p chrs in @p str.
  * 

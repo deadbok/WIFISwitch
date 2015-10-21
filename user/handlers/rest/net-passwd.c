@@ -30,7 +30,7 @@
 #include "eagle_soc.h"
 #include "osapi.h"
 #include "user_interface.h"
-#include "json/jsonparse.h"
+#include "tools/jsmn.h"
 #include "user_config.h"
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
@@ -44,19 +44,69 @@
 static bool passwd_changed = false;
 
 /**
- * @brief REST handler to get/set the GPIO state and get GPIO information.
+ * @brief Respond to a PUT request.
+ *
+ * Set the password used to connect to the configured WIFI.
+ * 
+ * @param request The request that we're handling.
+ * @return Bytes send.
+ */
+static signed int create_put_response(struct http_request *request)
+{
+	unsigned int i;
+	jsmn_parser parser;
+	jsmntok_t tokens[3];
+	int n_tokens;
+
+	jsmn_init(&parser);
+	n_tokens  = jsmn_parse(&parser, request->message, os_strlen(request->message), tokens, 3);
+	//We expect 3 tokens in an object.
+	if ( (n_tokens < 3) || tokens[0].type != JSMN_OBJECT)
+	{
+		warn("Could not parse JSON request.\n");
+		return(RESPONSE_DONE_ERROR);				
+	}
+	for (i = 1; i < n_tokens; i++)
+	{
+		debug(" JSON token %d.\n", i);
+		if (tokens[i].type == JSMN_STRING)
+		{
+			debug(" JSON token start with a string.\n");
+			if (strncmp(request->message + tokens[i].start, "password", 5) == 0)
+			{
+				debug(" JSON password.\n");
+				i++;
+				if (tokens[i].type == JSMN_STRING)
+				{
+					debug(" JSON string comes next.\n");
+					struct station_config sc;
+					
+					wifi_station_get_config(&sc);
+					sc.bssid_set = 0;
+					os_memcpy(&sc.password, request->message + tokens[i].start, tokens[i].end - tokens[i].start);
+					sc.password[tokens[i].end - tokens[i].start] = '\0';
+					debug(" Network password %s.\n", sc.password);
+					if (!wifi_station_set_config(&sc))
+					{
+						error("Could not network name.\n");
+					}
+					passwd_changed = true;
+				}
+			}
+		}
+	}
+	request->response.message_size = 0;
+	return(0);
+}
+
+/**
+ * @brief REST handler for setting the password for the default network.
  *
  * @param request The request that we're handling.
  * @return Bytes send.
  */
 signed int http_rest_net_passwd_handler(struct http_request *request)
 {
-	int type;
-	char passwd[64];
-	signed int ret = 0;
-	struct station_config sc;
-	struct jsonparse_state json_state;
-	
 	if (!request)
 	{
 		warn("Empty request.\n");
@@ -64,77 +114,15 @@ signed int http_rest_net_passwd_handler(struct http_request *request)
 	}
 	if (request->type != HTTP_PUT)
 	{
-		debug(" File system handler only supports PUT.\n");
+		debug("REST handler network password only supports PUT.\n");
 		return(RESPONSE_DONE_CONTINUE);
 	}
 
     if (os_strncmp(request->uri, "/rest/net/password\0", 19) != 0)
     {
-		debug("Rest handler network names will not request,\n"); 
+		debug("REST handler network password will not handle request,\n"); 
         return(RESPONSE_DONE_CONTINUE);
     }
 	
-	if (request->response.state == HTTP_STATE_NONE)
-	{
-		if (request->type == HTTP_PUT)
-		{
-			request->response.status_code = 204;
-			//Send status and headers.
-			ret += http_send_status_line(request->connection, request->response.status_code);
-			ret += http_send_default_headers(request, 0, NULL);
-			if (request->type == HTTP_HEAD)
-			{
-				request->response.state = HTTP_STATE_DONE;
-				return(ret);
-			}
-			else
-			{
-				//Go on to sending the file.
-				request->response.state = HTTP_STATE_MESSAGE;
-			}
-		}
-	}
-	
-	if (request->response.state == HTTP_STATE_MESSAGE)
-	{
-		if (request->type == HTTP_PUT)
-		{
-			jsonparse_setup(&json_state, request->message, os_strlen(request->message));
-			while ((type = jsonparse_next(&json_state)) != 0)
-			{
-				if (type == JSON_TYPE_PAIR_NAME)
-				{
-					if (jsonparse_strcmp_value(&json_state, "password") == 0)
-					{
-						debug(" Found network value in JSON.\n");
-						jsonparse_next(&json_state);
-						jsonparse_next(&json_state);
-						jsonparse_copy_value(&json_state, passwd, sizeof(passwd));
-						debug(" Password: %s.\n", passwd);
-
-						wifi_station_get_config(&sc);					
-						sc.bssid_set = 0;
-						os_memcpy(&sc.password, passwd, 64);
-						wifi_station_set_config(&sc);
-						passwd_changed = true;
-					}
-				}
-			}
-			request->response.message_size = 0;
-			return(ret);
-		}
-	}
-	    
-	if (request->response.state == HTTP_STATE_DONE)
-	{
-		if (request->type == HTTP_GET)
-		{
-			debug("Freeing network password REST handler data.\n");	
-			if (request->response.context)
-			{
-				db_free(request->response.context);
-			}
-		}
-	}
-	return(RESPONSE_DONE_FINAL);
+	return(http_simple_GET_PUT_handler(request, NULL, create_put_response, NULL));
 }

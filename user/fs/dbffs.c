@@ -259,6 +259,11 @@ struct dbffs_file_hdr  *dbffs_find_file_header(char *path)
 	}
 	//Root
 	gen_hdr = load_generic_header(hdr_off);
+	if (!gen_hdr)
+	{
+		error("Could not load generic header part.\n");
+		return(NULL);
+	}
 	while (gen_hdr->next)
 	{
 		debug("FS Address 0x%x.\n", hdr_off);
@@ -288,7 +293,7 @@ struct dbffs_file_hdr  *dbffs_find_file_header(char *path)
 							link_hdr = load_link_header(hdr_off);
 							debug("Link target length %d.\n", link_hdr->target_len);
 							debug("Link, target %s.\n", link_hdr->target);
-							strcpy(target, link_hdr->target);
+							os_strncpy(target, link_hdr->target, 255);
 							free_link_header(link_hdr);				
 							return(dbffs_find_file_header(target));
 						default:
@@ -305,6 +310,11 @@ struct dbffs_file_hdr  *dbffs_find_file_header(char *path)
 		hdr_off += gen_hdr->next;
 		free_generic_header(gen_hdr);
 		gen_hdr = load_generic_header(hdr_off);
+		if (!gen_hdr)
+		{
+			error("Could not load generic header part.\n");
+			return(NULL);
+		}
 	}
 	free_generic_header(gen_hdr);
 	debug("File not found.\n");
