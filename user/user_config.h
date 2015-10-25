@@ -153,16 +153,19 @@ extern void db_hexdump(void *mem, unsigned int len);
 #define DBG_MEM_MAX_INFOS	200
 #define db_malloc(ARG, INFO)  db_alloc(ARG, false, INFO)
 #define db_zalloc(ARG, INFO)  db_alloc(ARG, true, INFO)
+#define db_realloc(PTR, SIZE, INFO)  db_realloc(PTR, SIZE, INFO)
 #define db_free(ARG)    db_dealloc(ARG)             
 
 extern void *db_alloc(size_t size, bool zero, char *info);
+extern void *db_realloc(void *ptr, size_t size, char *info);
 extern void db_dealloc(void *ptr);
 extern void db_mem_list(void);
                         
 #else
-#define db_malloc(ARG, INFO)	os_malloc(ARG)
-#define db_free(ARG)	os_free(ARG)
-#define db_zalloc(ARG, INFO)	os_zalloc(ARG)
+#define db_malloc(ARG, INFO) os_malloc(ARG)
+#define db_realloc(PTR, SIZE, INFO) os_realloc(PTR, SIZE)
+#define db_free(ARG) os_free(ARG)
+#define db_zalloc(ARG, INFO) os_zalloc(ARG)
 #define db_mem_list(ARG)
 #endif
 

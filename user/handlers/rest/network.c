@@ -31,6 +31,7 @@
 #include "ip_addr.h"
 #include "user_interface.h"
 #include "tools/jsmn.h"
+#include "tools/json-gen.h"
 #include "user_config.h"
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
@@ -45,56 +46,48 @@
  */
 static signed int create_get_response(struct http_request *request)
 {
-	struct station_config wifi_config;
-	char *response;
-	char *response_pos;
-	char *hostname = NULL;
-	struct ip_info ip_inf;
-	    
     debug("Creating network REST GET response.\n");
 
 	if (!request->response.message)
 	{	
-		response = db_malloc(sizeof(char) * 124, "response create_response");
-		response_pos = response;
+		char *member;
+		char *response;
+		struct station_config wifi_config;
 		
-		os_strcpy(response_pos, "{ \"network\" : \"");
-		response_pos += 15;
-
 		if (!wifi_station_get_config(&wifi_config))
 		{
 			error(" Could not get station configuration.\n");
 			return(0);
 		}
-		os_strcpy(response_pos, (char *)wifi_config.ssid);
-		response_pos += os_strlen((char *)wifi_config.ssid); //Max 32.
+				
+		member = json_create_member("network", (char *)wifi_config.ssid, true);
+		response = json_add_to_object(NULL, member);
+		db_free(member);
 		
-		os_strcpy(response_pos, "\", \"hostname\": \"");
-		response_pos += 16;
-		
+		char *hostname = NULL;
 		hostname = wifi_station_get_hostname();
 		if (!hostname)
 		{
 			error("Could not get hostname.\n");
 			return(0);
 		}
-		os_strcpy(response_pos, hostname);
-		response_pos += os_strlen(hostname); //Max 32.
+
+		member = json_create_member("hostname", hostname, true);
+		response = json_add_to_object(response, member);
+		db_free(member);
 		
-		os_strcpy(response_pos, "\", \"ip_addr\": \"");
-		response_pos += 15;
-		
+		struct ip_info ip_inf;		
 		if (!wifi_get_ip_info(STATION_IF, &ip_inf))
 		{
 			error("Could not get IP address.\n");
 			return(0);
 		}
-		os_sprintf(response_pos, IPSTR, IP2STR(&ip_inf.ip));
-		response_pos += os_strlen(response_pos); //Max 11
-			
-		os_strcpy(response_pos, "\" }");
-		response_pos += 3;
-		*response_pos = '\0';
+
+		char ip[12];
+		os_sprintf(ip, IPSTR, IP2STR(&ip_inf.ip));
+		member = json_create_member("ip_addr", ip, true);
+		response = json_add_to_object(response, member);
+		db_free(member);
 	
 		request->response.message = response;
 	}
@@ -125,8 +118,8 @@ static signed int create_put_response(struct http_request *request)
 	int n_tokens;
 
 	jsmn_init(&parser);
-	n_tokens  = jsmn_parse(&parser, request->message, os_strlen(request->message), tokens, 3);
-	//We expect 3 tokens in an object.
+	n_tokens  = jsmn_parse(&parser, request->message, os_strlen(request->message), tokens, 5);
+	//We expect at least 2 tokens in an object.
 	if ( (n_tokens < 3) || tokens[0].type != JSMN_OBJECT)
 	{
 		warn("Could not parse JSON request.\n");
@@ -153,7 +146,7 @@ static signed int create_put_response(struct http_request *request)
 					debug(" Network name %s.\n", sc.ssid);
 					if (!wifi_station_set_config(&sc))
 					{
-						error("Could not network name.\n");
+						error("Could set not network name.\n");
 					}
 				}
 			}

@@ -30,6 +30,7 @@
 #include "user_interface.h"
 #include "user_config.h"
 #include "tools/strxtra.h"
+#include "tools/json-gen.h"
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
 #include "slighttp/http-handler.h"
@@ -42,30 +43,23 @@
  * @return Size of the response.
  */
 static signed int create_get_response(struct http_request *request)
-{
-	char *response;
-	char *response_pos;
-	    
+{  
     debug("Creating memory REST response.\n");
 
 	if (!request->response.message)
 	{	
-		response = db_malloc(sizeof(char) * 25, "response create_response");
-		response_pos = response;
-		
-		os_strcpy(response_pos, "{ \"free\" : \"");
-		response_pos += 12;
+		char *member;
+		char *response;
+		char free_mem[10];
 
-		if(!itoa(system_get_free_heap_size(), response_pos, 10))
+		if(!itoa(system_get_free_heap_size(), free_mem, 10))
 		{
 			error("Could not get free memory size.\n");
 			return(0);
 		}
-		response_pos += os_strlen(response_pos); //Hopefully never more than 4,294,967,295 hence 10 chars.
-	
-		os_strcpy(response_pos, "\" }");
-		response_pos += 3;
-		*response_pos = '\0';
+		member = json_create_member("free", free_mem, true);
+		response = json_add_to_object(NULL, member);
+		db_free(member);
 	
 		request->response.message = response;
 	}

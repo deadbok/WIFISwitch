@@ -145,6 +145,11 @@ void *db_alloc(size_t size, bool zero, char *info)
 		free = system_get_free_heap_size();
 		db_printf("Free heap (malloc): %d.\n", free);
 	}
+	if (!ptr)
+	{
+		error("Could not reallocate memory.\n");
+		return(NULL);
+	}
 	
 	//If free heap is unreasonably high, something is probably wrong. 
 	if (free > 100000)
@@ -164,6 +169,61 @@ void *db_alloc(size_t size, bool zero, char *info)
 
     db_printf("Allocs: %d.\n", dbg_mem_n_alloc);
     return(ptr);
+}
+
+/**
+ * @brief Generic realloc function for memory debugging.
+ * 
+ * @param ptr Pointer to memory to copy to new allocation.
+ * @param size Number of bytes to allocate.
+ * @param info A string with info on the allocated memory.
+ * @return A pointer to the allocated memory.
+ */
+void *db_realloc(void *ptr, size_t size, char *info)
+{
+	int i = 0;
+	void *ret;
+	size_t free;
+	
+
+	os_printf("Reallocating %d bytes from %p.\n", size, ptr);	
+	ret = os_realloc(ptr, size);
+	if (!ret)
+	{
+		error("Could not reallocate memory.\n");
+		return(NULL);
+	}
+	free = system_get_free_heap_size();
+	
+	/* If free heap is unreasonably high, something is probably wrong.
+	 * I have seen this happen after freeing a pointer twice.
+	 */
+	if (free > 100000)
+	{
+		warn("Memory management seems to be corrupted.\n");
+	}
+	
+	//Find the old memory info.
+	while(i < dbg_mem_n_alloc)
+	{
+		if (dbg_mem_alloc_infos[i].ptr)
+		{
+			if (dbg_mem_alloc_infos[i].ptr == ptr)
+			{
+				break;
+			}
+		}
+		i++;
+	}
+	
+	dbg_mem_alloc_infos[i].size = size;
+	dbg_mem_alloc_infos[i].info = info;
+	dbg_mem_alloc_infos[i].ptr = ret;
+	
+	db_printf("Reallocated %p size %d from %p, info: %s.\n", ret, size, ptr, info);	
+
+    db_printf("Allocs: %d.\n", dbg_mem_n_alloc);
+    return(ret);
 }
 
 /**

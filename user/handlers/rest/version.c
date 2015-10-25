@@ -29,6 +29,7 @@
 #include "c_types.h"
 #include "user_interface.h"
 #include "user_config.h"
+#include "tools/json-gen.h"
 #include "fs/dbffs.h"
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
@@ -43,37 +44,24 @@
  */
 static signed int create_get_response(struct http_request *request)
 {
-	char *response;
-	char *response_pos;
-	    
     debug("Creating version REST response.\n");
 
 	if (!request->response.message)
 	{	
-		response = db_malloc(sizeof(char) * 93, "response create_response");
-		response_pos = response;
+		char *member;		
+		char *response;
 		
-		os_strcpy(response_pos, "{ \"fw_ver\" : \"");
-		response_pos += 14;
-
-		os_strcpy(response_pos, VERSION);
-		response_pos += os_strlen(VERSION); //Hopefully never more than xxxx.xxxx.xxxx
+		member = json_create_member("fw_ver", VERSION, true);
+		response = json_add_to_object(NULL, member);
+		db_free(member);
 	
-		os_strcpy(response_pos, "\", \"httpd_ver\": \"");
-		response_pos += 17;
-		
-		os_strcpy(response_pos, HTTP_SERVER_VERSION);
-		response_pos += os_strlen(HTTP_SERVER_VERSION); //Hopefully never more than xxxx.xxxx.xxxx
+		member = json_create_member("httpd_ver", HTTP_SERVER_VERSION, true);
+		response = json_add_to_object(response, member);
+		db_free(member);
 
-		os_strcpy(response_pos, "\", \"dbffs_ver\": \"");
-		response_pos += 17;
-		
-		os_strcpy(response_pos, DBFFS_VERSION);
-		response_pos += os_strlen(DBFFS_VERSION); //Hopefully never more than xxxx.xxxx.xxxx
-			
-		os_strcpy(response_pos, "\" }");
-		response_pos += 3;
-		*response_pos = '\0';
+		member = json_create_member("dbffs_ver", DBFFS_VERSION, true);
+		response = json_add_to_object(response, member);
+		db_free(member);		
 	
 		request->response.message = response;
 	}

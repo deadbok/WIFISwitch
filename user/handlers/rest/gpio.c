@@ -38,6 +38,7 @@
 #include "user_interface.h"
 #include "user_config.h"
 #include "tools/jsmn.h"
+#include "tools/json-gen.h"
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
 #include "slighttp/http-response.h"
@@ -46,7 +47,7 @@
 #include "user_config.h"
 
 #ifndef REST_GPIO_ENABLED
-#warning "No GPIO's has been enabled for acces via the REST interface."
+#warning "No GPIO's has been enabled for access via the REST interface."
 /**
  * @brief Bit mask of which GPIO pins the REST interface can control.
  */
@@ -54,60 +55,13 @@
 #endif
 
 /**
+ * @brief Number of GPIO's
+ */
+#define REST_GPIO_PINS 16
+/**
  * @brief GPIO were are working with or -1 if no specific pin.
  */
 static signed char current_gpio = -1;
-
-/**
- * @brief Create a JSON array of integers.
- * 
- * @param values Pointer to an array of long ints.
- * @param entries Number of entries in the array.
- * @return Pointer to the JSON array.
- */
-static char *json_create_int_array(long *values, size_t entries)
-{
-	size_t i;
-	size_t total_length = 0;
-	size_t *lengths = db_malloc(sizeof(size_t) * entries, "lengths json_create_string_array");
-	char *ret, *ptr;
-	
-	//'['
-	total_length++;
-	for (i = 0; i < entries; i++)
-	{
-		lengths[i] = digits(values[i]);
-		total_length += lengths[i];
-		//","
-		if (i != (entries -1))
-		{
-			total_length++;
-		}
-	}
-	//']'
-	total_length++;
-	
-	ret = (char *)db_malloc(total_length, "res json_create_string_array");
-	ptr = ret;
-	
-	*ptr++ = '[';
-	for (i = 0; i < entries; i++)
-	{
-		itoa(values[i], ptr, 10);
-		ptr += lengths[i] - 1;
-		//","
-		if (i != (entries -1))
-		{
-			*ptr++ = ',';
-		}
-	}
-	*ptr++ = ']';
-	*ptr = '\0';
-	
-	db_free(lengths);
-	
-	return(ret);
-}
 
 /**
  * @brief Create a JSON array containing all usable GPIO's.
@@ -118,11 +72,11 @@ static char *json_create_int_array(long *values, size_t entries)
 static signed int create_enabled_response(struct http_request *request)
 {
 	unsigned char n_gpios = 0;
-	long gpios[16]  = { 0 };
+	long gpios[REST_GPIO_PINS]  = { 0 };
 	
 	debug("Creating JSON array of enabled GPIO's.\n");
 	//Run through all GPIO's
-	for (unsigned int i = 0; i < 16; i++)
+	for (unsigned int i = 0; i < REST_GPIO_PINS; i++)
 	{
 		if (((REST_GPIO_ENABLED >> i) & 1) == 1)
 		{
