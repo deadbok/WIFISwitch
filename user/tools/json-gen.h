@@ -31,38 +31,41 @@
 #include "user_interface.h"
 #include "user_config.h"
 
+#define JSON_TYPE_ARRAY "[]"
+#define JSON_TYPE_OBJECT "{}"
+
 /**
- * @brief Create a JSON array of integers.
+ * @brief Create a pair for an object.
  * 
- * @param values Pointer to an array of long ints.
- * @param entries Number of entries in the array.
- * @return Pointer to the JSON array.
- */
-static char *json_create_int_array(long *values, size_t entries)
-/**
- * @brief Create a JSON array of strings.
- * 
- * @param values Array of strings.
- * @param entries Number of strings in array.
- * @return The JSON array.
- */
-extern char *json_add_to_object(char *json_string, char *member);
-/**
- * @brief Create a member for an object.
- * 
- * @param string The string part of the member pair.
- * @param value The value part of the member pair.
+ * @param string The string part of the pair.
+ * @param value The value part of the pair.
  * @param Adds double quotes to value if TRUE.
  * @return A pointer to the string representation of the JSON member.
  */
-extern char *json_create_member(char *string, char *value, bool quotes);
+extern char *json_create_pair(char *string, char *value, bool quotes);
 /**
- * @brief Add an element to a JSON object.
+ * @brief Add an element to a JSON array.
+ * 
+ * @param json_string Pointer to previous string representation of the object, or NULL to create.
+ * @param member Pointer to the string representation of the element to add.
+ * @return Pointer to the string representation of the of the new JSON object.
+ */
+#define json_add_to_array(json_string, element) json_add_to_type(json_string, element, JSON_TYPE_ARRAY)
+/**
+ * @brief Add an member to a JSON object.
  * 
  * @param json_string Pointer to previous string representation of the object, or NULL to create.
  * @param member Pointer to the string representation of the member to add.
  * @return Pointer to the string representation of the of the new JSON object.
  */
-extern char *json_create_string_array(char **values, size_t entries);
+#define json_add_to_object(json_string, member) json_add_to_type(json_string, member, JSON_TYPE_OBJECT)
+/**
+ * @brief Add an member/element to a JSON object/array.
+ * 
+ * @param json_string Pointer to previous string representation of the object, or NULL to create.
+ * @param element Pointer to the string representation of the element/member to add.
+ * @return Pointer to the string representation of the of the new JSON object.
+ */
+extern char *json_add_to_type(char *json_string, char *element, char *type);
 
 #endif //JSON_GEN_H

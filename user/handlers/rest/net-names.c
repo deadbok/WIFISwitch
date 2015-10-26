@@ -37,19 +37,11 @@
 #include "slighttp/http-handler.h"
 
 /**
- * @brief AP names.
- */
-static char **ap_ssids;
-/**
- * @brief number of AP names.
- */
-static unsigned short n_aps;
-/**
  * @brief Stores the request while waiting for the callback.
  */
 static struct http_request *waiting_request = NULL;
 /**
- * @brief Statuf of SDK call.
+ * @brief Status of SDK call.
  */
 static bool error = false;
 
@@ -80,8 +72,11 @@ static void scan_done_cb(void *arg, STATUS status)
 {
 	struct bss_info *current_ap_info;
 	struct bss_info *scn_info;
-	unsigned short i;
+	size_t ssid_size;
 	size_t size;
+	char *json_ssid;
+	char *json_ssid_pos = NULL;
+	char *json_response = NULL;
 	struct http_request *request;
 	
 	debug("AP scan callback for REST.\n");
@@ -90,35 +85,43 @@ static void scan_done_cb(void *arg, STATUS status)
 		debug(" Scanning went OK (%p).\n", arg);
 		scn_info = (struct bss_info *)arg;
 		debug(" Processing AP list (%p, %p).\n", scn_info, scn_info->next.stqe_next);
-		debug(" Counting AP's.");
+		debug(" AP names:\n");
 		//Skip first according to docs.
 		for (current_ap_info = scn_info->next.stqe_next;
 			 current_ap_info != NULL;
 			 current_ap_info = current_ap_info->next.stqe_next)
 		{
-			debug(".");
-			n_aps++;
-		}
-		debug("%d.\n", n_aps);
-		if (n_aps)
-		{
-
-			//Get mem for array.
-			ap_ssids = db_zalloc(sizeof(char *) * n_aps, "ap_ssids rest_net_names_html");
-			//Fill in the AP names.
-			debug(" AP names:\n");
-			current_ap_info = scn_info->next.stqe_next;
-			for (i = 0; i < n_aps; i++)
+			debug("  %s.\n", current_ap_info->ssid);
+			//SSID cannot be longer than 32 char.
+			ssid_size = strlen((char *)(current_ap_info->ssid));
+			if (ssid_size > 32)
 			{
-				size = sizeof(char) * (strlen((char *)current_ap_info->ssid));
-				ap_ssids[i] = db_malloc(size + 1, "ap_ssids[] rest_net_names_html");
-				os_memcpy(ap_ssids[i], current_ap_info->ssid, size);
-				ap_ssids[i][size] = '\0';
-				current_ap_info = current_ap_info->next.stqe_next;
-				debug("  %s.\n", ap_ssids[i]);
+				//" + SSID + " + \0
+				size = 35;
 			}
-		}
-	}	
+			else
+			{
+				//" + " + \0
+				size = ssid_size + 3;
+			}
+			json_ssid = db_malloc(size, "scan_done_sb json_ssid");
+			json_ssid_pos = json_ssid;
+			*json_ssid_pos++ = '\"';
+			if (ssid_size > 32)
+			{
+				os_memcpy(json_ssid_pos, current_ap_info->ssid, 32);
+				json_ssid_pos += 32;
+			}
+			else
+			{
+				os_memcpy(json_ssid_pos, current_ap_info->ssid, ssid_size);
+				json_ssid_pos += ssid_size;
+			}
+			os_memcpy(json_ssid_pos, "\"\0", 2);
+			json_response = json_add_to_array(json_response, json_ssid);
+			db_free(json_ssid);
+		}	
+	}
 	else
 	{
 		error(" Scanning AP's.\n");
@@ -129,24 +132,13 @@ static void scan_done_cb(void *arg, STATUS status)
 	{
 		if (!error)
 		{
-			((struct rest_net_names_context *)request->response.context)->response = json_create_string_array(ap_ssids, n_aps);
-			((struct rest_net_names_context *)request->response.context)->size = os_strlen(((struct rest_net_names_context *)request->response.context)->response);
+			((struct rest_net_names_context *)request->response.context)->response = json_response;
+			((struct rest_net_names_context *)request->response.context)->size = os_strlen(json_response);
 		}
 		else
 		{
 			((struct rest_net_names_context *)request->response.context)->response = "[\"error\"]";
 			((struct rest_net_names_context *)request->response.context)->size = os_strlen(((struct rest_net_names_context *)request->response.context)->response);
-		}
-		if (n_aps && ap_ssids)
-		{
-			//Free old data if there is any.
-			for (i = 0; i < n_aps; i++)
-			{
-				db_free(ap_ssids[i]);
-			}
-			db_free(ap_ssids);
-			ap_ssids = NULL;
-			n_aps = 0;
 		}
 
 		//We'll be sending headers next.

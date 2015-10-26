@@ -29,101 +29,7 @@
 #include "user_interface.h"
 #include "user_config.h"
 
-static char *json_create_array(long *values, size_t entries, bool quotes)
-{
-	size_t i;
-	size_t total_length = 0;
-	size_t *lengths = db_malloc(sizeof(size_t) * entries, "lengths json_create_array");
-	char *ret, *ptr;
-	
-	//'['
-	total_length++;
-	for (i = 0; i < entries; i++)
-	{
-		lengths[i] = digits(values[i]);
-		total_length += lengths[i];
-		//","
-		if (i != (entries -1))
-		{
-			total_length++;
-		}
-	}
-	//']'
-	total_length++;
-	
-	ret = (char *)db_malloc(total_length, "res json_create_array");
-	ptr = ret;
-	
-	*ptr++ = '[';
-	for (i = 0; i < entries; i++)
-	{
-		itoa(values[i], ptr, 10);
-		ptr += lengths[i] - 1;
-		//","
-		if (i != (entries -1))
-		{
-			*ptr++ = ',';
-		}
-	}
-	*ptr++ = ']';
-	*ptr = '\0';
-	
-	db_free(lengths);
-	
-	return(ret);
-}
-
-char *json_create_string_array(char **values, size_t entries)
-{
-	size_t i;
-	size_t total_length = 0;
-	size_t *lengths = db_malloc(sizeof(size_t) * entries, "lengths json_create_string_array");
-	char *ret, *ptr;
-	
-	//Get the length of the JSON array.
-	//'['
-	total_length++;
-	for (i = 0; i < entries; i++)
-	{
-		//'\"'
-		total_length++;
-		lengths[i] = os_strlen(values[i]);
-		total_length += lengths[i];
-		//"\","
-		total_length++;
-		if (i != (entries -1))
-		{
-			total_length++;
-		}
-	}
-	//']'
-	total_length++;
-	
-	ret = (char *)db_malloc(total_length, "res json_create_string_array");
-	ptr = ret;
-	
-	//Build the actual JSON array as a string.
-	*ptr++ = '[';
-	for (i = 0; i < entries; i++)
-	{
-		*ptr++ = '\"';
-		os_memcpy(ptr, values[i], lengths[i]);
-		ptr += lengths[i];
-		*ptr++ = '\"';
-		if (i != (entries -1))
-		{
-			*ptr++ = ',';
-		}
-	}
-	*ptr++ = ']';
-	*ptr = '\0';
-	
-	db_free(lengths);
-	
-	return(ret);
-}
-
-char *json_create_member(char *string, char *value, bool quotes)
+char *json_create_pair(char *string, char *value, bool quotes)
 {
 	char *ret;
 	char *offset;
@@ -167,48 +73,49 @@ char *json_create_member(char *string, char *value, bool quotes)
 	return(ret);
 }
 
-char *json_add_to_object(char *json_string, char *member)
+
+char *json_add_to_type(char *json_string, char *element, char *type)
 {
-	size_t member_size;
+	size_t element_size;
 	size_t object_size;
-	char *member_pos;
+	char *element_pos;
 	char *ret = NULL;
 	
-	debug("Adding member %s to JSON object %s.\n", member, json_string);
-	if (!member)
+	debug("Adding %s to JSON container %s (type %s).\n", element, json_string, type);
+	if (!element)
 	{
 		warn("Nothing to add.\n");
 		return(json_string);
 	}
-	member_size = os_strlen(member);
+	element_size = os_strlen(element);
 	if (!json_string)
 	{
 		debug(" New object.\n");
 		//Reserve memory add space for {, }, and \0. 
-		object_size = member_size + 3;
+		object_size = element_size + 3;
 		ret = db_malloc(object_size, "json_add_to_object ret");
-		ret[0] = '{';
-		member_pos = ret + 1;
+		ret[0] = type[0];
+		element_pos = ret + 1;
 	}
 	else
 	{
 		debug("Existing object.\n");
 		size_t old_object_size = strlen(json_string);
 		//Reserve memory add space for ",".
-		object_size = old_object_size + member_size + 1;
+		object_size = old_object_size + element_size + 1;
 		ret = db_realloc(json_string, object_size,
 						 "json_add_to_object ret");
 		//Point to the ending } of the old object.
-		member_pos = ret + old_object_size - 1;
+		element_pos = ret + old_object_size - 1;
 		//Add ,
-		*member_pos++ = ',';
+		*element_pos++ = ',';
 	}
 	//Add member.
-	memcpy(member_pos, member, member_size);
+	memcpy(element_pos, element, element_size);
 	//Add ending } and \0.
-	memcpy(member_pos + member_size, "}\0", 2);
+	element_pos += element_size;
+	*element_pos++ = type[1];
+	*element_pos = '\0';
 
-	
 	return(ret);
 }
-

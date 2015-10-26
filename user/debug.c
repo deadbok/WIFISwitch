@@ -132,7 +132,7 @@ void *db_alloc(size_t size, bool zero, char *info)
 	void *ptr;
 	size_t free;
 
-	os_printf("Allocating %d bytes.\n", size);	
+	db_printf("Allocating %d bytes.\n", size);
 	if (zero)
 	{
 		ptr = os_zalloc(size);
@@ -147,7 +147,7 @@ void *db_alloc(size_t size, bool zero, char *info)
 	}
 	if (!ptr)
 	{
-		error("Could not reallocate memory.\n");
+		error("Could not allocate memory.\n");
 		return(NULL);
 	}
 	
@@ -186,7 +186,7 @@ void *db_realloc(void *ptr, size_t size, char *info)
 	size_t free;
 	
 
-	os_printf("Reallocating %d bytes from %p.\n", size, ptr);	
+	db_printf("Reallocating %d bytes from %p.\n", size, ptr);
 	ret = os_realloc(ptr, size);
 	if (!ret)
 	{

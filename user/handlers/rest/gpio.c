@@ -71,8 +71,8 @@ static signed char current_gpio = -1;
  */
 static signed int create_enabled_response(struct http_request *request)
 {
-	unsigned char n_gpios = 0;
-	long gpios[REST_GPIO_PINS]  = { 0 };
+	char json_value[3];
+	char *json_response = NULL;
 	
 	debug("Creating JSON array of enabled GPIO's.\n");
 	//Run through all GPIO's
@@ -81,10 +81,14 @@ static signed int create_enabled_response(struct http_request *request)
 		if (((REST_GPIO_ENABLED >> i) & 1) == 1)
 		{
 			debug(" GPIO%d is enabled.\n", i);
-			gpios[n_gpios++] = i;
+			if (!itoa(i, json_value, 10))
+			{
+				warn("Could not convert GPIO pin number to string.\n");
+			}
+			json_response = json_add_to_array(json_response, json_value);
 		}
 	}
-	request->response.context = json_create_int_array(gpios, n_gpios);
+	request->response.context = json_response;
 	
 	return(os_strlen(request->response.context));
 }
@@ -277,7 +281,7 @@ signed int http_rest_gpio_handler(struct http_request *request)
 							if (tokens[i].type == JSMN_PRIMITIVE)
 							{
 								debug(" JSON primitive comes next.\n");
-								if (isdigit(*(request->message + tokens[i].start)) || (*(request->message + tokens[i].start) == '-'))
+								if (isdigit((int)*(request->message + tokens[i].start)) || (*(request->message + tokens[i].start) == '-'))
 								{
 									gpio_state = atoi(request->message + tokens[i].start);
 									debug(" State: %d.\n", gpio_state);

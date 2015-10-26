@@ -1,3 +1,28 @@
+2015-10-26 Martin Grønholdt
+
+* user/debug.c (db_alloc): Fixed a some debug output errors.
+			   (db_realloc): Fixed a some debug output errors.
+* user/handlers/rest/gpio.c (create_eneabled_response): Using JSON generator.
+* user/handlers/rest/mem.c (create_get_response): Using JSON generator.
+* user/handlers/rest/net-names.c (scan_done_cb): Using JSON generator.
+* user/tools/json-gen.c (json_create_member): Renamed json_create_pair.
+						(json_add_to_object): Renamed json_add_to_type and adapted for both arrays and objects.
+* user/tools/json-gen.h: Replaced json_add_to_array and json_add_to_object with macros.
+
+2015-10-25 Martin Grønholdt
+
+* user/debug.c: Added db_realloc.
+		  (db_alloc): Added error checking.
+*  user/user_config.h: Added db_realloc macro.
+* user/handlers/rest/gpio.c: Added REST_GPIO_PINS.
+							 Removed json_create_int_array.
+* user/handlers/rest/mem.c (create_get_response): Using JSON generator.
+* user/handlers/rest/net-names.c: Removed json_create_string_array.
+* user/handlers/rest/network.c (create_get_response): Using JSON generator.
+* user/handlers/rest/version.c (create_get_response): Using JSON generator.
+* user/tools/json-gen.c: Added file with JSON generation routines.
+* user/tools/json-gen.h Added file with JSON generation routines.
+
 2015-10-21 Martin Grønholdt
 
 * Makefile: Changed size report printing.

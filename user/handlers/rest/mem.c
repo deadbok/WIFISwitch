@@ -48,7 +48,7 @@ static signed int create_get_response(struct http_request *request)
 
 	if (!request->response.message)
 	{	
-		char *member;
+		char *pair;
 		char *response;
 		char free_mem[10];
 
@@ -57,9 +57,9 @@ static signed int create_get_response(struct http_request *request)
 			error("Could not get free memory size.\n");
 			return(0);
 		}
-		member = json_create_member("free", free_mem, true);
-		response = json_add_to_object(NULL, member);
-		db_free(member);
+		pair = json_create_pair("free", free_mem, true);
+		response = json_add_to_object(NULL, pair);
+		db_free(pair);
 	
 		request->response.message = response;
 	}

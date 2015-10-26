@@ -50,7 +50,7 @@ static signed int create_get_response(struct http_request *request)
 
 	if (!request->response.message)
 	{	
-		char *member;
+		char *pair;
 		char *response;
 		struct station_config wifi_config;
 		
@@ -60,9 +60,9 @@ static signed int create_get_response(struct http_request *request)
 			return(0);
 		}
 				
-		member = json_create_member("network", (char *)wifi_config.ssid, true);
-		response = json_add_to_object(NULL, member);
-		db_free(member);
+		pair = json_create_pair("network", (char *)wifi_config.ssid, true);
+		response = json_add_to_object(NULL, pair);
+		db_free(pair);
 		
 		char *hostname = NULL;
 		hostname = wifi_station_get_hostname();
@@ -72,9 +72,9 @@ static signed int create_get_response(struct http_request *request)
 			return(0);
 		}
 
-		member = json_create_member("hostname", hostname, true);
-		response = json_add_to_object(response, member);
-		db_free(member);
+		pair = json_create_pair("hostname", hostname, true);
+		response = json_add_to_object(response, pair);
+		db_free(pair);
 		
 		struct ip_info ip_inf;		
 		if (!wifi_get_ip_info(STATION_IF, &ip_inf))
@@ -85,9 +85,9 @@ static signed int create_get_response(struct http_request *request)
 
 		char ip[12];
 		os_sprintf(ip, IPSTR, IP2STR(&ip_inf.ip));
-		member = json_create_member("ip_addr", ip, true);
-		response = json_add_to_object(response, member);
-		db_free(member);
+		pair = json_create_pair("ip_addr", ip, true);
+		response = json_add_to_object(response, pair);
+		db_free(pair);
 	
 		request->response.message = response;
 	}

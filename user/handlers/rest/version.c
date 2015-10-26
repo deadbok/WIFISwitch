@@ -48,20 +48,20 @@ static signed int create_get_response(struct http_request *request)
 
 	if (!request->response.message)
 	{	
-		char *member;		
+		char *pair;		
 		char *response;
 		
-		member = json_create_member("fw_ver", VERSION, true);
-		response = json_add_to_object(NULL, member);
-		db_free(member);
+		pair = json_create_pair("fw_ver", VERSION, true);
+		response = json_add_to_object(NULL, pair);
+		db_free(pair);
 	
-		member = json_create_member("httpd_ver", HTTP_SERVER_VERSION, true);
-		response = json_add_to_object(response, member);
-		db_free(member);
+		pair = json_create_pair("httpd_ver", HTTP_SERVER_VERSION, true);
+		response = json_add_to_object(response, pair);
+		db_free(pair);
 
-		member = json_create_member("dbffs_ver", DBFFS_VERSION, true);
-		response = json_add_to_object(response, member);
-		db_free(member);		
+		pair = json_create_pair("dbffs_ver", DBFFS_VERSION, true);
+		response = json_add_to_object(response, pair);
+		db_free(pair);		
 	
 		request->response.message = response;
 	}

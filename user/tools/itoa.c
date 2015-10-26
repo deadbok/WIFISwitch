@@ -33,6 +33,12 @@ char *itoa(long value, char *result, const unsigned char base)
 		return(NULL);
 	}
 	
+	if (!result)
+	{
+		error("No where to put the result.\n");
+		return(NULL);
+	}
+	
 	//Negative number handling.
 	if ((value < 0) && (base == 10))
 	{
