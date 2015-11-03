@@ -1,6 +1,9 @@
 /**
  * @file dbffs.c
  * @brief Routines accessing a DBF file system in flash.
+ * 
+ * Header loader functions allocate DBFFS_MAX_HEADER_SIZE bytes of
+ * memory so that any header data possible always fits.
  *
  */
 #include <stdint.h>
@@ -16,7 +19,7 @@
  * @brief address Address to load the data from.
  * @return An array of 8 bytes with type and offset information or NULL.
  */
-static uint32_t  load_signature(unsigned int address)
+static uint32_t load_signature(unsigned int address)
 {
 	uint32_t ret;
 	
@@ -35,7 +38,7 @@ static uint32_t  load_signature(unsigned int address)
  * 
  * @param entry Pointer to the entry to free.
  */
-static void  free_generic_header(struct dbffs_generic_hdr *entry)
+static void free_generic_header(struct dbffs_generic_hdr *entry)
 {
 	if (entry)
 	{
@@ -51,15 +54,24 @@ static void  free_generic_header(struct dbffs_generic_hdr *entry)
 
 /**
  * @brief Load the generic part of a header, shared by all types.
- * @brief address Address to load the data from.
+ * 
+ * @param address Address to load the data from.
+ * @param header Pointer to memory for the header or NULL to allocate.
  * @return A pointer to the general header part.
  */
-static struct dbffs_generic_hdr  *load_generic_header(unsigned int address)
+static struct dbffs_generic_hdr *load_generic_header(unsigned int address, void *header)
 {
-	struct dbffs_generic_hdr *ret;
+	struct dbffs_generic_hdr *ret = header;
 	
 	debug("Loading generic part of header at 0x%x.\n", address);
-	ret = db_malloc(sizeof(struct dbffs_generic_hdr), "load_generic_header ret");
+	if (!ret)
+	{
+		ret = db_malloc(DBFFS_MAX_HEADER_SIZE, "load_generic_header ret");
+	}
+	else
+	{
+		db_free(ret->name);
+	}
 	if (!ret)
 	{
 		error("Could not allocate memory for generic header.\n");
@@ -67,27 +79,24 @@ static struct dbffs_generic_hdr  *load_generic_header(unsigned int address)
 	}
     if (!aflash_read(ret, address, 9))
     {
-        debug("Could not read DBFFS file header start at 0x%x.\n", address);
-        free_generic_header(ret);
-        return(NULL);
+        debug("Could not read DBFFS generic header start at 0x%x.\n", address);
+        goto error;
 	}
 	ret->name = db_malloc(ret->name_len + 1, "load_generic_header ret->name"); 
 	if (!aflash_read(ret->name, address + 9, ret->name_len))
     {
         debug("Could not read entry name at 0x%x.\n", address + 9);
-        free_generic_header(ret);
-        return(NULL);
-	}
+        goto error;
+    }
 	ret->name[ret->name_len] = '\0';
 	return(ret);
+
+error:
+    free_generic_header(ret);
+    return(NULL);
 }
 
-/**
- * @brief Free memory used by a file header.
- * 
- * @param entry Pointer to the entry to free.
- */
-void  dbffs_free_file_header(struct dbffs_file_hdr *entry)
+void dbffs_free_file_header(struct dbffs_file_hdr *entry)
 {
 	if (entry)
 	{
@@ -98,6 +107,7 @@ void  dbffs_free_file_header(struct dbffs_file_hdr *entry)
 				debug("Freeing entry name.\n");
 				db_free(entry->name);
 			}
+			
 			debug("Freeing generic header.\n");
 			db_free(entry);
 		}
@@ -111,36 +121,18 @@ void  dbffs_free_file_header(struct dbffs_file_hdr *entry)
 /**
  * @brief Load a file header.
  * @brief address Address to load the data from.
+ * @param header Pointer to memory for the header or NULL to allocate.
  * @return A pointer to the file header.
  */
-static struct dbffs_file_hdr  *load_file_header(unsigned int address)
+static struct dbffs_file_hdr *load_file_header(unsigned int address, void *header)
 {
 	struct dbffs_file_hdr *ret;
 	uint32_t offset = address;
 	
 	debug("Loading file header at 0x%x.\n", address);
-	ret = db_malloc(sizeof(struct dbffs_file_hdr), "load_file_header ret");
-	if (!ret)
-	{
-		error("Could not allocate memory for file header.\n");
-		return(NULL);
-	}
-    if (!aflash_read(ret, offset, 9))
-    {
-        debug("Could not read DBFFS file header start at 0x%x.\n", address);
-        dbffs_free_file_header(ret);
-        return(NULL);
-	}
+	ret = (struct dbffs_file_hdr *)load_generic_header(address, header);
 	offset += 9;
-	ret->name = db_malloc(ret->name_len + 1, "load_file_header ret->name"); 
-	if (!aflash_read(ret->name, offset, ret->name_len))
-    {
-        debug("Could not read entry name at 0x%x.\n", offset);
-        dbffs_free_file_header(ret);
-        return(NULL);
-	}
 	offset += ret->name_len;
-	ret->name[ret->name_len] = '\0';
 	if (!aflash_read(&ret->size, offset, sizeof(ret->size)))
     {
         debug("Could not read data size at 0x%x.\n", offset);
@@ -157,7 +149,7 @@ static struct dbffs_file_hdr  *load_file_header(unsigned int address)
  * 
  * @param entry Pointer to the entry to free.
  */
-static void  free_link_header(struct dbffs_link_hdr *entry)
+static void free_link_header(struct dbffs_link_hdr *entry)
 {
 	if (entry)
 	{
@@ -187,69 +179,46 @@ static void  free_link_header(struct dbffs_link_hdr *entry)
 /**
  * @brief Load a link header.
  * @brief address Address to load the data from.
+ * @param header Pointer to memory for the header or NULL to allocate.
  * @return A pointer to the link header.
  */
-static struct dbffs_link_hdr  *load_link_header(unsigned int address)
+static struct dbffs_link_hdr *load_link_header(unsigned int address, void *header)
 {
 	struct dbffs_link_hdr *ret;
 	uint32_t offset = address;
 	
 	debug("Loading link header at 0x%x.\n", address);
-	ret = db_malloc(sizeof(struct dbffs_link_hdr), "load_link_header ret");
-	if (!ret)
-	{
-		error("Could not allocate memory for link header.\n");
-		return(NULL);
-	}
-    if (!aflash_read(ret, offset, 9))
-    {
-        debug("Could not read DBFFS link header start at 0x%x.\n", address);
-        free_link_header(ret);
-        return(NULL);
-	}
-	if (ret->signature != DBFFS_LINK_SIG)
-	{
-		error("Wrong header signature 0x%x.\n", ret->signature);
-		return(NULL);
-	}
+	ret = (struct dbffs_link_hdr *)load_generic_header(address, header);
 	offset += 9;
-	ret->name = db_malloc(ret->name_len + 1, "load_link_header ret->name"); 
-	if (!aflash_read(ret->name, offset, ret->name_len))
-    {
-        debug("Could not read entry name at 0x%x.\n", offset);
-        free_link_header(ret);
-        return(NULL);
-	}
 	offset += ret->name_len;
-	ret->name[ret->name_len] = '\0';
 	if (!aflash_read(&ret->target_len, offset, sizeof(ret->target_len)))
     {
         debug("Could not read target length at 0x%x.\n", offset);
-        free_link_header(ret);
-        return(NULL);
+        goto error;
 	}
 	offset += sizeof(ret->target_len);
 	ret->target = db_malloc(ret->target_len + 1, "load_link_header ret->target"); 
 	if (!aflash_read(ret->target, offset, ret->target_len))
     {
         debug("Could not read target name at 0x%x.\n", offset);
-        free_link_header(ret);
-        return(NULL);
+        goto error;
 	}
 	ret->target[ret->target_len] = '\0';
 	return(ret);
+
+error:
+	free_link_header(ret);
+	return(NULL);
 }
 
-/**
- * @brief Find a file header.
- */
-struct dbffs_file_hdr  *dbffs_find_file_header(char *path)
+struct dbffs_file_hdr *dbffs_find_file_header(char *path, void *header)
 {
 	struct dbffs_generic_hdr *gen_hdr;
 	struct dbffs_file_hdr *file_hdr;
 	struct dbffs_link_hdr *link_hdr;
-	unsigned int hdr_off = 0;
 	char target[DBFFS_MAX_PATH_LENGTH];
+						
+	unsigned int hdr_off = 0;
 	
 	debug("Finding file header for %s.\n", path);
 	if (!path)
@@ -258,72 +227,62 @@ struct dbffs_file_hdr  *dbffs_find_file_header(char *path)
 		return(NULL);
 	}
 	//Root
-	gen_hdr = load_generic_header(hdr_off);
-	if (!gen_hdr)
-	{
-		error("Could not load generic header part.\n");
-		return(NULL);
-	}
-	while (gen_hdr->next)
+	gen_hdr = load_generic_header(hdr_off, header);
+	while (gen_hdr)
 	{
 		debug("FS Address 0x%x.\n", hdr_off);
 		debug("Header address %p.\n", gen_hdr);
 	
-		if (gen_hdr)
+		debug(" Signature 0x%x.\n", gen_hdr->signature);
+		debug(" Offset to next entry 0x%x.\n", gen_hdr->next);
+		debug(" Name length %d.\n", gen_hdr->name_len);
+		debug(" Name %s.\n", gen_hdr->name);
+		//Check current name against current path entry.
+		if (os_strlen(path) == gen_hdr->name_len)
 		{
-			debug(" Signature 0x%x.\n", gen_hdr->signature);
-			debug(" Offset to next entry 0x%x.\n", gen_hdr->next);
-			debug(" Name length %d.\n", gen_hdr->name_len);
-			debug(" Name %s.\n", gen_hdr->name);
-			//Check current name against current path entry.
-			if (os_strlen(path) == gen_hdr->name_len)
+			if (os_strncmp(gen_hdr->name, path, gen_hdr->name_len) == 0)
 			{
-				if (os_strncmp(gen_hdr->name, path, gen_hdr->name_len) == 0)
+				debug(" Entry name %s matches the path.\n",
+					  gen_hdr->name);
+				switch (gen_hdr->signature)
 				{
-					debug(" Entry name %s matches the path.\n",
-						  gen_hdr->name);
-					switch (gen_hdr->signature)
-					{
-						case DBFFS_FILE_SIG:
-							free_generic_header(gen_hdr);
-							file_hdr = load_file_header(hdr_off);
-							return(file_hdr);
-						case DBFFS_LINK_SIG:
-							free_generic_header(gen_hdr);
-							link_hdr = load_link_header(hdr_off);
-							debug("Link target length %d.\n", link_hdr->target_len);
-							debug("Link, target %s.\n", link_hdr->target);
-							os_strncpy(target, link_hdr->target, 255);
-							free_link_header(link_hdr);				
-							return(dbffs_find_file_header(target));
-						default:
-							warn("Unknown file entry type 0x%x.\n",
-								 gen_hdr->signature);
-					}
+					case DBFFS_FILE_SIG:
+						file_hdr = load_file_header(hdr_off, gen_hdr);
+						return(file_hdr);
+					case DBFFS_LINK_SIG:
+						link_hdr = load_link_header(hdr_off, gen_hdr);
+						debug("Link target length %d.\n", link_hdr->target_len);
+						debug("Link, target %s.\n", link_hdr->target);
+						os_strncpy(target, link_hdr->target, link_hdr->target_len + 1);
+						db_free(link_hdr->target);
+						file_hdr = dbffs_find_file_header(target, link_hdr);
+						return(file_hdr);
+					default:
+						warn("Unknown file entry signatures 0x%x.\n",
+							 gen_hdr->signature);
 				}
+			}
+		}
+		if (gen_hdr->next)
+		{
+			hdr_off += gen_hdr->next;
+			gen_hdr = load_generic_header(hdr_off, gen_hdr);
+			if (!gen_hdr)
+			{
+				error("Could not load generic header part.\n");
+				return(NULL);
 			}
 		}
 		else
 		{
-			error("Could not read file system entry.\n");
-		}
-		hdr_off += gen_hdr->next;
-		free_generic_header(gen_hdr);
-		gen_hdr = load_generic_header(hdr_off);
-		if (!gen_hdr)
-		{
-			error("Could not load generic header part.\n");
-			return(NULL);
+			free_generic_header(gen_hdr);
+			gen_hdr = NULL;
 		}
 	}
-	free_generic_header(gen_hdr);
 	debug("File not found.\n");
 	return(NULL);
 }
 
-/**
- * @brief Initialise the zip routines.
- */
 void  init_dbffs(void)
 {
     uint32_t signature;

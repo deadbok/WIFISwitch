@@ -28,8 +28,23 @@
 #include <stdint.h>
 #include "dbffs-std.h"
 
+/**
+ * @brief Initialise the dbffs routines.
+ */
 extern void init_dbffs(void);
+/**
+ * @brief Free memory used by a file header.
+ * 
+ * @param entry Pointer to the entry to free.
+ */
 extern void dbffs_free_file_header(struct dbffs_file_hdr *entry);
-extern struct dbffs_file_hdr *dbffs_find_file_header(char *path);
+/**
+ * @brief Find a file header from a path.
+ * 
+ * @param path The path of the file.
+ * @param header Pointer to memory for the header or NULL to allocate.
+ * @return File header.
+ */
+extern struct dbffs_file_hdr *dbffs_find_file_header(char *path, void *header);
 
 #endif //DBFFS

@@ -56,6 +56,10 @@
  */
 #define DBFFS_MAX_PATH_LENGTH 256
 /**
+ * @brief Size of a memory block that will contain any header type.
+ */
+#define DBFFS_MAX_HEADER_SIZE 22
+/**
  * @brief Maximum entries in file system. 
  */
 #define DBFFS_MAX_ENTRIES 65536

@@ -1,8 +1,13 @@
 2015-11-03 Martin Grønholdt
 
 * Makefile: Added list output of largest functions and objects in user code.
+			Corrected comment.
 * mk/config.mk: Add N_LIST_OBJECTS, control the number entries in object/function lists.
 * mk/linux.mk: Added readelf.
+* user/fs/dbffs-std.h: Added DBFFS_MAX_HEADER_SIZE.
+* user/fs/dbffs.c: Optimise for size.
+* user/slighttp/http-request.c (http_get_request_type): TODO: Optimise for size.
+
 
 2015-10-26 Martin Grønholdt
 

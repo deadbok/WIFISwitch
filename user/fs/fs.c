@@ -128,7 +128,7 @@ FS_FILE_H fs_open(char *filename)
         return(-1);
     }
     
-    file_hdr = dbffs_find_file_header(filename);
+    file_hdr = dbffs_find_file_header(filename, NULL);
     if (!file_hdr)
     {
         debug("Could not open %s.\n", filename);

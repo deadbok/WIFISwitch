@@ -44,6 +44,9 @@
  */
 static size_t http_get_request_type(struct tcp_connection *connection)
 {
+	/*
+	 * TODO: Optimize for size.
+	 */
     struct http_request *request = connection->user;
     size_t offset = 0;
 
