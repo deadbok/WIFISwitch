@@ -216,7 +216,7 @@ struct dbffs_file_hdr *dbffs_find_file_header(char *path, void *header)
 	struct dbffs_generic_hdr *gen_hdr;
 	struct dbffs_file_hdr *file_hdr;
 	struct dbffs_link_hdr *link_hdr;
-	char target[DBFFS_MAX_PATH_LENGTH];
+	char *target;
 						
 	unsigned int hdr_off = 0;
 	
@@ -253,9 +253,10 @@ struct dbffs_file_hdr *dbffs_find_file_header(char *path, void *header)
 						link_hdr = load_link_header(hdr_off, gen_hdr);
 						debug("Link target length %d.\n", link_hdr->target_len);
 						debug("Link, target %s.\n", link_hdr->target);
-						os_strncpy(target, link_hdr->target, link_hdr->target_len + 1);
-						db_free(link_hdr->target);
+						//Hijack the target name before it is overwritten.
+						target = link_hdr->target;
 						file_hdr = dbffs_find_file_header(target, link_hdr);
+						db_free(target);
 						return(file_hdr);
 					default:
 						warn("Unknown file entry signatures 0x%x.\n",
