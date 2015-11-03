@@ -48,67 +48,44 @@ static size_t http_get_request_type(struct tcp_connection *connection)
 	 * TODO: Optimize for size.
 	 */
     struct http_request *request = connection->user;
-    size_t offset = 0;
+    unsigned int *method = (unsigned int *)connection->callback_data.data;
 
-    offset = 4;
-	if (os_strncmp(connection->callback_data.data, "GET ", offset) == 0)
-    {
-        debug("GET request.\n");
-        request->type = HTTP_GET;
-	}
-	else if(os_strncmp(connection->callback_data.data, "PUT ", offset) == 0)
-    {
-        debug("PUT request.\n");
-        request->type = HTTP_PUT;
-    }
-    else
-    {
-		offset++;
-		if(os_strncmp(connection->callback_data.data, "POST ", offset) == 0)
-		{
+	debug("Request method 0x%x.\n", *method);
+	switch(*method)
+	{
+		case 0x20544547:
+			debug("GET request.\n");
+			request->type = HTTP_GET;
+			return(4);
+		case 0x20545550:
+			debug("PUT request.\n");
+			request->type = HTTP_PUT;
+			return(4);
+		case 0x34534f50:
 			debug("POST request.\n");
 			request->type = HTTP_POST;
-		}
-		else if(os_strncmp(connection->callback_data.data, "HEAD ", offset) == 0)
-		{
+			return(5);
+		case 0x44414548:
 			debug("HEAD request.\n");
 			request->type = HTTP_HEAD;
-		}
-		else
-		{
-			offset++;
-			if(os_strncmp(connection->callback_data.data, "TRACE ", offset) == 0)
-			{
-				debug("TRACE request.\n");
-				request->type = HTTP_TRACE;
-			}
-			else
-			{
-				offset++;			
-				if(os_strncmp(connection->callback_data.data, "DELETE ", offset) == 0)
-				{
-					debug("DELETE request.\n");
-					request->type = HTTP_DELETE;
-				}
-				else
-				{
-					offset++;
-					if(os_strncmp(connection->callback_data.data, "CONNECT ", offset) == 0)
-					{
-						debug("CONNECT request.\n");
-						request->type = HTTP_CONNECT;
-					}
-					else
-					{
-						error("Unknown request: %s\n", connection->callback_data.data);
-						request->response.status_code = 400;
-						return(0);
-					}
-				}
-			}
-		}
+			return(5);
+		case 0x43415254:
+			debug("TRACE request.\n");
+			request->type = HTTP_TRACE;
+			return(5);
+		case 0x454c4544:
+			debug("DELETE request.\n");
+			request->type = HTTP_DELETE;
+			return(6);
+		case 0x4e4e4f43:
+			debug("CONNECT request.\n");
+			request->type = HTTP_CONNECT;
+			return(7);
+		default:
+			error("Unknown request: %s\n", connection->callback_data.data);
+			request->response.status_code = 400;
 	}
-	return(offset);
+	return(0);
 }
 
 /**
