@@ -4,7 +4,7 @@
  *
  * @brief REST interface for getting the firmware version.
  * 
- * Maps `/rest/fw/version` to a JSON object of versions..
+ * Maps `/rest/fw/version` to a JSON object of versions.
  * 
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>

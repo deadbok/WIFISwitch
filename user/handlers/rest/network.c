@@ -4,7 +4,7 @@
  * 
  * @brief Maps `/rest/net/network` to a JSON object with network info.
  * 
- * REST interface for getting/setting the current network name, and 
+ * REST interface for getting/setting the current network name,  
  * hostname, and getting the IP address.
  * 
  * @copyright

@@ -88,9 +88,9 @@ static signed int create_enabled_response(struct http_request *request)
 			json_response = json_add_to_array(json_response, json_value);
 		}
 	}
-	request->response.context = json_response;
+	request->response.message = json_response;
 	
-	return(os_strlen(request->response.context));
+	return(os_strlen(request->response.message));
 }
 
 /**
@@ -109,18 +109,99 @@ static signed int create_pin_response(struct http_request *request)
 	
 	debug(" GPIO state: %d.\n", state);
 	
-	request->response.context = db_malloc(sizeof(char) * 12,
+	request->response.message = db_malloc(sizeof(char) * 12,
 										  "request->response.context->response create_pin_response");
 	if (state)
 	{
-		os_memcpy(((char *)(request->response.context)), "{\"state\":1}", 11);
+		os_memcpy(request->response.message, "{\"state\":1}", 11);
 	}
 	else
 	{
-		os_memcpy(((char *)(request->response.context)), "{\"state\":0}", 11);
+		os_memcpy(request->response.message, "{\"state\":0}", 11);
 	}
-	((char *)(request->response.context))[11] = '\0';
+	request->response.message[11] = '\0';
 	return(11);
+}
+
+/**
+ * @brief Create the GET response.
+ * 
+ * @param request Request to respond to..
+ * @return Size of the response.
+ */
+static signed int create_get_response(struct http_request *request)
+{
+	signed int ret;
+	
+    debug("Creating GPIO REST GET response.\n");
+	if (current_gpio < 0)
+	{
+		ret = create_enabled_response(request);
+	}
+	else
+	{
+		ret = create_pin_response(request);
+	}
+	return(ret);
+}
+
+/**
+ * @brief Create PUT response.
+ * 
+ * @param request Request to respond to..
+ * @return Size of the response.
+ */
+static signed int create_put_response(struct http_request *request)
+{
+	signed int ret = 0;
+	//Handle trying to PUT to /rest/gpios
+	if (current_gpio < 0)
+	{
+		ret += http_send(request->connection, "<!DOCTYPE html><head><title>Method Not Allowed.</title></head><body><h1>405 Method Not Allowed.</h1><br />I won't PUT up with this.</body></html>", 145);
+		request->response.message_size = ret;
+		request->response.state = HTTP_STATE_DONE;
+	}
+	else
+	{
+		debug(" GPIO selected: %s.\n", request->message);
+		jsmn_parser parser;
+		jsmntok_t tokens[3];
+		int n_tokens;
+	
+		jsmn_init(&parser);
+		n_tokens  = jsmn_parse(&parser, request->message, os_strlen(request->message), tokens, 3);
+		//We expect 3 tokens in an object.
+		if ( (n_tokens < 3) || tokens[0].type != JSMN_OBJECT)
+		{
+			warn("Could not parse JSON request.\n");
+			return(RESPONSE_DONE_ERROR);				
+		}
+		for (unsigned int i = 1; i < n_tokens; i++)
+		{
+			debug(" JSON token %d.\n", i);
+			if (tokens[i].type == JSMN_STRING)
+			{
+				debug(" JSON token start with a string.\n");
+				if (strncmp(request->message + tokens[i].start, "state", 5) == 0)
+				{
+					i++;
+					if (tokens[i].type == JSMN_PRIMITIVE)
+					{
+						debug(" JSON primitive comes next.\n");
+						if (isdigit((int)*(request->message + tokens[i].start)) || (*(request->message + tokens[i].start) == '-'))
+						{
+							unsigned int gpio_state;
+							
+							gpio_state = atoi(request->message + tokens[i].start);
+							debug(" State: %d.\n", gpio_state);
+							GPIO_OUTPUT_SET(current_gpio, gpio_state);
+						}
+					}
+				}
+			}
+		}
+	}
+	return(ret);
 }
 
 /**
@@ -131,22 +212,10 @@ static signed int create_pin_response(struct http_request *request)
  */
 signed int http_rest_gpio_handler(struct http_request *request)
 {
-	size_t size = 0;
-	signed int ret = 0;
-	unsigned int i;
-	unsigned int gpio_state;
-		
 	if (!request)
 	{
 		warn("Empty request.\n");
 		return(RESPONSE_DONE_ERROR);
-	}
-	if ((request->type != HTTP_GET) &&
-		(request->type != HTTP_HEAD) &&
-		(request->type != HTTP_PUT))
-	{
-		debug(" Rest GPIO handler only supports HEAD, GET, and PUT.\n");
-		return(RESPONSE_DONE_CONTINUE);
 	}
     if (os_strncmp(request->uri, "/rest/gpios", 11) == 0)
     {
@@ -183,131 +252,6 @@ signed int http_rest_gpio_handler(struct http_request *request)
 			return(RESPONSE_DONE_CONTINUE);
 		}
     }
-	
-	if (request->response.state == HTTP_STATE_NONE)
-	{
-		if ((request->type == HTTP_HEAD) ||
-		    (request->type == HTTP_GET))
-		{
-			//Get data size and create response.
-			if (current_gpio < 0)
-			{
-				size = create_enabled_response(request);
-			}
-			else
-			{
-				size = create_pin_response(request);
-			}
-			//Send status and headers.
-			ret += http_send_status_line(request->connection, request->response.status_code);
-			ret += http_send_default_headers(request, size, "json");
-			if (request->type == HTTP_HEAD)
-			{
-				request->response.state = HTTP_STATE_DONE;
-				return(ret);
-			}
-			else
-			{
-				//Go on to sending the file.
-				request->response.state = HTTP_STATE_MESSAGE;
-			}
-		}
-		else
-		{
-			//Handle trying to PUT to /rest/gpios
-			if (current_gpio < 0)
-			{
-				request->response.status_code = 405;
-				ret = http_send_status_line(request->connection, request->response.status_code);
-			}
-			else
-			{
-				request->response.status_code = 204;
-				ret = http_send_status_line(request->connection, request->response.status_code);
-			}
-			//We have not send anything.
-			request->response.message_size = 0;
-			//Send status and headers.
-			ret += http_send_status_line(request->connection, request->response.status_code);
-			ret += http_send_default_headers(request, 0, NULL);
-			//Go on to set the network.
-			request->response.state = HTTP_STATE_MESSAGE;
-		}
-	}
-	
-	if (request->response.state == HTTP_STATE_MESSAGE)
-	{
-		if (request->type == HTTP_GET)
-		{
-			size = os_strlen(request->response.context);
-			debug(" Response: %s.\n", ((char *)(request->response.context)));
-			ret = http_send(request->connection, ((char *)(request->response.context)), size);
-			request->response.state = HTTP_STATE_DONE;
-			request->response.message_size = size;
-		}
-		else
-		{
-			//Handle trying to PUT to /rest/gpios
-			if (current_gpio < 0)
-			{
-				ret += http_send(request->connection, "<!DOCTYPE html><head><title>Method Not Allowed.</title></head><body><h1>405 Method Not Allowed.</h1><br />I won't PUT up with this.</body></html>", 145);
-				request->response.message_size = ret;
-				request->response.state = HTTP_STATE_DONE;
-			}
-			else
-			{
-				debug(" GPIO selected: %s.\n", request->message);
-				jsmn_parser parser;
-				jsmntok_t tokens[3];
-				int n_tokens;
-			
-				jsmn_init(&parser);
-				n_tokens  = jsmn_parse(&parser, request->message, os_strlen(request->message), tokens, 3);
-				//We expect 3 tokens in an object.
-				if ( (n_tokens < 3) || tokens[0].type != JSMN_OBJECT)
-				{
-					warn("Could not parse JSON request.\n");
-					return(RESPONSE_DONE_ERROR);				
-				}
-				for (i = 1; i < n_tokens; i++)
-				{
-					debug(" JSON token %d.\n", i);
-					if (tokens[i].type == JSMN_STRING)
-					{
-						debug(" JSON token start with a string.\n");
-						if (strncmp(request->message + tokens[i].start, "state", 5) == 0)
-						{
-							i++;
-							if (tokens[i].type == JSMN_PRIMITIVE)
-							{
-								debug(" JSON primitive comes next.\n");
-								if (isdigit((int)*(request->message + tokens[i].start)) || (*(request->message + tokens[i].start) == '-'))
-								{
-									gpio_state = atoi(request->message + tokens[i].start);
-									debug(" State: %d.\n", gpio_state);
-									GPIO_OUTPUT_SET(current_gpio, gpio_state);
-								}
-							}
-						}
-					}
-				}
-			}
-		}
-		return(ret);
-	}
-	    
-	if (request->response.state == HTTP_STATE_DONE)
-	{
-		if (request->type == HTTP_GET)
-		{
-			debug("Freeing GPIO REST handler data.\n");
-			if (request->response.context)
-			{
-				debug(" Freeing context.\n");
-				db_free(request->response.context);
-				request->response.context = NULL;
-			}
-		}
-	}
-	return(RESPONSE_DONE_FINAL);
+    
+    return(http_simple_GET_PUT_handler(request, create_get_response, create_put_response, NULL));
 }
