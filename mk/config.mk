@@ -43,6 +43,9 @@ LOG_DIR := logs
 # Directory with custom build tools.
 TOOLS_DIR := tools
 
+### Number of functions/objects to list on size list.
+N_LIST_OBJECTS = 20
+
 ### Set defines for the different build time debug configuration variables. ###
 # Warnings on serial.
 ifdef WARNINGS

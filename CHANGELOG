@@ -1,3 +1,9 @@
+2015-11-03 Martin Grønholdt
+
+* Makefile: Added list output of largest functions and objects in user code.
+* mk/config.mk: Add N_LIST_OBJECTS, control the number entries in object/function lists.
+* mk/linux.mk: Added readelf.
+
 2015-10-26 Martin Grønholdt
 
 * user/debug.c (db_alloc): Fixed a some debug output errors.

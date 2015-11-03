@@ -23,6 +23,7 @@ AR := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-ar
 LD := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 OBJCOPY := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objcopy
 OBJDUMP := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objdump
+READELF := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-readelf
 
 ### Build configuration. ###
 # Path for compiler to write object files.

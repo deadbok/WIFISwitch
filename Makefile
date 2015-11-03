@@ -140,6 +140,10 @@ endef
 
 # Generate firmware.
 all: checkdirs $(FW_FILE_1) $(FW_FILE_2) $(FW_FILE_FS) $(FW_FILE_CONFIG)
+	$(ECHO) "$(N_LIST_OBJECTS) largest functions:"
+	@$(READELF) -s $(TARGET_AR) | awk '$$4 == "FUNC" { print }' | sort -r -n -k 3 | head -n $(N_LIST_OBJECTS)
+	$(ECHO) "$(N_LIST_OBJECTS) largest objects:"
+	@$(READELF) -s $(TARGET_AR) | awk '$$4 == "OBJECT" { print }' | sort -r -n -k 3 | head -n $(N_LIST_OBJECTS)
 	./$(TOOLS_DIR)/mem_usage.sh $(TARGET) 81920 $(FW_FILE_MAX)
 	$(ECHO) File system size $(FS_SIZE)KB, $$(( $(FS_MAX_SIZE) - $(FS_SIZE) ))KB free of $(FS_MAX_SIZE)KB.
 	$(ECHO) Resident firmware size $(FW_FILE_1_SIZE)KB, $$(( $(FW_FILE_MAX) - $(FW_FILE_1_SIZE) ))KB free of $(FW_FILE_MAX)KB.
