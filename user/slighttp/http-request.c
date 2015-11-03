@@ -44,10 +44,10 @@
  */
 static size_t http_get_request_type(struct tcp_connection *connection)
 {
-	/*
-	 * TODO: Optimize for size.
-	 */
     struct http_request *request = connection->user;
+    /* Cast first 4 bytes of string to and uint and use that in a switch
+     * statement.
+     */
     unsigned int *method = (unsigned int *)connection->callback_data.data;
 
 	debug("Request method 0x%x.\n", *method);
