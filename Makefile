@@ -23,6 +23,7 @@
 # - 2015-10-09: Add the -L switch to SDK_LIBDIR when generated.
 # - 2015-10-09: Removed archive generation step.
 # - 2015-10-09: Lots of comments.
+# - 2015-11-03: Added distclean rule.
 
 # Initial Compiler flags.
 ESP_CFLAGS =
@@ -136,7 +137,7 @@ $1/%.o: %.c
 endef
 
 # Run these without checking if there up to date.
-.PHONY: all checkdirs flash flashblank clean debug debugflash docs flashfs flashconfig
+.PHONY: all checkdirs flash flashblank clean distclean debug debugflash docs flashfs flashconfig
 
 # Generate firmware.
 all: checkdirs $(FW_FILE_1) $(FW_FILE_2) $(FW_FILE_FS) $(FW_FILE_CONFIG)
@@ -186,9 +187,19 @@ flashblank:
 # An end to the tears, and the in between years, and the troubles I've seen. 
 clean:
 	$(RM) -R $(FW_BASE) $(BUILD_BASE)
+	$(RM) $(DBFFS_CREATE)
+	$(RM) $(GEN_CONFIG)
+	$(MAKE) -C fs clean
+	
+# Clean everything
+distclean:
+	$(RM) -R $(FW_BASE) $(BUILD_BASE)
 	$(MAKE) -C tools/dbffs-tools clean
 	$(MAKE) -C tools/esp-config-tools clean
-	$(MAKE) -C fs clean
+	$(RM) $(DBFFS_CREATE)
+	$(RM) $(GEN_CONFIG)
+	$(MAKE) -C fs distclean
+
 
 # Run minicom and save serial output in LOG_DIR.
 debug: $(LOG_DIR)

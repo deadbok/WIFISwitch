@@ -2,6 +2,7 @@
 
 * Makefile: Added list output of largest functions and objects in user code.
 			Corrected comment.
+			distclean target.
 * mk/config.mk: Add N_LIST_OBJECTS, control the number entries in object/function lists.
 * mk/linux.mk: Added readelf.
 * user/fs/dbffs-std.h: Added DBFFS_MAX_HEADER_SIZE.

@@ -58,7 +58,8 @@ ifdef DEBUG
 endif
 
 ### DBFFS configuration. ###
-DBFFS_CREATE := ./$(TOOLS_DIR)/dbffs-image $(VFLAG)
+FS_CREATE := ./$(TOOLS_DIR)/dbffs-image
+DBFFS_CREATE := $(FS_CREATE) $(VFLAG)
 
 ### ESP8266 firmware binary configuration. ###
 GEN_CONFIG := ./$(TOOLS_DIR)/gen_config $(VFLAG)
