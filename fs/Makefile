@@ -33,4 +33,8 @@ endif
 .PHONY: clean
 clean:
 	-rm -fR $(TARGET_DIR)
+	
+.PHONY: distclean
+distclean:
+	-rm -fR $(TARGET_DIR)
 	-rm -fR $(TOOLS_DIR)
