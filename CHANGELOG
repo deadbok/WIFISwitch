@@ -7,6 +7,8 @@
 * user/fs/dbffs-std.h: Added DBFFS_MAX_HEADER_SIZE.
 * user/fs/dbffs.c: Optimise for size.
 * user/slighttp/http-request.c (http_get_request_type): Optimise for size.
+* fs/Makefile: distclean target.
+
 
 
 2015-10-26 Martin Grønholdt
