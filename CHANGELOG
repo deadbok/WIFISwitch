@@ -9,6 +9,7 @@
 * user/fs/dbffs.c: Optimise for size.
 * user/slighttp/http-request.c (http_get_request_type): Optimise for size.
 * fs/Makefile: distclean target.
+* user/handlers/rest/gpio.c: Use http_simple_GET_PUT_handler.
 
 
 
