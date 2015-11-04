@@ -56,7 +56,7 @@ struct http_fs_context
 	 */
 	size_t total_size;
 	/**
-	 * @brief The file-
+	 * @brief The file.
 	 */
 	FS_FILE_H file;
 };
@@ -75,10 +75,9 @@ bool http_fs_init(char *root)
 		error("Root is empty.\n");
 		return(false);
 	}
-	if (http_fs_root )
+	if (http_fs_root)
 	{
-		error("Root already set.\n");
-		return(false);
+		db_free(http_fs_root);
 	}
 	http_fs_root = db_malloc(sizeof(char) * os_strlen(root) + 1, "http_fs_root http_fs_init");
 	os_memcpy(http_fs_root, root, os_strlen(root) + 1);
@@ -95,17 +94,19 @@ bool http_fs_init(char *root)
  * @param err Handles only error statuses if `true`. 
  * @return True on success.
  */
-bool http_fs_open_file(struct http_request *request, bool err)
+static bool http_fs_open_file(struct http_request *request, bool err)
 {
 	char *uri = request->uri;
 	char *fs_uri = NULL;
 	size_t uri_size;
-	size_t fs_uri_size;
 	size_t root_size = 0;
 	size_t index_size = 10;
 	struct http_fs_context *context;
 	
 	debug("HTTP file system handler looking for %s.\n", uri);
+/*
+ * The following is already checked by the caller:
+
 	if ((!err) && (request->response.status_code > 399))
 	{
 		warn(" Not handling errors, and status is %d. Leaving.\n",
@@ -116,6 +117,7 @@ bool http_fs_open_file(struct http_request *request, bool err)
 		warn(" Handling errors, and status is %d. Leaving.\n",
 			  request->response.status_code);
 	}
+*/
 	if ((err) && (request->response.status_code > 399))
 	{
 		debug(" Error status %d.\n", request->response.status_code);
@@ -148,8 +150,8 @@ bool http_fs_open_file(struct http_request *request, bool err)
 		}
 		
 		//Get size and mem.
-		fs_uri_size = root_size + uri_size + index_size;
-		fs_uri = db_zalloc(fs_uri_size + 1, "fs_uri http_fs_open_file");
+		fs_uri = db_zalloc(root_size + uri_size + index_size + 1,
+						   "fs_uri http_fs_open_file");
 		
 		if (root_size)
 		{

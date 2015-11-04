@@ -3,6 +3,7 @@
 * build.sh: Added option to clean and debugflash.
 * Makefile: Changed wording in free ROM messages to match mem_usage script.
 * user/handlers/fs/http-fs.c: Optimise for size.
+							 (http_fs_init): Don't complain when setting new root.
 
 2015-11-03 Martin Grønholdt
 
