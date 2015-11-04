@@ -1,3 +1,9 @@
+2015-11-04 Martin Grønholdt
+
+* build.sh: Added option to clean and debugflash.
+* Makefile: Changed wording in free ROM messages to match mem_usage script.
+* user/handlers/fs/http-fs.c: Optimise for size.
+
 2015-11-03 Martin Grønholdt
 
 * Makefile: Added list output of largest functions and objects in user code.
@@ -12,7 +18,6 @@
 * user/handlers/rest/gpio.c: Use http_simple_GET_PUT_handler.
 
 
-
 2015-10-26 Martin Grønholdt
 
 * user/debug.c (db_alloc): Fixed a some debug output errors.
@@ -23,6 +28,7 @@
 * user/tools/json-gen.c (json_create_member): Renamed json_create_pair.
 						(json_add_to_object): Renamed json_add_to_type and adapted for both arrays and objects.
 * user/tools/json-gen.h: Replaced json_add_to_array and json_add_to_object with macros.
+
 
 2015-10-25 Martin Grønholdt
 
@@ -37,6 +43,7 @@
 * user/handlers/rest/version.c (create_get_response): Using JSON generator.
 * user/tools/json-gen.c: Added file with JSON generation routines.
 * user/tools/json-gen.h Added file with JSON generation routines.
+
 
 2015-10-21 Martin Grønholdt
 

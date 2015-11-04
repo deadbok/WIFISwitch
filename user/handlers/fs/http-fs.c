@@ -214,16 +214,46 @@ bool http_fs_open_file(struct http_request *request, bool err)
  * @return The size of what has been sent, or one of the 
  *         RESPONSE_DONE_* values.
  */
-static signed int do_message(struct http_request *request)
+static signed int do_message(struct http_request *request, bool err)
 {
 	/* We are only called by nice responsible functions that would never
 	 * pass a NULL pointer ;).
 	 */
-	struct http_fs_context *context  = request->response.context;
+	struct http_fs_context *context = request->response.context;
 	size_t data_left, buffer_free, bytes;
 	char buffer[HTTP_FILE_CHUNK_SIZE];
 	signed int ret = 0;
-
+	char *ext;
+	
+	//Status and headers.
+	if (request->response.state == HTTP_STATE_NONE)
+	{
+		if (!http_fs_open_file(request, err))
+		{
+			debug(" Could not find file.\n");
+			return(RESPONSE_DONE_CONTINUE);
+		}
+		//Context has just been created.
+		context = request->response.context;
+		//We have not send anything.
+		request->response.message_size = 0;
+		//Get extension.
+		ext = http_mime_get_ext(context->filename);
+		//Send status and headers.
+		ret += http_send_status_line(request->connection, request->response.status_code);
+		ret += http_send_default_headers(request, context->total_size, ext);
+		if (request->type == HTTP_HEAD)
+		{
+			request->response.state = HTTP_STATE_DONE;
+			return(ret);
+		}
+		else
+		{
+			//Go on to sending the file.
+			request->response.state = HTTP_STATE_MESSAGE;
+		}
+	}
+	
 	//Message.
 	if (request->response.state == HTTP_STATE_MESSAGE)
 	{
@@ -308,13 +338,7 @@ static signed int do_message(struct http_request *request)
  * Does nothing if an error status is set.
  */
 signed int http_fs_handler(struct http_request *request)
-{
-	struct http_fs_context *context;
-	
-	
-	signed int ret = 0;
-	char *ext;
-	
+{	
 	debug("Entering HTTP File system handler (request %p).\n", request);
 	
 	if (!request)
@@ -322,7 +346,6 @@ signed int http_fs_handler(struct http_request *request)
 		warn("Empty request.\n");
 		return(RESPONSE_DONE_ERROR);
 	}
-	context = request->response.context;
 	
 	//Skip on error.
 	if (request->response.status_code > 399)
@@ -338,37 +361,7 @@ signed int http_fs_handler(struct http_request *request)
 		return(RESPONSE_DONE_CONTINUE);
 	}
 	
-	//Status and headers.
-	if (request->response.state == HTTP_STATE_NONE)
-	{
-		if (!http_fs_open_file(request, false))
-		{
-			debug(" Could not find file.\n");
-			request->response.status_code = 404;
-			return(RESPONSE_DONE_CONTINUE);
-		}
-		//Context has just been created.
-		context = request->response.context;
-		//We have not send anything.
-		request->response.message_size = 0;
-		//Get extension.
-		ext = http_mime_get_ext(context->filename);
-		//Send status and headers.
-		ret += http_send_status_line(request->connection, request->response.status_code);
-		ret += http_send_default_headers(request, context->total_size, ext);
-		if (request->type == HTTP_HEAD)
-		{
-			request->response.state = HTTP_STATE_DONE;
-			return(ret);
-		}
-		else
-		{
-			//Go on to sending the file.
-			request->response.state = HTTP_STATE_MESSAGE;
-		}
-	}
-	
-	return(do_message(request));
+	return(do_message(request, false));
 }
 
 /**
@@ -379,10 +372,6 @@ signed int http_fs_handler(struct http_request *request)
  */
 signed int http_fs_error_handler(struct http_request *request)
 {
-	struct http_fs_context *context;
-	signed int ret = 0;
-	char *ext;
-	
 	debug("Entering HTTP error file system handler (request %p).\n",
 		  request);
 	if (!request)
@@ -390,7 +379,6 @@ signed int http_fs_error_handler(struct http_request *request)
 		warn("Empty request.\n");
 		return(RESPONSE_DONE_ERROR);
 	}
-	context = request->response.context;
 	
 	//Set error status is to error since we got here.
 	if (request->response.status_code < 400)
@@ -400,34 +388,6 @@ signed int http_fs_error_handler(struct http_request *request)
 		//If we got here, some one else has not responded.
 		request->response.status_code = 404;
 	}
-	//Status and headers.
-	if (request->response.state == HTTP_STATE_NONE)
-	{
-		if (!http_fs_open_file(request, true))
-		{
-			debug(" Could not find file.\n");
-			return(RESPONSE_DONE_CONTINUE);
-		}
-		//Context has just been created.
-		context = request->response.context;
-		//We have not send anything.
-		request->response.message_size = 0;
-		//Get extension.
-		ext = http_mime_get_ext(context->filename);
-		//Send status and headers.
-		ret += http_send_status_line(request->connection, request->response.status_code);
-		ret += http_send_default_headers(request, context->total_size, ext);
-		if (request->type == HTTP_HEAD)
-		{
-			request->response.state = HTTP_STATE_DONE;
-			return(ret);
-		}
-		else
-		{
-			//Go on to sending the file.
-			request->response.state = HTTP_STATE_MESSAGE;
-		}
-	}
 	
-	return(do_message(request));
+	return(do_message(request, true));
 }
