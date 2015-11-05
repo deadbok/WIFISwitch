@@ -2,11 +2,11 @@
 
 ROOT_DIR := root_src
 ROOT_FILES := $(shell find $(ROOT_DIR) -type f -name '*')
-ROOT_FILES_MINIFY := $(filter %.css %.html %.js,$(ROOT_FILES))
+ROOT_FILES_MINIFY := $(filter %.css %.html,$(ROOT_FILES))
 
 TARGET_DIR := root_out
 TARGET_FILES := $(patsubst $(ROOT_DIR)/%,$(TARGET_DIR)/%,$(ROOT_FILES))
-TARGET_FILES_MINIFY := $(filter %.css %.html %.js,$(TARGET_FILES))
+TARGET_FILES_MINIFY := $(filter %.css %.html,$(TARGET_FILES))
 
 TOOLS_DIR := tools
 
@@ -22,7 +22,7 @@ $(CSS_HTML_MINIFY_PY): $(TOOLS_DIR)
 	wget -O $(CSS_HTML_MINIFY_PY) https://raw.githubusercontent.com/deadbok/css-html-js-minify/master/css-html-js-minify.py
 	chmod +x $(CSS_HTML_MINIFY_PY)
 	
-$(TARGET_FILES_MINIFY): $(ROOT_FILES_MINIFY) $(CSS_HTML_MINIFY_PY) $(TARGET_DIR)
+$(TARGET_FILES_MINIFY): $(ROOT_FILES_MINIFY) $(CSS_HTML_MINIFY_PY) | $(TARGET_DIR)
 	mkdir -p $(dir $@)
 ifdef DEBUG
 	cp -Rv $(patsubst $(TARGET_DIR)/%,$(ROOT_DIR)/%,$@) $@

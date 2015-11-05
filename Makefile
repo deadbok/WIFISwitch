@@ -238,6 +238,7 @@ $(FW_FILE_FS): $(FS_FILES) $(FS_CREATE)
 # Flash file system.	
 flashfs: $(FW_FILE_FS)
 	tools/testsize.sh $(FW_FILE_FS) $(FS_MAX_SIZE)
+	$(ECHO) File system uses $(FS_SIZE) bytes of ROM, $$(( $(FS_MAX_SIZE) - $(FS_SIZE) )) bytes free of $(FS_MAX_SIZE).
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FS_FILE_ADDR) $(FW_FILE_FS)
 
 #### ESP firmware binary configuration stuff. ####

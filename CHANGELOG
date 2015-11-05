@@ -1,3 +1,23 @@
+2015-11-05 Martin Grønholdt
+
+* Makefile: Added free ROM messages to target flashfs.
+* fs/Makefile: css-html-js-minify.py cripples the javescript files, so skip them.
+* fs/root_src/404.html: Removed extra </div>.
+* fs/root_src/about.html: Changed h2 to H3 like everywhere else.
+						  Added firmware version.
+* fs/root_src/connect/hostname.html: Use request.js.
+* fs/root_src/connect/index.html: Fixed div.
+								  Use request.js.
+* fs/root_src/connect/nets.html: Use request.js.
+* fs/root_src/connect/passwd.html: Use request.js.
+* fs/root_src/index.html: Use request.js.
+* fs/root_src/js/atomic.js: Removed, no longer used.
+* fs/root_src/connect/js/request.js: Link to fs/root_src/js/request.js.
+* fs/root_src/js/request.js: New file. Request function.
+* user/slighttp/http-request.c (http_get_headers_size): Removed unused variable.
+* user/user_main.c (connected): Don' expose network REST API in default mode.
+
+
 2015-11-04 Martin Grønholdt
 
 * build.sh: Added option to clean and debugflash.

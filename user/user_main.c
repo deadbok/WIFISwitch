@@ -114,10 +114,10 @@ static void connected(unsigned char mode)
 		http_add_handler("/rest/fw/mem", &http_rest_mem_handler);
 		db_printf("Adding version REST handler.\n");
 		http_add_handler("/rest/fw/version", &http_rest_version_handler);
-		db_printf("Adding network names REST handler.\n");
+		/*db_printf("Adding network names REST handler.\n");
 		http_add_handler("/rest/net/networks", &http_rest_net_names_handler);
 		db_printf("Adding default network REST handler.\n");
-		http_add_handler("/rest/net/network", &http_rest_network_handler);
+		http_add_handler("/rest/net/network", &http_rest_network_handler);*/
 		db_printf("Adding gpio REST handler.\n");
 		http_add_handler("/rest/gpios/*", &http_rest_gpio_handler);
 		db_printf("Adding deny handler.\n");

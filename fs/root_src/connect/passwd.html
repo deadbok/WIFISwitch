@@ -21,32 +21,27 @@
 		<input type="password" id="passwd" maxlength="64">
 		<input type="button" onclick="setPasswd()" value="Set">
 		</form>
-		<div class="message" id="state">
-		</div>
+		<div class="message" id="state"></div>
 	</div>
 	<div class="footer inverted">
 		<small><span class="copyright">&copy; Copyright 2015 Martin Bo Kristensen Gr&oslash;nholdt.</span><a href="LICENSE.zip" class="license inverted">Read license (compressed).</a></small>
 	</div>		
-<script src="js/atomic.js"></script>
+<script src="js/request.js"></script>
 <script>
-function setPasswd()
-{
+function setPasswd() {
 	var passwd = document.getElementById("passwd").value;
 	var state = document.getElementById("state");
-	
-	atomic.put('/rest/net/password', "{ \"password\" : \"" + passwd + "\" }")
-	.success(function (data, xhr) 
-	{
+
+	JSONrequest('PUT', '/rest/net/password', function(data) {
 		state.className += " success";
 		state.innerHTML = "<strong>Done!</strong> WIFI password saved.";
 		window.location.assign("/hostname.html");
-	})
-	.error(function (data, xhr) 
-	{
+
+	}, function() {
 		state.className += " error";
 		state.innerHTML = "<strong>Error!</strong> Could not update password.";
-	});
-} 
+	}, "{ \"password\" : \"" + passwd + "\" }");
+}
 </script>
 </body>
 </html>

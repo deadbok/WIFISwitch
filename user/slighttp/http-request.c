@@ -102,7 +102,6 @@ static size_t http_get_headers_size(
 {
     //Pointers to keep track of where we are.
     char *data = raw_headers;
-    char *next_data = raw_headers;
     //True if something is done doing stuff.
     bool done;
     
@@ -111,27 +110,25 @@ static size_t http_get_headers_size(
 	//Not done.
 	done = false;
 	//Go go go.
-	while (!done && next_data)
+	while (!done && data)
 	{
-		next_data = strchrs(next_data, "\r\n");
-		if (next_data)
+		data = strchrs(data, "\r\n");
+		if (data)
 		{
 			//Is it the end?
-			if ((os_strncmp(next_data, "\r\n\r\n ", 4) == 0) ||
-				(os_strncmp(next_data, "\n\n ", 2) == 0))
+			if ((os_strncmp(data, "\r\n\r\n ", 4) == 0) ||
+				(os_strncmp(data, "\n\n ", 2) == 0))
 			{
 				debug(" Last header.\n");
-				HTTP_SKIP_CRLF(next_data, 2);
+				HTTP_SKIP_CRLF(data, 2);
 				//Get out.
 				done = true;
 			}
 			else
 			{
 				debug(".");
-				HTTP_SKIP_CRLF(next_data, 1);
+				HTTP_SKIP_CRLF(data, 1);
 			}
-			//Go to the next entry
-			data = next_data;
 		}
 		else
 		{
@@ -140,7 +137,7 @@ static size_t http_get_headers_size(
 			return(0);
 		}
 	}
-	return(next_data - raw_headers);
+	return(data - raw_headers);
 }
 
 /**
