@@ -30,7 +30,7 @@ still works.
 
 Suggested using a zip file, as file system image, and shared his code
 
-### Todd Motto (http://toddmotto.com">http://toddmotto.com</) ###
+### Todd Motto (http://toddmotto.com/) ###
 
 Has a nice tutorial on AJAX and JavaScript.
 

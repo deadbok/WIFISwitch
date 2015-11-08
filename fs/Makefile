@@ -24,11 +24,11 @@ $(CSS_HTML_MINIFY_PY): $(TOOLS_DIR)
 	
 $(TARGET_FILES_MINIFY): $(ROOT_FILES_MINIFY) $(CSS_HTML_MINIFY_PY) | $(TARGET_DIR)
 	mkdir -p $(dir $@)
-ifdef DEBUG
-	cp -Rv $(patsubst $(TARGET_DIR)/%,$(ROOT_DIR)/%,$@) $@
-else
+#ifdef DEBUG
+#	cp -Rv $(patsubst $(TARGET_DIR)/%,$(ROOT_DIR)/%,$@) $@
+#else
 	$(CSS_HTML_MINIFY_PY) --quiet $(patsubst $(TARGET_DIR)/%,$(ROOT_DIR)/%,$@) $@
-endif
+#endif
 
 .PHONY: clean
 clean:

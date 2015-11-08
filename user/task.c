@@ -65,6 +65,7 @@ static void task_dispatch(os_event_t *event)
 
 void task_init(void)
 {
+	debug("Initialising task handler.\n");
 	system_os_task(task_dispatch, TASK_PRIORITY, task_queue, TASK_MAX_QUEUE);
 }
 
