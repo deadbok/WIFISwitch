@@ -62,8 +62,9 @@
 #include "osapi.h"
 #include "gpio.h"
 #include "os_type.h"
-#include "user_config.h"
 #include "user_interface.h"
+#include "user_config.h"
+#include "task.h"
 #include "driver/uart.h"
 #include "fs/fs.h"
 #include "net/wifi.h"
@@ -71,6 +72,7 @@
 #include "net/tcp.h"
 #include "net/capport.h"
 #include "slighttp/http.h"
+#include "driver/button.h"
 #include "handlers/rest/rest.h"
 #include "handlers/fs//http-fs.h"
 #include "slighttp/http-handler.h"
@@ -181,6 +183,7 @@ static void connected(unsigned char mode)
 static void start_connection(void)
 {
     db_printf("Running...\n");
+    task_init();
     wifi_init("wifiswitch", connected, disconnected);
 }
 
@@ -220,11 +223,14 @@ void user_init(void)
     // Initialize the GPIO subsystem.
     gpio_init();
 
-    //Set GPIO2 to output mode
-    //PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5);
+	//Map the button to a GPIO);
+    button_map (SWITCH_KEY_NAME, SWITCH_KEY_FUNC, SWITCH_KEY_NUM);
 
-    //Set GPIO2 low
-    //gpio_output_set(0, BIT5, BIT5, 0);
+    //Set GPIO5 function.
+    PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5);
+
+    //Set GPIO5 to output.
+    gpio_output_set(0, GPIO_ID_PIN(5), GPIO_ID_PIN(5), 0);
 
     db_printf("\nLeaving user_init...\n");
 }

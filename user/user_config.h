@@ -24,12 +24,20 @@
 #ifndef USER_CONFIG_H
 #define USER_CONFIG_H
 
+#include <stdint.h>
+/**
+ * @brief SDK GPIO API needs this.
+ */
+#define uint32 uint32_t
+
 #include "mem.h"
+#include "gpio.h"
 #include "osapi.h"
 #include "user_interface.h"
 #include "tools/missing_dec.h"
 #include "config.h"
 
+/************************ Version ************************/
 /**
  * @brief Firmware version.
  */
@@ -41,6 +49,7 @@
 	#define GIT_VERSION "none"
 #endif
 
+/************************ Network ************************/
 /**
  * @brief Network connection time-out.
  * 
@@ -58,6 +67,30 @@
  * @brief How often to check the status in miliseconds.
  */
 #define CHECK_TIME 5000
+
+/************************ Physical pin functions. ************************/
+/**
+ * @brief Multiplexer pin name for the switch button.
+ */
+#define SWITCH_KEY_NAME PERIPHS_IO_MUX_GPIO4_U
+/**
+ * @brief Multiplexer pin function for the switch button.
+ */
+#define SWITCH_KEY_FUNC FUNC_GPIO4
+/**
+ * @brief Multiplexer GPIO number for the switch button.
+ */
+#define SWITCH_KEY_NUM 4
+
+/**
+ * @brief Multiplexer pin name for the relay.
+ */
+#define RELAY_NAME PERIPHS_IO_MUX_GPIO5_U
+/**
+ * @brief Multiplexer pin function for the relay.
+ */
+#define RELAY_FUNC FUNC_GPIO05
+
 
 /**
  * @brief Bit mask of which GPIO pins the REST interface can control.
