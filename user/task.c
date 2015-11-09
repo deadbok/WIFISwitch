@@ -41,7 +41,7 @@ static void task_dispatch(os_event_t *event)
 	struct task_handler *tasks = task_handlers;
 	unsigned short i = 1;
 	
-	debug("Dispatching signal %d.\n", event->sig);
+	debug("Dispatching signal 0x%x.\n", event->sig);
 	if (!tasks)
 	{
 		debug(" No tasks.\n");
@@ -56,11 +56,12 @@ static void task_dispatch(os_event_t *event)
 		{
 			debug("Calling signal handler %p.\n", tasks->handler);
 			tasks->handler(event->par);
+			return;
 		}
 		i++;
 		tasks = tasks->next;
 	}
-	warn("No task handler found for signal %d.\n", event->sig);
+	warn("No task handler found for signal 0x%x.\n", event->sig);
 }
 
 void task_init(void)
@@ -69,30 +70,64 @@ void task_init(void)
 	system_os_task(task_dispatch, TASK_PRIORITY, task_queue, TASK_MAX_QUEUE);
 }
 
-void task_add(struct task_handler *task)
+int task_add(signal_handler_t handler)
 {
+	struct task_handler *current_task = task_handlers;
 	struct task_handler *tasks = task_handlers;
+	struct task_handler *task = NULL;
 	
-	debug("Adding task handler %p, for signal %d.\n", task->handler, task->signal);
-	if (tasks == NULL)
+	debug("Adding task handler %p.\n", handler);
+	if (!handler)
 	{
-		tasks = task;
-		task->prev = NULL;
-		task->next = NULL;
+		warn("No handler.\n");
+		return(-1);
 	}
-	else
+	//Check if the task is already there.
+	while (current_task)
 	{
-		DL_LIST_ADD_END(task, tasks);
+		if (current_task->handler == handler)
+		{
+			task = current_task;
+			debug(" Task exists.\n");
+			break;
+		}
+		current_task = current_task->next;
 	}
+	if (!task)
+	{
+		//No task found.
+		debug(" New task.\n");
+		//Get mem for entry.
+		task = db_zalloc(sizeof(struct task_handler), "task_add task");
+		task->signal = (os_signal_t)handler;
+		task->handler = handler;
+		if (!tasks)
+		{
+			debug(" First task.\n");
+			task_handlers = task;
+		}
+		else
+		{
+			debug(" Adding task.\n");
+			DL_LIST_ADD_END(task, tasks);
+		}
+	}
+	//Increase reference count.
+	task->ref_count++;
+	debug(" New reference count %d.\n", task->ref_count);
+	//Increase number of tasks.
 	n_tasks++;
 	debug("%d tasks handlers.\n", n_tasks);
+	//Return pointer as ID.
+	return(task->signal);
 }
 
-bool task_remove(struct task_handler *task)
+struct task_handler *task_remove(os_signal_t signal)
 {
 	struct task_handler *tasks = task_handlers;
+	struct task_handler *task;
 	
-	debug("Removing task handler %d.\n", task->signal);
+	debug("Removing task handler %d.\n", signal);
 	if (!tasks)
 	{
 		debug("No handlers registered.\n");
@@ -101,16 +136,29 @@ bool task_remove(struct task_handler *task)
 	
 	while (tasks)
 	{
-		if (tasks->signal == task->signal)
+		task = tasks;
+		if (task->signal == signal)
 		{
-			debug("Unlinking handler.\n");
-			DL_LIST_UNLINK(task, tasks);	
-			n_tasks--;
-			debug("%d registered task handlers.\n", n_tasks);
-			return(true);
+			//Decrease reference count.
+			task->ref_count--;
+			debug(" New reference count %d.\n", task->ref_count);
+			if (!task->ref_count)
+			{
+				//No more references, delete the task.
+				debug("Unlinking handler.\n");
+				DL_LIST_UNLINK(task, tasks);	
+				n_tasks--;
+				debug("%d registered task handlers.\n", n_tasks);
+			}
+			return(task);
 		}
 		tasks = tasks->next;
 	}
 	warn("Handler not fount.\n");
-	return(false);
+	return(NULL);
+}
+
+void task_raise_signal(os_signal_t signal, os_param_t parameter)
+{
+	system_os_post(TASK_PRIORITY, signal, parameter);
 }

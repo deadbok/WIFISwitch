@@ -66,6 +66,7 @@
 #include "user_config.h"
 #include "task.h"
 #include "driver/uart.h"
+#include "driver/button.h"
 #include "fs/fs.h"
 #include "net/wifi.h"
 #include "net/udp.h"
@@ -183,8 +184,17 @@ static void connected(unsigned char mode)
 static void start_connection(void)
 {
     db_printf("Running...\n");
-    task_init();
     wifi_init("wifiswitch", connected, disconnected);
+}
+
+static void button_press(os_param_t par)
+{
+	debug("Button press %d.\n", par);
+	unsigned int gpio_state;
+
+	gpio_state = !GPIO_INPUT_GET(5);
+	debug(" New state: %d.\n", gpio_state);
+	GPIO_OUTPUT_SET(5, gpio_state);
 }
 
 /**
@@ -218,13 +228,20 @@ void user_init(void)
 
 	cfg = read_cfg_flash();
 
+	//Initialise file system.
     fs_init();
 
-    // Initialize the GPIO subsystem.
+    //Initialise the GPIO subsystem.
     gpio_init();
+    
+    //Initialise task system.
+    task_init();
+    
+    //Initialise button handler.
+    button_init();
 
 	//Map the button to a GPIO);
-    button_map (SWITCH_KEY_NAME, SWITCH_KEY_FUNC, SWITCH_KEY_NUM);
+    button_map(SWITCH_KEY_NAME, SWITCH_KEY_FUNC, SWITCH_KEY_NUM, button_press);
 
     //Set GPIO5 function.
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5);

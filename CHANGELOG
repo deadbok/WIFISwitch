@@ -1,7 +1,8 @@
 2015-11-08 Martin Grønholdt
 
 * user/task.*: Added task handling code.
-* user/user_main.c (start_connection): Added task handler init.
+* user/user_main.c (user_init): Added task handler init.
+							  : Added button handler code.
 * user/user_config.h: Added definitions for physical pin connections.
 * fs/Makefile: Run minify on fs in debug mode as well.
 

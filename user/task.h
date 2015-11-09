@@ -25,32 +25,67 @@
 #ifndef TASK_H
 #define TASK_H
 
+#include "os_type.h"
 #include "tools/dl_list.h"
 
 #define TASK_MAX_QUEUE 20
 #define TASK_PRIORITY USER_TASK_PRIO_1
 
+
+/**
+ * @brief Type definition of the signal handler callback function pointer.
+ */
 typedef void (*signal_handler_t)(os_param_t par);
 
+/**
+ * @brief Task handler entry.
+ */
 struct task_handler
 {
+	/**
+	 * @brief Signal to handle.
+	 */
 	os_signal_t signal;
+	/**
+	 * @brief Handler function pointer.
+	 */
 	signal_handler_t handler;
+	/**
+	 * @brief Reference count.
+	 */
+	unsigned short ref_count;
 	/**
      * @brief Pointers for the prev and next entry in the list.
      */
     DL_LIST_CREATE(struct task_handler);
 };
 
+/**
+ * @brief Initialise the task system.
+ */
 extern void task_init(void);
 
-extern void task_add(struct task_handler *task);
+/**
+ * @brief Register a task handler.
+ *
+ * @param handler Function pointer to a handler function.
+ * @return Signal number used to call the handler or -1 on error.
+ */
+extern int task_add(signal_handler_t handler);
 
 /**
- * @brief Remove a registered task.
+ * @brief Remove a registered task handler.
  * 
- * @param task Pointer to a the callback.
+ * @param signal Signal of the handler to remove.
  */
-extern bool task_remove(struct task_handler *task);
+extern struct task_handler *task_remove(os_signal_t signal);
+
+/**
+ * @brief Raise a signal to handle.
+ * 
+ * @param signal Signal to raise.
+ * @param parameter Parameter for handler.
+ */
+void task_raise_signal(os_signal_t signal, os_param_t parameter);
 	
 #endif //TASK_H

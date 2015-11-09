@@ -22,6 +22,7 @@
  * MA 02110-1301, USA.
  */
 #include "user_config.h"
+#include "tools/dl_list.h"
 #include "tools/strxtra.h"
 #include "http-response.h"
 #include "http-handler.h"

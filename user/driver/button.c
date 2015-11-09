@@ -1,0 +1,148 @@
+/**
+ * @file button.c
+ *
+ * @brief Physical button handling routines.
+ *
+ * @copyright
+ * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
+ *
+ * @license
+ * This program is free software; you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation; either version 2 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+ * MA 02110-1301, USA.
+ */
+#include <stdint.h>
+#include "user_config.h"
+#include "gpio.h"
+#include "user_interface.h"
+#include "button.h"
+
+struct button buttons[BUTTONS_MAX];
+
+static void button_intr_handler(uint32_t mask, void *arg)
+{
+	unsigned int start_time;
+	uint32_t gpio_status;
+	unsigned char i;
+	uint16_t pin_mask;
+	
+	debug("GPIO interrupt mask 0x%x.\n", mask);
+	
+	gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
+	debug(" Status 0x%x.\n", gpio_status);
+	
+	//This seems to not work if called after gpio_pin_intr_state_set.
+	gpio_intr_ack(mask);
+	
+	//Disable interrupts on GPIO's before messing with them.
+	ETS_GPIO_INTR_DISABLE();
+		
+	//Get system time in ms.
+	start_time = system_get_time();
+	
+	//Check each GPIO for an interrupt.
+	for (i = 0; i < 16; i++)
+	{
+		pin_mask =  1 << i;
+		if (mask & pin_mask)
+		{
+			debug("Change on pin %d.\n", i);
+			if (buttons[i].enabled)
+			{
+				debug("Registered, handling.\n"); 
+				//Interrupt on any GPIO edge.
+				gpio_pin_intr_state_set(GPIO_ID_PIN(i), GPIO_PIN_INTR_ANYEDGE);
+				//Raise button signal.
+				task_raise_signal(buttons[i].signal, i);
+			}
+			else
+			{
+				warn("Not registered, skipping.\n");
+			}
+		}
+	}
+	//We're done turn ints on again. 
+	ETS_GPIO_INTR_ENABLE();
+}
+
+void button_map(uint32_t mux, uint32_t func, unsigned char gpio, button_handler_t handler)
+{
+	debug("Mapping button at GPIO %d.\n", gpio);
+	
+	if ((gpio + 1) > BUTTONS_MAX)
+	{
+		warn("GPIO does not exist.\n");
+		return;
+	}
+	//Set GPIO function.
+    PIN_FUNC_SELECT(mux, func);
+    
+    //Enable pullup.
+    PIN_PULLUP_EN(mux);
+	
+	//Keep track enabled keys.
+	buttons[gpio].enabled = true;
+	
+	//Set signal.
+	buttons[gpio].signal = task_add(handler);
+	debug(" Registered handler signal 0x%x.\n", buttons[gpio].signal);
+	
+	//Set GPIO as input
+    gpio_output_set(0, 0, 0, GPIO_ID_PIN(4));
+    
+	//Disable interrupts on GPIO's before messing with them.
+	ETS_GPIO_INTR_DISABLE();
+	
+	//Interrupt on any GPIO edge.
+    gpio_pin_intr_state_set(GPIO_ID_PIN(gpio), GPIO_PIN_INTR_ANYEDGE);
+    
+    //Clear GPIO status.
+    GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(gpio));
+	
+	//We're done turn ints on again. 
+	ETS_GPIO_INTR_ENABLE();
+}
+
+void button_unmap(unsigned char gpio)
+{
+	struct task_handler *handler;
+	debug("Un-mapping button at GPIO %d.\n", gpio);
+	
+	//Disable task.
+	if ((gpio + 1) > BUTTONS_MAX)
+	{
+		warn("GPIO does not exist.\n");
+		return;
+	}
+	buttons[gpio].enabled = false;
+	
+	handler = task_remove(buttons[gpio].signal);
+	if (!handler->ref_count)
+	{
+		debug(" Freeing task %p.\n", handler);
+		db_free(handler);
+	}
+}
+
+void button_init(void)
+{
+	//Disable interrupts on GPIO's before messing with them.
+	ETS_GPIO_INTR_DISABLE();
+    
+    //Attach interrupt function.
+	gpio_intr_handler_register(button_intr_handler, NULL);
+	
+	//We're done turn ints on again. 
+	ETS_GPIO_INTR_ENABLE();
+}	
