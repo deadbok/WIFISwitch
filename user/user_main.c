@@ -84,6 +84,11 @@ extern uint32_t _irom0_text_end;
 struct config *cfg;
 
 /**
+ * @brief Signal to de a system reset.
+ */
+os_signal_t signal_reset;
+
+/**
  * @brief Timer for handling events.
  */
 os_timer_t status_timer;
@@ -176,6 +181,15 @@ static void connected(unsigned char mode)
 	}
  }
  
+ /**
+ * @brief Handler to do a system reset,
+ */
+static void reset(os_param_t dummy)
+{
+	db_printf("Restarting...\n");
+	system_restart();
+}
+ 
 /**
  * @brief Called when initialisation is over.
  *
@@ -184,18 +198,34 @@ static void connected(unsigned char mode)
 static void start_connection(void)
 {
     db_printf("Running...\n");
+    //Register reset handler.
+    signal_reset = task_add(reset);
     wifi_init("wifiswitch", connected, disconnected);
 }
 
+/**
+ * @brief Handle activity on the hardware button.
+ * 
+ * @param gpio The gpio that triggered the handler.
+ */
 static void button_press(os_param_t gpio)
 {
 	unsigned int gpio_state;
 	
 	debug("Button press %d.\n", gpio);
-
-	gpio_state = !GPIO_INPUT_GET(5);
-	debug(" New state: %d.\n", gpio_state);
-	GPIO_OUTPUT_SET(5, gpio_state);
+	if (buttons[gpio].time > 5000000)
+	{
+		debug(" Long press. ");
+		db_printf("Resetting on request from hardware button.\n");
+		task_raise_signal(signal_reset, 0);
+	}
+	else
+	{
+		debug(" Switching output state.\n");
+		gpio_state = !GPIO_INPUT_GET(5);
+		debug(" New state: %d.\n", gpio_state);
+		GPIO_OUTPUT_SET(5, gpio_state);
+	}
 	
 	button_ack(gpio);
 }

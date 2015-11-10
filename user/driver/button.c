@@ -2,6 +2,9 @@
  * @file button.c
  *
  * @brief Physical button handling routines.
+ * 
+ * *Button GPIOS are pulled up by default. When the button is activated
+ * the GPIO goes low.*
  *
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -28,7 +31,7 @@
 #include "user_interface.h"
 #include "button.h"
 
-struct button buttons[BUTTONS_MAX];
+struct button_info buttons[BUTTONS_MAX];
 
 static void button_intr_handler(uint32_t mask, void *arg)
 {
@@ -36,20 +39,13 @@ static void button_intr_handler(uint32_t mask, void *arg)
 	uint32_t gpio_status;
 	unsigned char i;
 	uint16_t pin_mask;
-	unsigned char state;
 	
 	debug("Button interrupt handler.\n");
 	debug(" GPIO interrupt mask 0x%x.\n", mask);
 	
-	gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
-	debug(" Status 0x%x.\n", gpio_status);
+	//gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
+	//debug(" Status 0x%x.\n", gpio_status);
 	
-	//This seems to not work if called after gpio_pin_intr_state_set.
-	gpio_intr_ack(mask);
-	
-	//Disable interrupts on GPIO's before messing with them.
-	ETS_GPIO_INTR_DISABLE();
-		
 	//Get system time in ms.
 	start_time = system_get_time();
 	
@@ -58,44 +54,50 @@ static void button_intr_handler(uint32_t mask, void *arg)
 	//Check each GPIO for an interrupt.
 	for (i = 0; i < 16; i++)
 	{
-		//Srate goes low when button is pressed.
-		state = gpio_status & BIT(i);
 		pin_mask =  1 << i;
 		if (mask & pin_mask)
 		{
 			if (buttons[i].enabled)
 			{
-				debug(" Enabled.\n");
-				debug(" GPIO state %d.\n", state);
 				debug(" Activation time %d.\n", buttons[i].time);
 				debug(" Current time %d.\n", start_time);
 				if ((buttons[i].time == 0))
 				{
 					debug(" New press at %d.\n", start_time);
 					buttons[i].time = start_time;
+					//Interrupt on positive GPIO edge (button release).
+					buttons[i].edge = GPIO_PIN_INTR_POSEDGE;
 				}
-				else if (((buttons[i].time + BUTTONS_DEBOUNCE_MS) < start_time))
+				else if (((buttons[i].time + BUTTONS_DEBOUNCE_US) < start_time))
 				{
 					buttons[i].time = start_time - buttons[i].time;
-					debug(" Release after %dms.\n", buttons[i].time);
+					debug(" Release after %dus.\n", buttons[i].time);
 					//Raise button signal.
 					task_raise_signal(buttons[i].signal, i);
+					//Interrupt on negative GPIO edge (button press).
+					buttons[i].edge = GPIO_PIN_INTR_NEGEDGE;
 				}
 				else
 				{
 					debug(" State change within de-bounce period, ignoring.\n");
+					/* Wait for a positive edge (button release), even
+					 * though it may already have occurred.
+					 */
+					buttons[i].edge = GPIO_PIN_INTR_POSEDGE;
 				}
-				//Interrupt on any GPIO edge.
-				gpio_pin_intr_state_set(GPIO_ID_PIN(i), GPIO_PIN_INTR_ANYEDGE);
 			}
 			else
 			{
-				warn("Not registered, skipping.\n");
+				warn("Not enabled, skipping.\n");
 			}
 		}
 	}
-	//We're done turn ints on again. 
-	ETS_GPIO_INTR_ENABLE();
+	//This seems to not work if called after gpio_pin_intr_state_set.
+	gpio_intr_ack(mask);
+	for (i = 0; i < 16; i++)
+	{
+		gpio_pin_intr_state_set(GPIO_ID_PIN(i), buttons[i].edge);
+	}
 }
 
 void button_map(uint32_t mux, uint32_t func, unsigned char gpio, button_handler_t handler)
@@ -119,6 +121,9 @@ void button_map(uint32_t mux, uint32_t func, unsigned char gpio, button_handler_
 	//Reset de-bounce time.
 	buttons[gpio].time = 0;
 	
+	//Set interrupt on falling edge.
+	buttons[gpio].edge = GPIO_PIN_INTR_NEGEDGE;
+	
 	//Set signal.
 	buttons[gpio].signal = task_add(handler);
 	debug(" Registered handler signal 0x%x.\n", buttons[gpio].signal);
@@ -130,7 +135,8 @@ void button_map(uint32_t mux, uint32_t func, unsigned char gpio, button_handler_
 	ETS_GPIO_INTR_DISABLE();
 	
 	//Interrupt on any GPIO edge.
-    gpio_pin_intr_state_set(GPIO_ID_PIN(gpio), GPIO_PIN_INTR_ANYEDGE);
+    //gpio_pin_intr_state_set(GPIO_ID_PIN(gpio), GPIO_PIN_INTR_ANYEDGE);
+    gpio_pin_intr_state_set(GPIO_ID_PIN(gpio), buttons[gpio].edge);
     
     //Clear GPIO status.
     GPIO_REG_WRITE(GPIO_STATUS_W1TC_ADDRESS, BIT(gpio));

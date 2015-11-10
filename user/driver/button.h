@@ -27,22 +27,44 @@
 
 #include "task.h"
 
+/**
+ * @brief Number of possible buttons.
+ */
 #define BUTTONS_MAX 16
 /**
- * @brief De-bounce time in milliseconds.
+ * @brief De-bounce time in microseconds.
  */
-#define BUTTONS_DEBOUNCE_MS 100
+#define BUTTONS_DEBOUNCE_US 10000
 
+/**
+ * @brief Button callback handler type.
+ */
 typedef signal_handler_t button_handler_t;
 
-struct button
+/**
+ * @brief Struct to hold button information.
+ */
+struct button_info
 {
+	/**
+	 * @brief Status of the button.
+	 */
 	bool enabled;
+	/**
+	 * @brief Number of microseconds that the button was pressed.
+	 */
 	unsigned int time;
+	/**
+	 * @brief Signal used to call the button handler.
+	 */
 	os_signal_t signal;
+	GPIO_INT_TYPE edge;
 };
 
-extern struct button buttons[];
+/**
+ * @brief Array of all buttons.
+ */
+extern struct button_info buttons[];
 
 extern void button_map(uint32_t mux, uint32_t func, unsigned char gpio, button_handler_t handler);
 extern void button_unmap(unsigned char gpio);

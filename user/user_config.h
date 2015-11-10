@@ -207,4 +207,10 @@ extern void db_mem_list(void);
  */
 extern struct config *cfg;
 
+/**
+ * @brief Signal to de a system reset.
+ */
+extern os_signal_t signal_reset;
+
+
 #endif //USER_CONFIG_H

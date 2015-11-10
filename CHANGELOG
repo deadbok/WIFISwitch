@@ -1,6 +1,12 @@
 2015-11-10 Martin Grønholdt
 
 * user/driver/button.c: Added de-bounce.
+					   (button_intr_handler) Cleaned up the esp8266 specific stuff.
+* user/driver/button.h: internal timer uses microseconds not milliseconds.
+* user/user_config.h: Added signal_reset.
+* user/user_main.c (reset): Added reset handler.
+				   (start_connection): Add reset task.
+				   (button_press): Handle long presses as reset.
 
 
 2015-11-09 Martin Grønholdt
