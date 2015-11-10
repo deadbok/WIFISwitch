@@ -187,14 +187,17 @@ static void start_connection(void)
     wifi_init("wifiswitch", connected, disconnected);
 }
 
-static void button_press(os_param_t par)
+static void button_press(os_param_t gpio)
 {
-	debug("Button press %d.\n", par);
 	unsigned int gpio_state;
+	
+	debug("Button press %d.\n", gpio);
 
 	gpio_state = !GPIO_INPUT_GET(5);
 	debug(" New state: %d.\n", gpio_state);
 	GPIO_OUTPUT_SET(5, gpio_state);
+	
+	button_ack(gpio);
 }
 
 /**
@@ -248,6 +251,8 @@ void user_init(void)
 
     //Set GPIO5 to output.
     gpio_output_set(0, GPIO_ID_PIN(5), GPIO_ID_PIN(5), 0);
+    
+    debug(" GPIO states 0x%x.\n", GPIO_REG_READ(GPIO_OUT_ADDRESS));
 
     db_printf("\nLeaving user_init...\n");
 }

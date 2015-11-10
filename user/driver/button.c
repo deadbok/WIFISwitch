@@ -36,8 +36,10 @@ static void button_intr_handler(uint32_t mask, void *arg)
 	uint32_t gpio_status;
 	unsigned char i;
 	uint16_t pin_mask;
+	unsigned char state;
 	
-	debug("GPIO interrupt mask 0x%x.\n", mask);
+	debug("Button interrupt handler.\n");
+	debug(" GPIO interrupt mask 0x%x.\n", mask);
 	
 	gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
 	debug(" Status 0x%x.\n", gpio_status);
@@ -51,20 +53,40 @@ static void button_intr_handler(uint32_t mask, void *arg)
 	//Get system time in ms.
 	start_time = system_get_time();
 	
+	debug(" GPIO states 0x%x.\n", GPIO_REG_READ(GPIO_OUT_ADDRESS));
+	
 	//Check each GPIO for an interrupt.
 	for (i = 0; i < 16; i++)
 	{
+		//Srate goes low when button is pressed.
+		state = gpio_status & BIT(i);
 		pin_mask =  1 << i;
 		if (mask & pin_mask)
 		{
-			debug("Change on pin %d.\n", i);
 			if (buttons[i].enabled)
 			{
-				debug("Registered, handling.\n"); 
+				debug(" Enabled.\n");
+				debug(" GPIO state %d.\n", state);
+				debug(" Activation time %d.\n", buttons[i].time);
+				debug(" Current time %d.\n", start_time);
+				if ((buttons[i].time == 0))
+				{
+					debug(" New press at %d.\n", start_time);
+					buttons[i].time = start_time;
+				}
+				else if (((buttons[i].time + BUTTONS_DEBOUNCE_MS) < start_time))
+				{
+					buttons[i].time = start_time - buttons[i].time;
+					debug(" Release after %dms.\n", buttons[i].time);
+					//Raise button signal.
+					task_raise_signal(buttons[i].signal, i);
+				}
+				else
+				{
+					debug(" State change within de-bounce period, ignoring.\n");
+				}
 				//Interrupt on any GPIO edge.
 				gpio_pin_intr_state_set(GPIO_ID_PIN(i), GPIO_PIN_INTR_ANYEDGE);
-				//Raise button signal.
-				task_raise_signal(buttons[i].signal, i);
 			}
 			else
 			{
@@ -93,6 +115,9 @@ void button_map(uint32_t mux, uint32_t func, unsigned char gpio, button_handler_
 	
 	//Keep track enabled keys.
 	buttons[gpio].enabled = true;
+	
+	//Reset de-bounce time.
+	buttons[gpio].time = 0;
 	
 	//Set signal.
 	buttons[gpio].signal = task_add(handler);
@@ -146,3 +171,9 @@ void button_init(void)
 	//We're done turn ints on again. 
 	ETS_GPIO_INTR_ENABLE();
 }	
+
+void button_ack(unsigned char gpio)
+{
+	debug("Button action on GPIO %d acknowledged.\n", gpio);
+	buttons[gpio].time = 0;
+}

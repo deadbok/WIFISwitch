@@ -1,3 +1,16 @@
+2015-11-10 Martin Grønholdt
+
+* user/driver/button.c: Added de-bounce.
+
+
+2015-11-09 Martin Grønholdt
+
+* user/slighttp/http-handler.c: Missed the dl_list.h header.
+* user/task.*: Reworked task system.
+* user/user_main.c: Added initial button handling.
+* user/driver/button.c: Code for connected buttons.
+
+
 2015-11-08 Martin Grønholdt
 
 * user/task.*: Added task handling code.

@@ -28,6 +28,10 @@
 #include "task.h"
 
 #define BUTTONS_MAX 16
+/**
+ * @brief De-bounce time in milliseconds.
+ */
+#define BUTTONS_DEBOUNCE_MS 100
 
 typedef signal_handler_t button_handler_t;
 
@@ -48,5 +52,8 @@ extern void button_unmap(unsigned char gpio);
  * *gpio_init() and task_init() must have been called first.*
  */
 extern void button_init(void);
-
+/**
+ * @brief Call this from the button handler to acknowledge that the signal has been handled.
+ */
+extern void button_ack(unsigned char gpio);
 #endif //BUTTON_H
