@@ -37,12 +37,6 @@
 #include "slighttp/http-response.h"
 #include "slighttp/http-handler.h"
 
-
-/**
- * @brief Keep track of actual password changes.
- */
-static bool passwd_changed = false;
-
 /**
  * @brief Respond to a PUT request.
  *
@@ -79,18 +73,24 @@ static signed int create_put_response(struct http_request *request)
 				if (tokens[i].type == JSMN_STRING)
 				{
 					debug(" JSON string comes next.\n");
-					struct station_config sc;
-					
-					wifi_station_get_config(&sc);
-					sc.bssid_set = 0;
-					os_memcpy(&sc.password, request->message + tokens[i].start, tokens[i].end - tokens[i].start);
-					sc.password[tokens[i].end - tokens[i].start] = '\0';
-					debug(" Network password %s.\n", sc.password);
-					if (!wifi_station_set_config(&sc))
+					if (tokens[i].start == tokens[i].end)
 					{
-						error("Could not network name.\n");
+						debug(" Empty password received. Password unchanged.\n");
 					}
-					passwd_changed = true;
+					else
+					{
+						struct station_config sc;
+						
+						wifi_station_get_config(&sc);
+						sc.bssid_set = 0;
+						os_memcpy(&sc.password, request->message + tokens[i].start, tokens[i].end - tokens[i].start);
+						sc.password[tokens[i].end - tokens[i].start] = '\0';
+						debug(" Network password %s.\n", sc.password);
+						if (!wifi_station_set_config(&sc))
+						{
+							error("Could set network configuration.\n");
+						}
+					}
 				}
 			}
 		}

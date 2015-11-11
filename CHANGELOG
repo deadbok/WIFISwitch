@@ -7,6 +7,8 @@
 * user/user_main.c (reset): Added reset handler.
 				   (start_connection): Add reset task.
 				   (button_press): Handle long presses as reset.
+* user/handlers/rest/net-passwd.c: Removed passwd_changed.
+								  (create_put_response): Only set password to non empty value.
 
 
 2015-11-09 Martin Grønholdt
