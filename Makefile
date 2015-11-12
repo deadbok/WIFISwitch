@@ -249,7 +249,7 @@ $(GEN_CONFIG):
 
 # Generate configuration data.
 $(FW_FILE_CONFIG): $(GEN_CONFIG) $(FW_FILE_1) $(FW_FILE_2)
-	$(GEN_CONFIG) $(FW_FILE_CONFIG) $(FS_FILE_ADDR)
+	$(GEN_CONFIG) $(FW_FILE_CONFIG) $(FS_FILE_ADDR) $(NETWORK_MODE)
 
 # Flash configuration data.
 flashconfig: $(FW_FILE_CONFIG)

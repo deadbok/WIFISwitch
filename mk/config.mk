@@ -24,6 +24,10 @@ TARGET = wifiswitch
 BAUD_RATE ?= 230400
 # Flash size, 512 or 1024.
 FLASH_SIZE ?= 512
+# Network mode to start in.
+# *  1 Client.
+# *  2 AP.
+NETWORK_MODE = 1
 
 ### Project directory configuration. ###
 # Modules (subdirectories) of the project to include when compiling.
@@ -43,7 +47,7 @@ LOG_DIR := logs
 # Directory with custom build tools.
 TOOLS_DIR := tools
 
-### Number of functions/objects to list on size list.
+### Number of functions/objects to list on size list. ###
 N_LIST_OBJECTS = 20
 
 ### Set defines for the different build time debug configuration variables. ###
