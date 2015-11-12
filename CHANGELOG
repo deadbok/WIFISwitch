@@ -1,3 +1,14 @@
+2015-11-12 Martin Grønholdt
+
+* README.md: Added more buzzwords.
+* user/net/wifi.c: Ported to task system.
+				  (ap_config): Made local to create_softap.
+				  (station_config): Made local to wifi_connect_default.
+* user/net/wifi.h (WIFI_MODE_CONFIG): Renamed WIFI_MODE_AP.
+				  (wifi_init): Changed signature.
+* user/user_main.c: Ported WiFi callbacks to tasks.
+
+
 2015-11-10 Martin Grønholdt
 
 * user/driver/button.c: Added de-bounce.

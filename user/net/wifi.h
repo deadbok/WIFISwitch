@@ -1,9 +1,9 @@
-/* wifi.h
+/** wifi.h
  *
- * Routines for connecting th ESP8266 to a WIFI network.
+ * @brief Routines for connecting th ESP8266 to a WIFI network.
  *
- * 
- * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@ace2>
+ * @copyright
+ * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
  * This program is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -23,6 +23,13 @@
 #ifndef WIFI_CONNECT_H
 #define WIFI_CONNECT_H
 
+#include "task.h"
+
+/**
+ * @brief Button callback handler type.
+ */
+typedef signal_handler_t wifi_handler_t;
+
 /**
  * @brief No connection status.
  */
@@ -34,11 +41,26 @@
 /**
  * @brief In configuration mode acting as client and AP.
  */
-#define WIFI_MODE_CONFIG 2
+#define WIFI_MODE_AP 2
 
-extern bool wifi_init(char *hostname, 
-					  void (*connect_cb)(unsigned char wifi_mode),
-					  void (*disconnect_cb)());
+/**
+ * @brief Intitialise WIFI connection, by waiting for auto
+ * connection to succed, manually connecting to the default
+ * configured AP, or creating an AP named ESP+$mac.
+ * 
+ * @param hostname The desired host name used by the DHCP client.
+ * @param connected Function to call when a connection is made.
+ * @param disconnected Function to call when a disconnect happens.
+ */
+extern bool wifi_init(char *hostname, wifi_handler_t connected,
+					  wifi_handler_t disconnected);
+/**
+ * @brief Check if we're connected to a WIFI.
+ *
+ * Both station mode with an IP address and AP mode count as connected.
+ * 
+ * @return `true`on connection.
+ */
 extern bool wifi_check_connection(void);
 
 #endif

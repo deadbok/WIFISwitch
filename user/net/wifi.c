@@ -4,12 +4,9 @@
  * @brief Routines for connecting th ESP8266 to a WIFI network.
  *
  * - Load a WIFI configuration.
- * - If unsuccessful create an AP presenting a HTTP server to configure 
- *   the connection values.
+ * - If unsuccessful create an AP.
  * 
- * What works:
- * - Try to connect to the AP.
- * 
+ * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
  * This program is free software; you can redistribute it and/or modify
@@ -35,18 +32,8 @@
 #include "tools/strxtra.h"
 #include "wifi.h"
 
-/**
- * @brief The current station config.
- * 
- * Configuration used, when connecting to an AP.
- */
-struct station_config station_conf = {{0}};
-/**
- * @brief The current AP configuration.
- * 
- * Configuration used when in connection config mode.
- */
-struct softap_config  ap_config = {{0}};
+static os_signal_t connected_signal;
+static os_signal_t disconnected_signal;
 
 /**
  * @brief Connection mode.
@@ -54,33 +41,19 @@ struct softap_config  ap_config = {{0}};
  * Values:
  *  0 No connection.
  *  1 Normal.
- *  2 Config.
+ *  2 AP.
  */
 static unsigned char wifi_connected = WIFI_MODE_NO_CONNECTION;
 
-/**
- * @brief Connection callback function.
- *
- * @param wifi_mode WiFi mode: 1 = Connected to AP, 2 = Config mode.
- */
-static void (*wifi_connected_cb)(unsigned char wifi_mode);
-/**
- * @brief Disonnect callback function.
- *
- */
-static void (*wifi_disconnected_cb)(void);
 //Retry counter.
 static unsigned char timeout = CONNECT_DELAY_SEC;
 //Timer for waiting for connection.
 static os_timer_t connected_timer;
 
-//Forward declarations.
-static bool wifi_connect_default(void);
-
 /**
  * @brief Disconnect WIFI.
  * 
- * @return `true`on success.
+ * @return `true` on success.
  */
 static bool ICACHE_FLASH_ATTR wifi_disconnect(void)
 {
@@ -94,13 +67,13 @@ static bool ICACHE_FLASH_ATTR wifi_disconnect(void)
         ret = wifi_station_disconnect();
         if (!ret)
         {
-            error("Cannot disconnect (%d).", ret);
+            warn("Cannot disconnect (%d).", ret);
             return(false);
         }
         ret = wifi_station_dhcpc_stop();
         if (!ret)
         {
-            error("Cannot stop DHCP client (%d).", ret);
+            warn("Cannot stop DHCP client (%d).", ret);
             return(false);
         }
     }
@@ -119,7 +92,8 @@ static bool ICACHE_FLASH_ATTR wifi_disconnect(void)
  */
 static bool create_softap(char *ssid, char *passwd, unsigned char channel)
 {
-    unsigned char           ret;
+    unsigned char ret;
+    struct softap_config ap_config;
 
     debug("Creating AP SSID: %s, password: %s, channel %u\n", ssid, passwd, 
           channel);
@@ -127,12 +101,12 @@ static bool create_softap(char *ssid, char *passwd, unsigned char channel)
     //Set station + AP mode. Station mode is needed for scanning available networks.
     if (!wifi_set_opmode(STATIONAP_MODE))
     {
-        error("Cannot set soft AP mode.\n");
+        error("Cannot set station + AP mode.\n");
         return(false);
     }
     if (!wifi_softap_get_config(&ap_config))
     {
-        error("Cannot set get default AP mode configuration.\n");
+        error("Cannot get default AP mode configuration.\n");
         return(false);
 	}
 	
@@ -145,7 +119,7 @@ static bool create_softap(char *ssid, char *passwd, unsigned char channel)
     ap_config.authmode = AUTH_WPA2_PSK;
     ap_config.ssid_hidden = 0;
     //We don't need a lot of connections for our purposes.
-    ap_config.max_connection = 4;
+    //ap_config->max_connection = 4;
     //ap_config.beacon_interval = 100;
 
     //Set AP configuration.
@@ -165,11 +139,11 @@ static bool create_softap(char *ssid, char *passwd, unsigned char channel)
  * 
  * @return true on success, false on failure.
  */
-static bool wifi_config_mode(void)
+static bool wifi_ap_mode(void)
 {
     unsigned char           mac[6];
     char                    ssid[32];
-    char                    passwd[11];
+    char                    passwd[11] = SOFTAP_PASSWORD;
     unsigned char           i;
     char                    temp_str[3];
     unsigned char           ret;
@@ -203,9 +177,6 @@ static bool wifi_config_mode(void)
     ssid[15] = '\0';
     debug("SSID: %s\n", ssid);
 
-    //The password.
-    strcpy(passwd, SOFTAP_PASSWORD);
-
     //Create the AP.
     if (!create_softap(ssid, passwd, 10))
     {
@@ -213,11 +184,11 @@ static bool wifi_config_mode(void)
 		return(false);
 	}
     
-    wifi_connected = WIFI_MODE_CONFIG;
+    wifi_connected = WIFI_MODE_AP;
     //Reset retry counter.
     timeout = CONNECT_DELAY_SEC;
-    //Call connected call back.
-    wifi_connected_cb(wifi_connected);
+    //Call connected task.
+    task_raise_signal(connected_signal, wifi_connected);
 
 	return(true);
 }
@@ -241,14 +212,11 @@ static void wifi_handle_event_cb(System_Event_t *event)
 			debug("Disconnected from AP.\n");
 			debug("Reason: %d.\n", event->event_info.disconnected.reason);
 			//Ignore failed client attempts in config mode.
-			if (wifi_connected < WIFI_MODE_CONFIG)
+			if (wifi_connected < WIFI_MODE_AP)
 			{
 				debug("Disconnected from Wifi AP.\n");
 				wifi_connected = WIFI_MODE_NO_CONNECTION;
-				if (wifi_disconnected_cb)
-				{
-					wifi_disconnected_cb();
-				}
+				task_raise_signal(disconnected_signal, 0);
 			}
 			break;
 		//Unused.
@@ -260,42 +228,28 @@ static void wifi_handle_event_cb(System_Event_t *event)
 		//Got an IP address.
 		case     EVENT_STAMODE_GOT_IP:
 			db_printf("WiFi got address " IPSTR ".\n",
-					  IP2STR(&event->event_info.got_ip.ip));
-			//We do not want to be connected in config mode.
-			if (wifi_get_opmode() > STATION_MODE)
-			{
-				wifi_set_opmode(STATION_MODE);
-				if (!wifi_connect_default())
-				{
-					error("Could not connect to the configured AP.\n");
-					return;
-				}
-			}
-				
+					  IP2STR(&event->event_info.got_ip.ip));		
 			//Reset timeout
 			timeout = CONNECT_DELAY_SEC;
 			wifi_connected = WIFI_MODE_CLIENT;
 			//Stop the connection time out.
 			os_timer_disarm(&connected_timer);
-			/* Call the call back and tell that we are now connected in
+			/* Call the task and tell that we are now connected in
 			 * station mode.
 			 */
-			if (wifi_connected_cb)
-			{
-				wifi_connected_cb(STATION_MODE);
-			}
+			task_raise_signal(connected_signal, wifi_connected);
 			break;
-		//Someone has connected to our configuration AP.
+		//Someone has connected to our AP.
 		case     EVENT_SOFTAPMODE_STACONNECTED:
 			debug("WiFi " MACSTR " connected to AP.\n", 
 			          MAC2STR(event->event_info.sta_connected.mac));
 			break;
-		//Someone has disconnected to out configuration AP.
+		//Someone has disconnected from our AP.
 		case     EVENT_SOFTAPMODE_STADISCONNECTED:
 			debug("WiFi " MACSTR " disconnected from AP.\n", 
 			          MAC2STR(event->event_info.sta_disconnected.mac));
 			break;
-				//Someone has disconnected to out configuration AP.
+		//Someone is probing our AP.
 		case     EVENT_SOFTAPMODE_PROBEREQRECVED:
 			debug("WiFi " MACSTR " probe from AP.\n", 
 			          MAC2STR(event->event_info.ap_probereqrecved.mac));
@@ -317,9 +271,8 @@ static void timeout_check(void)
 		if (!wifi_check_connection())
 		{
 			db_printf("WiFi connect time out.\n");
-			//Connected call off everything and reset it.
 			os_timer_disarm(&connected_timer);
-			wifi_config_mode();
+			wifi_ap_mode();
 			return;
 		}
 	}
@@ -332,7 +285,8 @@ static void timeout_check(void)
  */
 static bool wifi_connect_default(void)
 {
-    unsigned char   ret = 0;
+    unsigned char ret = 0;
+    struct station_config station_conf;
 
 	ret = wifi_get_opmode();
 	if (ret == STATION_MODE)
@@ -406,28 +360,18 @@ bool wifi_check_connection(void)
 	return(false);
 }
 
-/**
- * @brief Intitialise WIFI connection, by waiting for auto
- * connection to succed, manually connecting to the default
- * configured AP, or creating an AP named ESP+$mac.
- * 
- * @param hostname The desired host name used by the DHCP client.
- * @param connect_cb Function to call when a connection is made.
- * @param disconnect_cb Function to call when a disconnect happens.
- */
-bool wifi_init(char *hostname, 
-								 void (*connect_cb)(unsigned char wifi_mode),
-								 void (*disconnect_cb)())
+bool wifi_init(char *hostname, wifi_handler_t connected,
+			   wifi_handler_t disconnected)
 {
 	debug("WiFi init.\n");
+
+	//Add connection state task.
+	connected_signal = task_add(connected);
+	disconnected_signal = task_add(disconnected);
 	//Set callback
-    wifi_connected_cb = connect_cb;
-    wifi_disconnected_cb = disconnect_cb;
 	wifi_set_event_handler_cb(wifi_handle_event_cb);
 	
-	debug("WiFi call backs connected %p, disconnected %p, and event handler %p.\n", 
-		  wifi_connected_cb, wifi_disconnected_cb,
-		  wifi_handle_event_cb);
+	debug("WiFi event handler %p.\n", wifi_handle_event_cb);
 
 	if (!wifi_set_opmode(STATION_MODE))
 	{

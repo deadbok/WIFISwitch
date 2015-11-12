@@ -106,7 +106,7 @@ static void status_check(void)
 /**
  * @brief Called when the WIFI is connected or in AP mode.
  */
-static void connected(unsigned char mode)
+static void connected(os_signal_t mode)
 {
 	//Start status task.
 	//Disarm timer.
@@ -172,7 +172,7 @@ static void connected(unsigned char mode)
  * Simply reset the chip.
  * @todo Stop HTTP server instead.
  */
- static void disconnected(void)
+ static void disconnected(os_signal_t signal)
  {
 	if (http_get_status())
 	{
@@ -200,6 +200,7 @@ static void start_connection(void)
     db_printf("Running...\n");
     //Register reset handler.
     signal_reset = task_add(reset);
+    //Connect to a configured WiFi or create an AP.
     wifi_init("wifiswitch", connected, disconnected);
 }
 

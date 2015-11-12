@@ -10,6 +10,7 @@ Features.
 * RESTful (I think) interface.
 * Enters AP mode and serves a WIFI configuration page, when there is no AP connection at start up.
 * Captive portal in configuration mode.
+* Multifunctional one button interface. :-D
 
 Warning.
 --------
