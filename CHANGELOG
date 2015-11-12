@@ -7,10 +7,14 @@
 * user/net/wifi.h (WIFI_MODE_CONFIG): Renamed WIFI_MODE_AP.
 				  (wifi_init): Changed signature.
 * user/user_main.c: Ported WiFi callbacks to tasks.
+				  : Add config mode when pressing button just after reset.
+
+
 * Makefile: Added network mode to flash config.
 * mk/config.mk: Added network mode config, NETWORK_MODE.
 * user/config/config.h: Version upped 1.1.
 					  : Added network mode configuration
+* docs/TODO.md: Updated.
 
 
 2015-11-10 Martin Grønholdt

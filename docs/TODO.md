@@ -1,9 +1,9 @@
 TODO
 =====
 
-File               scope                         Item
-----               -----                         ----
-Makefile           *na*                          Decide on where the file system is loaded.                           
-*na*               REST handlers				 Add host name handler
-*na*			   Network						 Add NTP.
-*na*			   File system					 Roll my own with links and stuff.
+|File | Scope | Item |
+|:--- | :---: | :--- |
+|*na* | Network | Add NTP. |
+|*na* | Network | Add OTA update. |
+|*na* | Network | Add client and stand-alone mode (client/AP). |
+|*na* | Network, REST | Add AP configuration. |

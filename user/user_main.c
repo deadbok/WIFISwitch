@@ -79,9 +79,20 @@
 #include "slighttp/http-handler.h"
 #include "handlers/deny/http-deny.h"
 
+/**
+ * @brief Linker symbol that points to the end of the ROM code in flash.
+ */
 extern uint32_t _irom0_text_end;
 
+/**
+ * @brief Configuration read from the flash.
+ */
 struct config *cfg;
+
+/**
+ * @brief Config mode enabler.
+ */
+static bool config_mode = false;
 
 /**
  * @brief Signal to de a system reset.
@@ -92,6 +103,51 @@ os_signal_t signal_reset;
  * @brief Timer for handling events.
  */
 os_timer_t status_timer;
+
+/**
+ * @brief Button handler that activates configuration mode. 
+ * 
+ * *Only used until a network connection has been made.*
+ * 
+ * @param gpio The gpio that triggered the handler.
+ */
+static void button_config(os_param_t gpio)
+{
+	unsigned int gpio_state;
+	
+	debug("Button press %d.\n", gpio);
+	config_mode = true;
+	db_printf("Configuration mode enabled.\n");
+	
+	button_ack(gpio);
+}
+
+/**
+ * @brief Button handler that switches the relay.
+ * 
+ * @param gpio The gpio that triggered the handler.
+ */
+static void button_switch(os_param_t gpio)
+{
+	unsigned int gpio_state;
+	
+	debug("Button press %d.\n", gpio);
+	if (buttons[gpio].time > 5000000)
+	{
+		debug(" Long press. ");
+		db_printf("Resetting on request from hardware button.\n");
+		task_raise_signal(signal_reset, 0);
+	}
+	else
+	{
+		debug(" Switching output state.\n");
+		gpio_state = !GPIO_INPUT_GET(5);
+		debug(" New state: %d.\n", gpio_state);
+		GPIO_OUTPUT_SET(5, gpio_state);
+	}
+	
+	button_ack(gpio);
+}
 
 /**
  * @brief Called by the timer to check the status.
@@ -108,13 +164,15 @@ static void status_check(void)
  */
 static void connected(os_signal_t mode)
 {
+	//Map the button to a GPIO and relay switch.
+    button_map(SWITCH_KEY_NAME, SWITCH_KEY_FUNC, SWITCH_KEY_NUM, button_switch);
 	//Start status task.
 	//Disarm timer.
 	os_timer_disarm(&status_timer);
 	//Setup timer, pass call back as parameter.
 	os_timer_setfn(&status_timer, (os_timer_func_t *)status_check, NULL);
 	
-	if (mode < 2)
+	if (!config_mode)
 	{
 		//Start web server with default pages.
 		init_http(80);		
@@ -172,14 +230,10 @@ static void connected(os_signal_t mode)
  * Simply reset the chip.
  * @todo Stop HTTP server instead.
  */
- static void disconnected(os_signal_t signal)
- {
-	if (http_get_status())
-	{
-		db_printf("Network connection lost, restarting...\n");
-		system_restart();
-	}
- }
+static void disconnected(os_signal_t signal)
+{
+	db_printf("Network connection lost, restarting...\n");
+}
  
  /**
  * @brief Handler to do a system reset,
@@ -205,33 +259,6 @@ static void start_connection(void)
 }
 
 /**
- * @brief Handle activity on the hardware button.
- * 
- * @param gpio The gpio that triggered the handler.
- */
-static void button_press(os_param_t gpio)
-{
-	unsigned int gpio_state;
-	
-	debug("Button press %d.\n", gpio);
-	if (buttons[gpio].time > 5000000)
-	{
-		debug(" Long press. ");
-		db_printf("Resetting on request from hardware button.\n");
-		task_raise_signal(signal_reset, 0);
-	}
-	else
-	{
-		debug(" Switching output state.\n");
-		gpio_state = !GPIO_INPUT_GET(5);
-		debug(" New state: %d.\n", gpio_state);
-		GPIO_OUTPUT_SET(5, gpio_state);
-	}
-	
-	button_ack(gpio);
-}
-
-/**
  * @brief Main entry point and init code.
  */
 void user_init(void)
@@ -243,7 +270,7 @@ void user_init(void)
     //Turn off auto reconnect.
     wifi_station_set_reconnect_policy(false);
 
-    // Set baud rate of debug port
+    //Set baud rate of debug port
     //uart_div_modify(0,UART_CLK_FREQ / BAUD_RATE);
     uart_init(BAUD_RATE, BAUD_RATE);
 
@@ -262,9 +289,6 @@ void user_init(void)
 
 	cfg = read_cfg_flash();
 
-	//Initialise file system.
-    fs_init();
-
     //Initialise the GPIO subsystem.
     gpio_init();
     
@@ -273,9 +297,11 @@ void user_init(void)
     
     //Initialise button handler.
     button_init();
+    
+    db_printf("\nPress the button now to enter configuration mode.\n\n");
 
-	//Map the button to a GPIO);
-    button_map(SWITCH_KEY_NAME, SWITCH_KEY_FUNC, SWITCH_KEY_NUM, button_press);
+	//Map the button to a GPIO and config mode switch.
+    button_map(SWITCH_KEY_NAME, SWITCH_KEY_FUNC, SWITCH_KEY_NUM, button_config);
 
     //Set GPIO5 function.
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO5_U, FUNC_GPIO5);
@@ -284,6 +310,9 @@ void user_init(void)
     gpio_output_set(0, GPIO_ID_PIN(5), GPIO_ID_PIN(5), 0);
     
     debug(" GPIO states 0x%x.\n", GPIO_REG_READ(GPIO_OUT_ADDRESS));
+
+	//Initialise file system.
+    fs_init();
 
     db_printf("\nLeaving user_init...\n");
 }
