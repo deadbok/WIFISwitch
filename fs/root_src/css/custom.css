@@ -18,57 +18,59 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-.button-off
-{
-	color: white;
-	background: rgb(28, 28, 28);
-}
-
-.button-on
-{
-	color: rgb(60, 250, 250);
-	background: rgb(250, 60, 60);
-}
-
 .inverted
 {
 	color: rgb(230, 220, 220);
 	background: rgb(28, 28, 28);
 }
 
-.header
+nav
 {
-	position: fixed;
-	left: 0;
-	top: 0;
-	z-index: 3;
-	width: 100%;
+	color: rgb(230, 220, 220);
+	background: rgb(28, 28, 28);
+	overflow: hidden;
+}
+
+nav ul
+{
+	overflow: auto;
+	margin-right: auto;
+	margin-left: auto;
+}
+
+nav li
+{
+   display: block;
+   float: left;
+}
+
+nav a
+{
+	background: rgb(28, 28, 28);
+	color: rgb(230, 220, 220);
+}
+	
+nav li a
+{
 	display: block;
-	padding-top: 0.5em;
-	padding-bottom: 0.5em;
-}
-
-.menu
-{
-	list-style: none;
-	display: inline;
-	padding-right: 2em;
-}
-
-.menu-link
-{
+	padding: 0.5em 0.5em;
 	text-decoration: none;
-	color: inherit
 }
 
-.menu-link:hover
+nav a:hover
 {
 	background: rgb(230, 220, 220);
 	color: rgb(28, 28, 28);
+}
+
+nav li a:hover
+{
+	display: block;
+	padding: 0.5em 0.5em;
 	text-decoration: none;
 }
 	
-.footer
+footer
 {
 	position: fixed;
 	left: 0;
@@ -81,7 +83,12 @@
 	padding-left: 1em;
 }
 
-.main
+nav .hidden-menu
+{
+  display:none;
+}
+
+section
 {
 	padding: 2em 1em;
 }
@@ -97,6 +104,18 @@
     right: 0;
     margin: auto;
     border-radius: 10%;
+}
+
+.button-off
+{
+	color: white;
+	background: rgb(28, 28, 28);
+}
+
+.button-on
+{
+	color: rgb(60, 250, 250);
+	background: rgb(250, 60, 60);
 }
 
 .license
@@ -129,14 +148,14 @@
 	background: #dfd;
 }
 
-.link-button {
+button {
 	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #2dabf9), color-stop(1, #0688fa));
 	background:-moz-linear-gradient(top, #2dabf9 5%, #0688fa 100%);
 	background:-webkit-linear-gradient(top, #2dabf9 5%, #0688fa 100%);
 	background:-o-linear-gradient(top, #2dabf9 5%, #0688fa 100%);
 	background:-ms-linear-gradient(top, #2dabf9 5%, #0688fa 100%);
 	background:linear-gradient(to bottom, #2dabf9 5%, #0688fa 100%);
-	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#2dabf9', endColorstr='#0688fa',GradientType=0);
+	/*filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#2dabf9', endColorstr='#0688fa',GradientType=0);*/
 	background-color:#2dabf9;
 	-moz-border-radius:3px;
 	-webkit-border-radius:3px;
@@ -150,18 +169,40 @@
 	text-shadow:0px 1px 0px #263666;
 }
 
-.link-button:hover {
+a.button:hover {
 	background:-webkit-gradient(linear, left top, left bottom, color-stop(0.05, #0688fa), color-stop(1, #2dabf9));
 	background:-moz-linear-gradient(top, #0688fa 5%, #2dabf9 100%);
 	background:-webkit-linear-gradient(top, #0688fa 5%, #2dabf9 100%);
 	background:-o-linear-gradient(top, #0688fa 5%, #2dabf9 100%);
 	background:-ms-linear-gradient(top, #0688fa 5%, #2dabf9 100%);
 	background:linear-gradient(to bottom, #0688fa 5%, #2dabf9 100%);
-	filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#0688fa', endColorstr='#2dabf9',GradientType=0);
+	/*filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#0688fa', endColorstr='#2dabf9',GradientType=0);*/
 	background-color:#0688fa;
 }
 
-.link-button:active {
+/*.a button:active {
 	position:relative;
 	top:1px;
+}*/
+
+@media only screen and (max-width: 480px)
+{
+
+	#menu
+	{
+		display: none;
+	}
+
+	nav .hidden-menu
+	{
+		display: block;
+		float: left;
+		padding: 0.75em 0.5em;
+	}
+	
+	nav li
+	{
+		float: none;
+		border-right: none;
+	}
 }

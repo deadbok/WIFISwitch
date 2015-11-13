@@ -1,3 +1,12 @@
+2015-11-13 Martin Grønholdt
+
+* fs/root_src/about.html: Reworked for responsive menu and for use in both modes.
+* fs/root_src/connect/index.html: Reworked for responsive menu.
+* fs/root_src/css/custom.css: Reworked for responsive menu.
+* fs/root_src/js/menu.js: Responsive menu show/hide function.
+* fs/root_src/connect/net.html: Net network mode configuration mock up.
+
+
 2015-11-12 Martin Grønholdt
 
 * README.md: Added more buzzwords.
