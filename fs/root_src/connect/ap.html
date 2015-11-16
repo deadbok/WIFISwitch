@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>Network setup info.</title>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+<title>Stand-alone setup.</title>
 <link href="css/normalize.css" rel="stylesheet" type="text/css" />
 <link href="css/custom.css" rel="stylesheet" type="text/css" />
+<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
 </head>
 <body>
 	<nav role="navigation">
@@ -19,49 +19,45 @@
 		</ul>
 	</nav>
 	<section>
-	<!-- include header.html -->
-		<h3>WIFISwitch configuration.</h3>
-		<p>Mode: <span><strong id="mode">unknown</strong></span></p>
-		<p>Firmware version: <span id="fw_ver">0.0.0</span></p>
-		<p>IP address: <span id="ip_addr">none</span></p>
-		<p>Network name: <span id="network">none</span></p>
-		<p>Hostname: <span id="hostname">none</span></p>
-		<p><button type="button" onclick="switchMode()">Change mode</button></p>
-		<p class=message" id="status"><strong>Idle.</strong> &iexcl;Venga, venga!</p>
+		<h3>Stand-alone  connection setup.</h3>
+		<p>Network name:<br />
+		<input type="text" id="ssid" maxlength="32"></p>
+		<p>Channel:<br />
+		<select id="channel">
+		</select>
+		<p>Password:<br />
+		<input type="password" id="passwd" maxlength="64"></p>
+		<p>Hostname:<br />
+		<input type="text" id="hostname" maxlength="32"></p>
+		<p><button type="button" onclick="setAP()">Save</button></p>
+		<p class="message" id="status">
+		</p>
 		<br />
-	<!-- include footer.html -->
 	</section>
 	<footer class="inverted">
 		<small><span class="copyright">&copy; Copyright 2015 Martin Bo Kristensen Gr&oslash;nholdt.</span><a href="LICENSE.zip" class="license inverted">Read license (compressed).</a></small>
-	</footer> 
+	</footer>
 	<script src="js/menu.js" type="text/javascript"></script>
 	<script type="text/javascript">
         var socket = new WebSocket("ws://localhost:8080", "wifiswitch");
         var statusMsg = document.getElementById("status");
         
         statusMsg.innerHTML = "Connecting...</strong>";
+        
+        function populateChannels() {
+			var channelSelect = document.getElementById("channel");
 
-		function switchMode() {
-			var msg = {};
-			msg.type = "fw";
-			
-			if (mode.innerHTML === "<strong>network</strong>") {
-				msg.mode = "ap";
+			for (var i = 1; i < 13; i++) {
+				channelSelect.options[i - 1] = new Option(
+						i, i, false, false);
 			}
-			else if (mode.innerHTML === "<strong>stand-alone</strong>") {
-				msg.mode = "station";
-			}
-			socket.send(JSON.stringify(msg));
-			
-			console.log("Switch mode: " + msg);
-			statusMsg.className = "message";
-			statusMsg.innerHTML = "<strong>Saving.</strong>";
 		}
-		
+        
         socket.onopen = function(event) {
 			console.log("Connected to backend");
 			
-			socket.send(JSON.stringify({type: "fw"}));
+			socket.send(JSON.stringify({type: "ap"}));
+			populateChannels();
 			
 			statusMsg.className = "message success";
 			statusMsg.innerHTML = "<strong>Connected.</strong>";
@@ -72,16 +68,10 @@
 			console.log("Backend message:" + event.data);
 			
 			var msg = JSON.parse(event.data);
-			if (msg.type === "fw") {
-				var mode = document.getElementById("mode");
-				
-				if (msg.mode === "ap") {
-					mode.innerHTML = "<strong>stand-alone</strong>";
-				}
-				else if (msg.mode === "station") {
-					mode.innerHTML = "<strong>network</strong>";
-				}
-				document.getElementById("fw_ver").innerHTML = msg.ver;
+			if (msg.type === "ap") {
+				document.getElementById("ssid").value = msg.ssid;
+				document.getElementById("channel").value = msg.channel;
+				document.getElementById("hostname").value = msg.hostname;
 				statusMsg.className = "message success";
 				statusMsg.innerHTML = "<strong>Updated.</strong>";
 			}
@@ -93,6 +83,23 @@
 			statusMsg.className += "message error";
 			statusMsg.innerHTML = "<strong>Error:</strong> " + event;
         };
+        
+        function setAP() {
+			var passwd = document.getElementById("passwd").value;
+			var msg = {};
+			
+			msg.type = "ap";
+			msg.ssid = document.getElementById("ssid").value;
+			msg.hostname = document.getElementById("hostname").value;
+			msg.channel = parseInt(document.getElementById("channel").value);
+			if (passwd) {
+				msg.passwd = passwd;
+			}
+
+			socket.send(JSON.stringify(msg));
+			statusMsg.className = "message";
+			statusMsg.innerHTML = "<strong>Saving.</strong>";			
+		}
 	</script>
 	<noscript>Sorry I need JavaScript!</noscript>
 </body>

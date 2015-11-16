@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="utf-8">
 <title>Network connection setup.</title>
 <link href="css/normalize.css" rel="stylesheet" type="text/css" />
 <link href="css/custom.css" rel="stylesheet" type="text/css" />
@@ -19,23 +20,28 @@
 	</nav>
 	<section>
 		<h3>Network connection setup.</h3>
-			<p>Network: <select id="networks"><option value="nets">Networks...</option></select></p
-			<p>Hostname: <input type="text" id="hostname" maxlength="32"></p>
-			<p>Password: <input type="password" id="passwd" maxlength="64"></p>
-			<p><button type="button" onclick="SwitchMode()">Save</button></p>
-		<div class="message" id="scnstat">
-			<strong>Scanning!</strong> Still scanning for WIFI networks.
-		</div>
+		<p>Network:<br />
+		<select id="networks"><option value="nets">Networks...</option></select></p
+		<p>Hostname:<br />
+		<input type="text" id="hostname" maxlength="32"></p>
+		<p>Password:<br />
+		<input type="password" id="passwd" maxlength="64"></p>
+		<p><button type="button" onclick="setStation()">Save</button></p>
+		<p class="message" id="status">
+		</p>
+		<br />
 	</section>
 	<footer class="inverted">
 		<small><span class="copyright">&copy; Copyright 2015 Martin Bo Kristensen Gr&oslash;nholdt.</span><a href="LICENSE.zip" class="license inverted">Read license (compressed).</a></small>
 	</footer>
-	<script src="js/request.js" type="text/javascript"></script>
 	<script src="js/menu.js" type="text/javascript"></script>
 	<script type="text/javascript">
-		var pending = false;
-
-		function populateNetworks(networks) {
+        var socket = new WebSocket("ws://localhost:8080", "wifiswitch");
+        var statusMsg = document.getElementById("status");
+        
+        statusMsg.innerHTML = "Connecting...</strong>";
+        
+        function populateNetworks(networks) {
 			var netSelect = document.getElementById("networks");
 
 			netSelect.options.length = 0;
@@ -48,49 +54,58 @@
 			for (var i = 0; i < networks.length; i++) {
 				netSelect.options[netSelect.options.length] = new Option(
 						networks[i], networks[i], false, false);
-				var scnstat = document.getElementById("scnstat");
-				scnstat.className += " success";
-				scnstat.innerHTML = "<strong>Done!</strong> WIFI networks have been scanned.";
-				clearInterval(nameTimer);
+				statusMsg.className = "message success";
+				statusMsg.innerHTML = "<strong>Done!</strong> WIFI networks have been scanned.";
 			}
 		}
 
-		function getNetworks() {
-			if (!pending) {
-				pending = true;
-				JSONrequest('GET', '/rest/net/networks', function(data) {
-					populateNetworks(data);
-					pending = false;
-				}, function() {
-					populateNetworks(new Array("Error..."));
-					pending = false;
-					scnstat.className += " error";
-					scnstat.innerHTML = "<strong>Error</strong> scanning WIFI network names.";
-				});
+        socket.onopen = function(event) {
+			console.log("Connected to backend");
+			
+			socket.send(JSON.stringify({type: "networks"}));
+			
+			statusMsg.className = "message"
+			statusMsg.innerHTML = "Scanning!</strong> Scanning for WIFI networks.";        };
+        
+        // Display messages received from the server
+        socket.onmessage = function(event) {
+			console.log("Backend message:" + event.data);
+			
+			var msg = JSON.parse(event.data);
+			if (msg.type === "networks") {
+				populateNetworks(msg.ssids);
+				socket.send(JSON.stringify({type: "station"}));
 			}
+			else if (msg.type === "station") {
+				document.getElementById("networks").value = msg.ssid;
+				document.getElementById("hostname").value = msg.hostname;
+				statusMsg.className = "message success";
+				statusMsg.innerHTML = "<strong>Updated.</strong>";
+			}
+        };
+
+        // Display any errors that occur
+        socket.onerror = function(event) {
+			console.log("Backend error:" + event);
+			statusMsg.className += "message error";
+			statusMsg.innerHTML = "<strong>Error:</strong> " + event;
+        };
+        
+        function setStation() {
+			var passwd = document.getElementById("passwd").value;
+			var msg = {};
+			msg.type = "station";
+			msg.ssid = document.getElementById("networks").value;
+			msg.hostname = document.getElementById("hostname").value;
+			if (passwd) {
+				msg.passwd = passwd;
+			}
+
+			socket.send(JSON.stringify(msg));
+			statusMsg.className = "message";
+			statusMsg.innerHTML = "<strong>Saving.</strong>";
 		}
-
-		function networkSelect() {
-			var networkName = document.getElementById("networks").value;
-			var network = document.getElementById("network");
-
-			JSONrequest('PUT', '/rest/net/network', function(data) {
-				network.innerHTML = networkName;
-				window.location.assign("/passwd.html");
-			}, function() {
-				network.innerHTML = "Could not set network name.";
-			}, "{ \"network\" : \"" + networkName + "\" }");
-		}
-
-		var network = document.getElementById("network");
-		
-		JSONrequest('GET', '/rest/net/network', function(data) {
-			network.innerHTML = data.network;
-		}, function() {
-			network.innerHTML = "Could not get default network name.";
-		});
-
-		var nameTimer = setInterval(getNetworks, 2000);
 	</script>
+	<noscript>Sorry I need JavaScript!</noscript>
 </body>
 <html></html>

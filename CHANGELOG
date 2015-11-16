@@ -1,3 +1,19 @@
+2015-11-16 Martin Grønholdt
+
+* fs/root_src/index.html: Ported to websockets.
+* fs/root_src/about.html: Ported to websockets.
+* fs/root_src/connect/index.html: Ported to websockets.
+* fs/root_src/connect/net.html: Ported to websockets.
+* fs/root_src/connect/ap.html: Added file to configure stand-alone mode using websockets.
+* fs/root_src/connect/hostname.html: Removed.
+* fs/root_src/connect/passwd.html: Removed.
+* fs/root_src/connect/nets.html: Removed.
+* fs/root_src/css/custom.css: Minor adjustments.
+* test: Added websocket test server.
+* docs/specs/rfc6455.txt: Websocket protocol specification.
+* docs/ws_proto.md: WiFiSwitch protocol using websockets, documentation.
+
+
 2015-11-13 Martin Grønholdt
 
 * fs/root_src/about.html: Reworked for responsive menu and for use in both modes.

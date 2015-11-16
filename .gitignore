@@ -71,3 +71,5 @@ tools/esp-config-tools/bin
 fs/root_out/
 fs/tools/
 
+#Node JS modules for test server
+tests/ws_test_server/node_modules

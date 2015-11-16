@@ -2,52 +2,69 @@
 <html lang="en">
 <head>
 <title>WIFI Switch.</title>
+<meta charset="utf-8">
 <link href="css/normalize.css" rel="stylesheet" type="text/css" />
 <link href="css/custom.css" rel="stylesheet" type="text/css" />
 <meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
 </head>
 <body>
-<div class="header inverted">
-	<ul class="menu">
-		<li class="menu"><a href="index.html" class="menu-link">WIFISwitch</a></li>
-		<li class="menu"><a href="about.html" class="menu-link">About</a></li>
-	</ul>
-</div>
-<div class="button" id="button" onclick="buttonSwitch()"></div>
-<div class="footer inverted">
-	<small><span class="copyright">&copy; Copyright 2015 Martin Bo Kristensen Gr&oslash;nholdt.</span><a href="LICENSE.zip" class="license inverted">Read license (compressed).</a></small>
-</div>
-<script src="/js/request.js" type="text/javascript"></script>
-<script type="text/javascript">
-var button = document.getElementById("button");
-var state = false;
+	<nav role="navigation">
+		<a href="#" class="hidden-menu" onclick="ToggleHide('menu');" id="hidden-menu">&#9776;</a>
+		<ul id="menu">
+			<li><a href="index.html" class="menu">WIFISwitch</a></li>			
+			<li><a href="about.html" class="menu">About</a></li>
+		</ul>
+	</nav>
+	<section>
+		<div class="button" id="button" onclick="buttonSwitch()"></div>
+	</section>
+	<footer class="inverted">
+		<small><span class="copyright">&copy; Copyright 2015 Martin Bo Kristensen Gr&oslash;nholdt.</span><a href="LICENSE.zip" class="license inverted">Read license (compressed).</a></small>
+	</footer> 
+	<script src="js/menu.js" type="text/javascript"></script>
+	<script type="text/javascript">
+		var button = document.getElementById("button");
+		var state = false;
+        var socket = new WebSocket("ws://localhost:8080", "wifiswitch");
 
-function getState()
-{
-	JSONrequest('GET', '/rest/gpios/5', function(data) {
-		if (data.state)
-		{
-			state = true;
-			button.className = "button-on button"
+        socket.onopen = function(event) {
+			console.log("Connected to backend");
+			
+			socket.send(JSON.stringify({type: "gpio"}));
+       };
+        
+        // Display messages received from the server
+        socket.onmessage = function(event) {
+			console.log("Backend message:" + event.data);
+			
+			var msg = JSON.parse(event.data);
+			if (msg.type === "gpio") {
+				if (msg.gpios[1]) {
+					state = true;
+					button.className = "button-on button";
+				}
+				else {
+					state = false;
+					button.className = "button-off button";
+				}
+			}
+        };
+
+        // Display any errors that occur
+        socket.onerror = function(event) {
+			console.log("Backend error:" + event);
+        };
+
+		function buttonSwitch() {
+			state = !state;
+			if (state) {
+				socket.send(JSON.stringify({type: "gpio", gpios : [ 0, 1 ]}));
+			}
+			else {
+				socket.send(JSON.stringify({type: "gpio", gpios : [ 0, 0 ]}));
+			}
 		}
-		else
-		{
-			state = false;
-			button.className = "button-off button"
-		}
-	});
-}
-
-function buttonSwitch()
-{
-	state = !state;
-
-	var request = "{\"state\":" + Number(state).toString() + "}";
-	JSONrequest('PUT', '/rest/gpios/5', getState, getState, request);
-}
-
-getState();
-</script>
-<noscript>Sorry I need JavaScript!</noscript>
+	</script>
+	<noscript>Sorry I need JavaScript!</noscript>
 </body>
 </html>

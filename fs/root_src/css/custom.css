@@ -34,6 +34,7 @@ nav
 nav ul
 {
 	overflow: auto;
+	margin: 0.25em auto;
 	margin-right: auto;
 	margin-left: auto;
 }
@@ -85,7 +86,7 @@ footer
 
 nav .hidden-menu
 {
-  display:none;
+	display: none;
 }
 
 section
@@ -123,17 +124,12 @@ section
 	padding-left: 1em;
 }
 
-.grey
-{
-	color: dimgrey;
-}
-
 .message
 {
-	padding:1.5em;
+	padding: 1.5em;
 	margin-top: 1em;
-	background:#def;
-	border-left:5px solid #59d
+	background: #def;
+	border-left: 0.25em solid #59d
 }
 
 .error
@@ -157,9 +153,9 @@ button {
 	background:linear-gradient(to bottom, #2dabf9 5%, #0688fa 100%);
 	/*filter:progid:DXImageTransform.Microsoft.gradient(startColorstr='#2dabf9', endColorstr='#0688fa',GradientType=0);*/
 	background-color:#2dabf9;
-	-moz-border-radius:3px;
-	-webkit-border-radius:3px;
-	border-radius:3px;
+	-moz-border-radius:2px;
+	-webkit-border-radius:2px;
+	border-radius:2px;
 	display:inline-block;
 	cursor:pointer;
 	color:#ffffff;
