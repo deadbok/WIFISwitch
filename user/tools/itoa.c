@@ -10,14 +10,6 @@
 #include "user_config.h" 
 #include "c_types.h"
 
-/**
- * @brief Convert an integer to a string.
- * 
- * @param value The value to be converted.
- * @param result A pointer to where the string is written.
- * @param base The base used to convert the value.
- * @return A pointer to #result, or NULL on error.
- */ 
 char *itoa(long value, char *result, const unsigned char base)
 {
 	const char *chr_map = "0123456789abcdef";

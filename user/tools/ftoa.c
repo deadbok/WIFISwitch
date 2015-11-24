@@ -9,14 +9,6 @@
 #include "user_config.h" 
 #include "c_types.h"
 
-/**
- * @brief Convert a base 10 float to a string.
- * 
- * @param value The value to be converted.
- * @param result A pointer to where the string is written.
- * @param fractional_digits Digits after the point.
- * @return A pointer to #result, or NULL on error.
- */ 
 char *ftoa(float value, char *result, unsigned char fractional_digits)
 {
 	const char *chr_map = "0123456789";

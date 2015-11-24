@@ -33,19 +33,6 @@
 #include "http.h"
 #include "http-common.h"
 
-/**
- * @brief Print a Common Log Format message to the console.
- * 
- * Log access to the web server to console in a standardized text file format:
- * 
- *  host ident authuser date request status bytes
- * 
- * or:
- * 
- *  127.0.0.1 user-identifier frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326
- * 
- * See [CLF](https://en.wikipedia.org/wiki/Common_Log_Format).
- */
 void http_print_clf_status(struct http_request *request)
 {
     char *unknown = "-";
@@ -77,3 +64,32 @@ void http_print_clf_status(struct http_request *request)
 			  request->response.status_code, request->response.message_size);
 }
 
+char *http_eat_crlf(char *ptr, size_t number)
+{
+	//debug("Eat line ends at %s.\n", ptr);
+	if (*ptr == '\r')
+	{
+		os_bzero(ptr, number * 2);
+		ptr += (number * 2);
+	}
+	else
+	{ 
+		os_bzero(ptr, number);
+		ptr += number;
+	}
+	return(ptr);
+}
+
+char *http_skip_crlf(char *ptr, size_t number)
+{
+	//debug("Skipping line ends at %s.\n", ptr);
+	if (*ptr == '\r')
+	{
+		ptr += (number * 2);
+	}
+	else
+	{
+		ptr += number;
+	}
+	return(ptr);
+} 

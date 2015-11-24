@@ -48,7 +48,7 @@
  * @brief Return code when done.
  * 
  * Signals that the handler is done, and no one is allowed to
- * take over. The connection data must is kept, and some one else will
+ * take over. The connection data is kept, and someone else will
  * have to clean up.
  */
 #define RESPONSE_DONE_NO_DEALLOC -2
@@ -57,7 +57,24 @@
  */
 #define RESPONSE_DONE_ERROR -3
 
+/**
+ * @brief Register a handler.
+ * 
+ * Register functions to handle some URIs. The list of registered
+ * handlers is searched from the first added handler to the last.
+ * Make sure to add the most specific URIs first.
+ * 
+ * @param uri The base URI that the handler will start at. Everything
+ *            below this URI will be handled by this handler, except
+ *            when another rule, *added before this*, will handle it.
+ * @param handler Pointer to the callback.
+ */
 extern bool http_add_handler(char *uri, http_handler_callback handler);
+/**
+ * @brief Remove a registered handler.
+ * 
+ * @param handler Pointer to a the callback.
+ */
 extern bool http_remove_handler(http_handler_callback handler);
 extern http_handler_callback http_get_handler(
 	struct http_request *request,

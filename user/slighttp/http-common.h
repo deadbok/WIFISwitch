@@ -33,51 +33,45 @@
 #define HTTP_EAT_SPACES(string) while (*string == ' ')\
                                     *string++ = '\0'
 /**
- * @brief Eat line ends from HTTP headers.
- * 
- * This macro is used to be tolerant, accepting both CRLF and LF endings.
- */
-#define HTTP_EAT_CRLF(ptr, number)  do\
-                                    {\
-                                        if (*ptr == '\r')\
-                                        {\
-                                            os_bzero(ptr, number * 2);\
-                                            ptr += (number * 2);\
-                                        }\
-                                        else\
-                                        {\
-                                            os_bzero(ptr, number);\
-                                            ptr += number;\
-                                        }\
-                                    } while(0)
-/* Wrapping stuff in do...while(0), makes it possible to invoke the macro like a
- * function call ending with semicolon (;).
- * Idea from here: [https://gcc.gnu.org/onlinedocs/cpp/Swallowing-the-Semicolon.html
- */
-/**
  * @brief Skip initial spaces.
  * 
  * Skip initial spaces in a string.
  */
-#define HTTP_SKIP_SPACES(string) while (*string == ' ')\
-                                    string++
-/**
- * @brief Skip line ends from HTTP headers.
- * 
- * This macro is used to be tolerant, accepting both CRLF and LF endings.
- */
-#define HTTP_SKIP_CRLF(ptr, number)  do\
-                                    {\
-                                        if (*ptr == '\r')\
-                                        {\
-                                            ptr += (number * 2);\
-                                        }\
-                                        else\
-                                        {\
-                                            ptr += number;\
-                                        }\
-                                    } while(0)
+#define HTTP_SKIP_SPACES(string) while (*string == ' ')                \
+									*string++
 
+/**
+ * @brief Print a Common Log Format message to the console.
+ * 
+ * Log access to the web server to console in a standardized text file format:
+ * 
+ *  host ident authuser date request status bytes
+ * 
+ * or:
+ * 
+ *  127.0.0.1 user-identifier frank [10/Oct/2000:13:55:36 -0700] "GET /apache_pb.gif HTTP/1.0" 200 2326
+ * 
+ * See [CLF](https://en.wikipedia.org/wiki/Common_Log_Format).
+ */
 extern void http_print_clf_status(struct http_request *request);
+/**
+ * @brief Eat line ends.
+ * 
+ * Replace occurrences of both CRLF and LF by ``\0``.
+ * 
+ * @param ptr The string to work on.
+ * @param number Number of CRLF's to eat.
+ */
+extern char *http_eat_crlf(char *ptr, size_t number);
+/**
+ * @brief Skip line ends.
+ * 
+ * Return a pointer to just after the lene end.
+ * 
+ * @param ptr The string to work on.
+ * @param number Number of CRLF's to eat.
+ * @return Pointer after the line end.
+ */
+extern char *http_skip_crlf(char *ptr, size_t number);
 
 #endif //HTTP_COMMON_H

@@ -25,6 +25,7 @@
 #define HTTP_H
 
 #include "net/tcp.h"
+#include "tools/dl_list.h"
 /**
  * @brief Server name.
  */
@@ -169,6 +170,25 @@ struct http_response
 };
 
 /**
+ * @brief HTTP header.
+ */
+struct http_header
+{
+	/**
+	 * @brief Header name.
+	 */
+	char *name;
+	/**
+	 * @brief Header balue.
+	 */
+	char *value;
+	/**
+	 * @brief Add linked list entries.
+	 */
+	DL_LIST_CREATE(struct http_header);
+};
+
+/**
  * @brief Structure to keep the data of a HTTP request.
  */
 struct http_request
@@ -190,9 +210,9 @@ struct http_request
      */
     char *version;
     /**
-     * @brief Copy of the header data received.
+     * @brief List of headers.
      */
-    char *headers;
+    struct http_header *headers;
     /**
      * @brief The message body of the HTTP request.
      */
@@ -203,7 +223,7 @@ struct http_request
     struct http_response response;
 };
 
-extern char *http_fs_doc_root;
+//extern char *http_fs_doc_root;
 
 extern bool init_http(unsigned int port);
 extern bool http_get_status(void);

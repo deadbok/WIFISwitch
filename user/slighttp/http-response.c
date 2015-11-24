@@ -61,6 +61,10 @@ unsigned char http_send_status_line(struct tcp_connection *connection, unsigned 
 	debug("Sending status line with status code %d.\n", status_code);	
 	switch (status_code)
 	{
+		case 101:
+			response = HTTP_STATUS_101;
+			size = os_strlen(HTTP_STATUS_101);
+			break;
 		case 200:
 			response = HTTP_STATUS_200;
 			size = os_strlen(HTTP_STATUS_200);

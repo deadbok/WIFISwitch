@@ -89,55 +89,112 @@ static size_t http_get_request_type(struct tcp_connection *connection)
 }
 
 /**
- * @brief Get the size of the headers.
+ * @brief Parse the headers into the request struct.
+ * 
+ * *Modifies request data.*
  * 
  * @param request Pointer to the request where the headers belong.
  * @param raw_headers Pointer to the raw headers to parse. 
- * @return Size of the headers in bytes.
  */
-static size_t http_get_headers_size(
+static void http_parse_headers(
 	struct http_request *request,
 	char* raw_headers
 )
 {
+	struct http_header *header, *headers = request->headers;
     //Pointers to keep track of where we are.
     char *data = raw_headers;
+    char *next_data, *value;
     //True if something is done doing stuff.
     bool done;
+    //True if a host header was seen.
+    bool host = false;
     
 	//Run through the response headers.
-	debug("Getting headers (%p) size:\n", data);
+	debug("Getting headers (%p).\n", data);
 	//Not done.
 	done = false;
 	//Go go go.
 	while (!done && data)
 	{
-		data = strchrs(data, "\r\n");
-		if (data)
+		next_data = strchrs(data, "\r\n");
+		if (next_data)
 		{
 			//Is it the end?
-			if ((os_strncmp(data, "\r\n\r\n ", 4) == 0) ||
-				(os_strncmp(data, "\n\n ", 2) == 0))
+			if ((os_strncmp(next_data, "\r\n\r\n ", 4) == 0) ||
+				(os_strncmp(next_data, "\n\n ", 2) == 0))
 			{
 				debug(" Last header.\n");
-				HTTP_SKIP_CRLF(data, 2);
+				next_data = http_eat_crlf(next_data, 2);
 				//Get out.
 				done = true;
 			}
 			else
 			{
-				debug(".");
-				HTTP_SKIP_CRLF(data, 1);
+				next_data = http_eat_crlf(next_data, 1);
+			}
+			debug("%s\n", data);
+			//Find end of name.
+            value = os_strstr(data, ":");
+            //Spec. says to return 400 on space before the colon.
+            if ((!value) || (*(value - 1) == ' '))
+            {
+                error("Could not parse request header: %s\n", data);
+				request->response.status_code = 400;
+				return;
+			}
+			//End name string.
+            *value++ = '\0';
+            //Convert to lower case.
+            //Note to self, the name has just been zero terminated above.
+            data = strlwr(data);
+            if (os_strcmp(data, "host") == 0)
+            {
+				debug(" Host header.\n");
+				host = true;
+			}
+            //Get some memory for the pointers.
+            header = (struct http_header *)db_zalloc(sizeof(struct http_header), "http_get_headers header");
+            //And the name.
+            header->name = db_zalloc(os_strlen(data) + 1, "http_get_headers header->name");
+            os_strcpy(header->name, data);
+            debug(" Name (%p): %s\n", header->name, header->name);
+            
+            //Eat spaces in front of value.
+            HTTP_EAT_SPACES(value);
+            //And the value.
+            header->value = db_zalloc(os_strlen(value) + 1, "http_get_headers header->value");
+            os_strcpy(header->value, value);
+            debug(" Value (%p): %s\n", header->value, header->value);
+            
+			//Add header to list.
+			debug(" Adding header");
+			if (!request->headers)
+			{
+				debug(", list starts at %p.\n", header);
+				request->headers = header;
+				headers = header;
+			}
+			else
+			{
+				debug(" at %p.\n", headers);
+				DL_LIST_ADD_END(header, headers);
 			}
 		}
 		else
 		{
 			error("Unexpected or missing end of request headers.\n");
 			request->response.status_code = 400;
-			return(0);
+			return;
 		}
+		data = next_data;
 	}
-	return(data - raw_headers);
+	if (!host)
+	{
+		error("No host header.\n");
+		request->response.status_code = 400;
+		return;
+	}
 }
 
 /**
@@ -207,22 +264,8 @@ bool http_parse_request(struct tcp_connection *connection, unsigned short length
     request->version[size] = '\0';
     debug(" Version (%p): %s\n", request_entry, request->version);
     
-    HTTP_SKIP_CRLF(next_entry, 1);
-    size = http_get_headers_size(request, next_entry);
-	//Copy headers
-	if (size > 0)
-	{
-		debug(" Copying %d bytes of header data.\n", size);
-		request->headers = db_malloc(size + 1, "request->headers http_parse_request");
-		os_memcpy(request->headers, next_entry, size);
-		request->headers[size] = '\0';
-		//Forward.
-		next_entry += size;
-	}
-	else
-	{
-		debug(" No headers.\n");
-	}
+    next_entry = http_skip_crlf(next_entry, 1);
+    http_parse_headers(request, next_entry);
 	
     //Get length of message data if any.
     size = length - (next_entry - connection->callback_data.data);
@@ -273,7 +316,16 @@ void http_free_request(struct http_request *request)
 		if (request->headers)
 		{
 			debug("Deallocating request headers.\n");
-			db_free(request->headers);
+			
+			do
+			{
+				struct http_header *next = request->headers->next;
+				
+				db_free(request->headers->name);
+				db_free(request->headers->value);
+				db_free(request->headers);
+				request->headers = next;
+			} while (request->headers);
 		}
 		debug("Deallocating request.\n");
 		db_free(request);

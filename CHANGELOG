@@ -1,3 +1,29 @@
+2015-11-24 Martin Grønholdt
+
+* docs/TODO.md: Removed REST, added WebSockets.
+* fs/Makefile: Added DEBUGFS define to have the raw file system in flash.
+* fs/root_src/index.html: Initial websocket code.
+* mk/config.mk: Added WebSocket code.
+* user/slighttp/http-common.c (http_eat_crlf): Added.
+							  (http_skip_crlf): Added.
+* user/slighttp/http-common.h: Remove macro version of the above.
+* user/slighttp/http-handler.c (http_remove_handler): Use defined message lengths. 
+													: Use http_send_default_headers.
+* user/slighttp/http-request.c (http_get_headers_size): Removed.
+							   (http_parse_headers): Added.
+							   (http_parse_request): Use http_parse_headers.
+							   (http_free_request): Free headers.
+* user/slighttp/http-response.c (http_send_status_line): Add 101 status.
+* user/slighttp/http-response.h: Add 101 status.
+* user/slighttp/http.h (struct http_header): Added.
+					   (struct http_request): Use http_header.
+* user/user_main.c (connected): Remove REST handlers and add WebSocket handler to default mode.
+* user/tools/sha1.h: Added SHA1 hash algorithm.
+* user/tools/sha1.c: Added.
+* docs/specs/rfc4648.txt: Added on Base64 coding.
+* docs/specs/rfc3174.txt: Added on SHA1 hashing.
+
+
 2015-11-16 Martin Grønholdt
 
 * fs/root_src/index.html: Ported to websockets.

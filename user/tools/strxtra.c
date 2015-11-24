@@ -36,15 +36,6 @@
 #include "c_types.h"
 #include "osapi.h"
 
-/**
- * @brief Find a character in a string.
- * 
- * Find any of the characters in @p chrs in @p str.
- * 
- * @param str The string to look in.
- * @param chrs A string consisting af all individual characters to look for.
- * @return A pointer to the first occurrence of any char in @p chrs or NULL.
- */
 char *strchrs(char *str, char *chrs)
 {
     unsigned int n_ch = 0;
@@ -70,12 +61,6 @@ char *strchrs(char *str, char *chrs)
     return(ptr);
 }
 
-/**
- * @brief Convert every character of a string to lower case.
- * 
- * @param str Pointer to the string to work on.
- * @return Pointer to the string.
- */
 char *strlwr(char *str)
 {
     char    *ptr = str;
@@ -94,13 +79,6 @@ char *strlwr(char *str)
     return(str);
 }
 
-/**
- * @brief Find the length of a long, when converted to a string.
- * 
- * @param n Count the number of tenth in this number.
- * @return The number of characters needed for the string version of
- *         the number.
- */
 unsigned short digits(long n)
 {
 	unsigned short i = 1;
@@ -124,14 +102,6 @@ unsigned short digits(long n)
 	return(i);
 }
 
-/**
- * @brief Find the length of a float, when converted to a string.
- * 
- * @param n Count the number of digits in this float.
- * @param fractional_digits Number of digits after the decimal separator.
- * @return The number of characters needed for the string version of
- *         the number.
- */
 unsigned short digits_f(float n, unsigned char fractional_digits)
 {
 	long int_part = n;
@@ -140,16 +110,6 @@ unsigned short digits_f(float n, unsigned char fractional_digits)
 	return(digits(int_part) + fractional_digits + 1);
 }
 
-/**
- * @brief Replace a string within another.
- * 
- * Replace a string within another.
- * 
- * @param src The string to operate on.
- * @param rpl The string to replace the old.
- * @param pos Position from where to start overwriting the old string.
- * @return Pointer to `src` or NULL on error.
- */
 char *strrpl(char *src, char *rpl, size_t pos)
 {
 	size_t src_size, rpl_size;

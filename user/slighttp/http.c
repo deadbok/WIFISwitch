@@ -87,7 +87,7 @@ bool init_http(unsigned int port)
 	{
 		return(false);
 	}
-	//Create buffer for 50 requests.
+	//Create buffer for requests.
 	debug("Creating request buffer.\n");
 	init_ring(&request_buffer, sizeof(struct tcp_connection *), HTTP_REQUEST_BUFFER_SIZE);
 	

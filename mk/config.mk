@@ -33,7 +33,7 @@ NETWORK_MODE = 1
 # Modules (subdirectories) of the project to include when compiling.
 MODULES	= user user/fs user/net user/slighttp user/tools user/driver
 MODULES	+= user/handlers/fs user/handlers/deny user/handlers/rest
-MODULES += user/config user/jsmn
+MODULES += user/handlers/websocket user/config user/jsmn
 # Libraries used in this project, mainly provided by the SDK
 LIBS = c gcc hal pp phy net80211 lwip wpa main
 # Directory for generating the file system root. A Makefile is expected

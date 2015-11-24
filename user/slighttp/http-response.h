@@ -37,6 +37,10 @@
 
 //Predefined response status-lines.
 /**
+ * @brief HTTP 100 Switching Protocols response.
+ */
+#define HTTP_STATUS_101 HTTP_STATUS_LINE("101", "Switching Protocols")
+/**
  * @brief HTTP 200 OK response.
  */
 #define HTTP_STATUS_200 HTTP_STATUS_LINE("200", "OK")
@@ -103,9 +107,10 @@
 /**
  * @brief HTTP default response HTML.
  */
-#define HTTP_ERROR_HTML_START 		"<!DOCTYPE html><head><title>Error.</title></head><body><h1>Error status.</h1><br />"
-#define HTTP_ERROR_HTML_END			".</body></html>"
-#define HTTP_ERROR_HTML_LENGTH		105
+#define HTTP_ERROR_HTML_START 			"<!DOCTYPE html><head><title>Error.</title></head><body><h1>Error status"
+#define HTTP_ERROR_HTML_START_LENGTH	71
+#define HTTP_ERROR_HTML_END				".</h1><br /></body></html>"
+#define HTTP_ERROR_HTML_END_LENGTH		26
 
 extern unsigned char http_send_status_line(
 	struct tcp_connection *connection, unsigned short status_code);

@@ -58,6 +58,9 @@ struct button_info
 	 * @brief Signal used to call the button handler.
 	 */
 	os_signal_t signal;
+	/**
+	 * @brief The edge that will trigger the next interrupt.
+	 */
 	GPIO_INT_TYPE edge;
 };
 

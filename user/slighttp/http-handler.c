@@ -56,18 +56,6 @@ static struct http_handler_entry *response_handlers = NULL;
  */
 static unsigned int n_handlers = 0;
 
-/**
- * @brief Register a handler.
- * 
- * Register functions to handle some URIs. The list of registered
- * handlers is searched from the first added handler to the last.
- * Make sure to add the most specific URIs first.
- * 
- * @param uri The base URI that the handler will start at. Everything
- *            below this URI will be handled by this handler, except
- *            when another rule, *added before this*, will handle it.
- * @param handler Pointer to the callback.
- */
 bool http_add_handler(char *uri, http_handler_callback handler)
 {
 	struct http_handler_entry *handlers = response_handlers;
@@ -112,11 +100,6 @@ bool http_add_handler(char *uri, http_handler_callback handler)
 	return(true);
 }
 
-/**
- * @brief Remove a registered handler.
- * 
- * @param handler Pointer to a the callback.
- */
 bool http_remove_handler(http_handler_callback handler)
 {
 	struct http_handler_entry *entry = response_handlers;
@@ -257,7 +240,6 @@ http_handler_callback http_get_handler(
 signed int http_status_handler(struct http_request *request)
 {
 	size_t size = 0;
-	char str_size[5];
 	char *msg = NULL;
 	char default_msg[102];
 	signed int ret;
@@ -308,23 +290,16 @@ signed int http_status_handler(struct http_request *request)
 			msg = HTTP_501_HTML;
 			break;
 		default:
-			os_memcpy(default_msg, HTTP_ERROR_HTML_START, 83);
-			size = 83;
+			os_memcpy(default_msg, HTTP_ERROR_HTML_START, HTTP_ERROR_HTML_START_LENGTH);
+			size = HTTP_ERROR_HTML_START_LENGTH;
 			itoa(request->response.status_code, (char *)(default_msg + size), 10);
 			size += 3;
-			os_memcpy(default_msg + size, HTTP_ERROR_HTML_END "\0", 16);
-			size += 15;
+			os_memcpy(default_msg + size, HTTP_ERROR_HTML_END "\0", HTTP_ERROR_HTML_START_LENGTH + 1);
+			size += HTTP_ERROR_HTML_START_LENGTH;
 			msg = default_msg;
 	}
-	itoa(size, str_size, 10);
 	ret = http_send_status_line(request->connection, request->response.status_code);
-	ret += http_send_header(request->connection, "Connection", "close");
-	ret += http_send_header(request->connection, "Server", HTTP_SERVER_NAME);	
-	//Send message length.
-	ret += http_send_header(request->connection, "Content-Length", str_size);
-	ret += http_send_header(request->connection, "Content-Type", http_mime_types[MIME_HTML].type);	
-	//Send end of headers.
-	ret += http_send(request->connection, "\r\n", 2);
+	ret += http_send_default_headers(request, size, "html");
 	if (msg)
 	{
 		ret += http_send(request->connection, msg, size);
@@ -333,7 +308,6 @@ signed int http_status_handler(struct http_request *request)
 	done = true;
 	return(ret);
 }
-
 
 /**
  * @brief Template handler for simple GET/PUT handlers.

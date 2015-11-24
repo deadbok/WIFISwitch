@@ -78,7 +78,7 @@
 #include "handlers/fs//http-fs.h"
 #include "slighttp/http-handler.h"
 #include "handlers/deny/http-deny.h"
-
+#include "handlers/websocket/websocket.h"
 /**
  * @brief Linker symbol that points to the end of the ROM code in flash.
  */
@@ -113,8 +113,6 @@ os_timer_t status_timer;
  */
 static void button_config(os_param_t gpio)
 {
-	unsigned int gpio_state;
-	
 	debug("Button press %d.\n", gpio);
 	config_mode = true;
 	db_printf("Configuration mode enabled.\n");
@@ -145,7 +143,6 @@ static void button_switch(os_param_t gpio)
 		debug(" New state: %d.\n", gpio_state);
 		GPIO_OUTPUT_SET(5, gpio_state);
 	}
-	
 	button_ack(gpio);
 }
 
@@ -176,16 +173,8 @@ static void connected(os_signal_t mode)
 	{
 		//Start web server with default pages.
 		init_http(80);		
-		db_printf("Adding memory REST handler.\n");
-		http_add_handler("/rest/fw/mem", &http_rest_mem_handler);
-		db_printf("Adding version REST handler.\n");
-		http_add_handler("/rest/fw/version", &http_rest_version_handler);
-		/*db_printf("Adding network names REST handler.\n");
-		http_add_handler("/rest/net/networks", &http_rest_net_names_handler);
-		db_printf("Adding default network REST handler.\n");
-		http_add_handler("/rest/net/network", &http_rest_network_handler);*/
-		db_printf("Adding gpio REST handler.\n");
-		http_add_handler("/rest/gpios/*", &http_rest_gpio_handler);
+		db_printf("Adding WebSocket handler.\n");
+		http_add_handler("/ws*", &http_ws_handler);
 		db_printf("Adding deny handler.\n");
 		http_add_handler("/connect/*", &http_deny_handler);
 		http_fs_init("/");
