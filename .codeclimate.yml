@@ -12,4 +12,5 @@ ratings:
   - "**.js"
   - "**.jsx"
 exclude_paths: 
-- "*.md"
+- "**.md"
+

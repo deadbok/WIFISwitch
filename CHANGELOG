@@ -1,3 +1,13 @@
+2015-11-25 Martin Grønholdt
+
+* user/slighttp/http-response.c (http_send_header): Bail out if input is to large.
+* user/handlers/websocket/websocket.c (websocket_gen_accept_value): Added Base64 encoding.
+									  (http_ws_handler): Rearranged.
+* user/handlers/websocket/websocket.h: Started adding WebSocket frames.
+* user/tools/sha1.c: Use the right formatting for printf.
+* user/tools/base64.*: Added for Base64 encoding.
+
+
 2015-11-24 Martin Grønholdt
 
 * docs/TODO.md: Removed REST, added WebSockets.

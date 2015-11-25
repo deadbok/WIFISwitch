@@ -27,6 +27,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <inttypes.h>
 #include "user_config.h"
 #include "sha1.h"
 
@@ -177,8 +178,8 @@ void sha1_init(struct sha1_context *context)
 
 void sha1_process(uint32_t w[16], uint64_t size, struct sha1_context *context)
 {
-	debug("Processing chunk, %lu bits.\n", (unsigned long)size);
-	debug(" Current length %lu.\n", (unsigned long)context->length.qw[0]);
+	debug("Processing chunk, " PRIu64 " bits.\n", size);
+	debug(" Current length " PRIu64 ".\n", context->length.qw[0]);
 	
 	//Copy the message into the buffer.
 	os_memcpy(context->buffer.b, w, size >> 3);
@@ -202,7 +203,7 @@ void sha1_process(uint32_t w[16], uint64_t size, struct sha1_context *context)
 		sha1_process_chunk(context);
 	}
 	
-	debug(" Current length %lu.\n", (unsigned long)context->length.qw[0]);
+	debug(" Current length " PRIu64 ".\n", context->length.qw[0]);
 	return;
 }
 
@@ -211,7 +212,7 @@ void sha1_final(struct sha1_context *context)
 	unsigned char i;
 	
 	debug("Finalising digest %p.\n", context);
-	debug(" Final length %lu.\n", (unsigned long)context->length.qw[0]);
+	debug(" Final length " PRIu64 ".\n", context->length.qw[0]);
 	
 	if (context->pad)
 	{

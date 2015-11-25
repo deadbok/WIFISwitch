@@ -29,6 +29,8 @@
 //#include "user_interface.h"
 #include "user_config.h"
 #include "tools/sha1.h"
+#include "tools/base64.h"
+#include "tools/strxtra.h"
 #include "slighttp/http.h"
 //#include "slighttp/http-mime.h"
 #include "slighttp/http-response.h"
@@ -104,6 +106,10 @@ static char *websocket_gen_accept_value(char *key)
 	size_t length;
 	char *key_guid;
 	char *key_guid_cur;
+	//char digest[41];
+	char *value;
+	//char *digest_pos;
+	unsigned char i;
 	
 	debug("Creating accept value from key %s.\n", key);
 	
@@ -132,13 +138,28 @@ static char *websocket_gen_accept_value(char *key)
 	};
 	sha1_final(&context);
 	
-	debug(" Digest: \n");
-	debug_digest(context.digest.b);
-	debug("\n");
-	
+	//Convert digest to hex string.
+	/*digest_pos = digest;
+	for (i = 0; i < 20; i++)
+	{
+		itoa(context.digest.b[i], digest_pos, 16);
+		digest_pos += 2;
+	}
+	db_hexdump(digest, 41);
+	digest[40] = '\0';
+	debug(" Digest: %s\n", digest);*/
+
+	//Base64 encode.
+	value = db_malloc(100, "websocket_gen_accept_value value");
+	if (!base64_encode((char *)context.digest.b, 20, value, 100))
+	{
+		error(" Base64 encoding failed.\n");
+		return(NULL);
+	}
+
 	db_free(key_guid);
-	
-	return(NULL);
+	debug("Done.\n");
+	return(value);
 }
 
 /**
@@ -154,7 +175,8 @@ signed int http_ws_handler(struct http_request *request)
 	char *needed_headers[] = HTTP_WS_HEADERS;
 	signed int ret = 0;
 	unsigned char i;
-	char *key;
+	char *key = NULL;
+	char *accept_value;
 	
 	debug("WebSocket access to %s.\n", request->uri);
 	
@@ -180,7 +202,7 @@ signed int http_ws_handler(struct http_request *request)
 							break;
 						case HTTP_WS_HEADER_KEY:
 							debug("  Key header.\n");
-							websocket_gen_accept_value(header->value);
+							key = header->value;
 							break;
 						case HTTP_WS_HEADER_ORIGIN:
 							debug("  Origin header.\n");
@@ -198,6 +220,9 @@ signed int http_ws_handler(struct http_request *request)
 			header = header->next;
 		}
 		
+		//Generate reponse accept value from key.
+		accept_value = websocket_gen_accept_value(key);
+		
 		//Switching protocols.
 		request->response.status_code = 101;
 		//Send handshake status and headers.
@@ -209,7 +234,7 @@ signed int http_ws_handler(struct http_request *request)
 								"Upgrade");
 		//Key.						
 		ret += http_send_header(request->connection, "Sec-WebSocket-Accept",
-								key);
+								accept_value);
 		//Protocol.
 		ret += http_send_header(request->connection, "Sec-WebSocket-Protocol",
 								HTTP_WS_PROTOCOL);

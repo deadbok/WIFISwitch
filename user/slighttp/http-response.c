@@ -127,6 +127,11 @@ unsigned short http_send_header(struct tcp_connection *connection, char *name, c
 	size_t size;
 
 	debug("Sending header (%s: %s).\n", name, value);
+	if (os_strlen(name) + os_str_len(value) > 508)
+	{
+		warn("Header to large to send.\n");
+		return(0);
+	}
 	size = os_sprintf(header, "%s: %s\r\n", name, value);
 	return(http_send(connection, header, size));
 
