@@ -121,9 +121,6 @@ void tcp_recv_cb(struct tcp_connection *connection)
 		(connection->callback_data.length == 0))
     {
 		request->response.status_code = 400;
-	}
-    if (request->response.status_code == 400)
-    {
 		warn("Empty request received.<n");
 	}
 

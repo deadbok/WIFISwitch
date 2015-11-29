@@ -88,7 +88,11 @@ unsigned char http_send_status_line(struct tcp_connection *connection, unsigned 
 		case 405: 
 			response = HTTP_STATUS_405;
 			size = os_strlen(HTTP_STATUS_405);
-			break;				  
+			break;
+		case 426: 
+			response = HTTP_STATUS_426;
+			size = os_strlen(HTTP_STATUS_426);
+			break;
 		case 500: 
 			response = HTTP_STATUS_500;
 			size = os_strlen(HTTP_STATUS_500);
@@ -124,17 +128,33 @@ unsigned char http_send_status_line(struct tcp_connection *connection, unsigned 
 unsigned short http_send_header(struct tcp_connection *connection, char *name, char *value)
 {
 	char header[512];
+	char *temp_val = "";
 	size_t size;
 
 	debug("Sending header (%s: %s).\n", name, value);
-	if (os_strlen(name) + os_str_len(value) > 508)
+	if (name)
 	{
-		warn("Header to large to send.\n");
+		if (value)
+		{
+			temp_val = value;
+			if (os_strlen(name) + os_strlen(temp_val) > 508)
+			{
+				warn("Header to large to send.\n");
+				return(0);
+			}
+		}
+		else
+		{
+			warn("Header value is NULL.\n");
+		}
+		size = os_sprintf(header, "%s: %s\r\n", name, temp_val);
+		return(http_send(connection, header, size));
+	}
+	else
+	{
+		warn("Header name is NULL.\n");
 		return(0);
 	}
-	size = os_sprintf(header, "%s: %s\r\n", name, value);
-	return(http_send(connection, header, size));
-
 }
 
 /**

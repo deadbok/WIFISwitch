@@ -133,6 +133,8 @@ struct http_response
 {
     /**
      * @brief Numerical status code.
+     * 
+     * Set to 200 on connection.
      */
     unsigned short status_code;
     /**

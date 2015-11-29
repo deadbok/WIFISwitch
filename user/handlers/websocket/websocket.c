@@ -37,26 +37,6 @@
 #include "handlers/websocket/websocket.h"
 
 #define HTTP_WS_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
-/**
- *    The handshake from the client looks as follows:
- *
- *       GET /chat HTTP/1.1
- *       Host: server.example.com
- *       Upgrade: websocket
- *       Connection: Upgrade
- *       Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ==
- *       Origin: http://example.com
- *       Sec-WebSocket-Protocol: chat, superchat
- *       Sec-WebSocket-Version: 13
- *
- *  The handshake from the server looks as follows:
- *
- *       HTTP/1.1 101 Switching Protocols
- *       Upgrade: websocket
- *       Connection: Upgrade
- *       Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
- *       Sec-WebSocket-Protocol: chat
- */
 
 /**
  * Enumeration to map the required request headers.
@@ -85,16 +65,6 @@ enum http_ws_headers
 						  "origin",                                    \
 						  "sec-websocket-protocol",                    \
 						  "sec-websocket-version" }
-
-#ifdef DEBUG
-#define debug_digest(digest)                                           \
-	for (unsigned char i = 0; i < 20; i++)                             \
-	{                                                                  \
-		debug("%x", digest[i]);                                        \
-	}
-#else
-#define debug_digest(digest)
-#endif //DEBUG
 
 /**
  * @brief Generate accept header value from the client key.
@@ -150,8 +120,8 @@ static char *websocket_gen_accept_value(char *key)
 	debug(" Digest: %s\n", digest);*/
 
 	//Base64 encode.
-	value = db_malloc(100, "websocket_gen_accept_value value");
-	if (!base64_encode((char *)context.digest.b, 20, value, 100))
+	value = db_malloc(BASE64_LENGTH(20) + 1, "websocket_gen_accept_value value");
+	if (!base64_encode((char *)context.digest.b, 20, value, BASE64_LENGTH(20) + 1))
 	{
 		error(" Base64 encoding failed.\n");
 		return(NULL);
@@ -177,6 +147,7 @@ signed int http_ws_handler(struct http_request *request)
 	unsigned char i;
 	char *key = NULL;
 	char *accept_value;
+	bool upgrade = false;
 	
 	debug("WebSocket access to %s.\n", request->uri);
 	
@@ -212,6 +183,12 @@ signed int http_ws_handler(struct http_request *request)
 							break;
 						case HTTP_WS_HEADER_VERSION:
 							debug("  Version header.\n");
+							if (os_strncmp(header->value, "13", 2) != 0)
+							{
+								warn(" Unsupported WebSocket version %s.\n", header->value);
+								request->response.status_code = 426;
+								upgrade = true;
+							}
 							break;
 					}
 					debug("   Value: %s.\n", header->value);
@@ -223,10 +200,23 @@ signed int http_ws_handler(struct http_request *request)
 		//Generate reponse accept value from key.
 		accept_value = websocket_gen_accept_value(key);
 		
-		//Switching protocols.
-		request->response.status_code = 101;
+		//If nothing bad has happened.
+		if (request->response.status_code == 200)
+		{
+			//Switching protocols.
+			request->response.status_code = 101;
+		}
 		//Send handshake status and headers.
 		ret = http_send_status_line(request->connection, request->response.status_code);
+		
+		//Version support error.
+		if (upgrade)
+		{
+			ret += http_send_header(request->connection,
+									"Sec-WebSocket-Version", "13");
+			return(RESPONSE_DONE_FINAL);
+		}
+		
 		//Upgrade.
 		ret += http_send_header(request->connection, "Upgrade",
 								"websocket");
@@ -238,9 +228,37 @@ signed int http_ws_handler(struct http_request *request)
 		//Protocol.
 		ret += http_send_header(request->connection, "Sec-WebSocket-Protocol",
 								HTTP_WS_PROTOCOL);
-		request->response.state = HTTP_STATE_DONE;
+		//Send end of headers.
+		ret += http_send(request->connection, "\r\n", 2);
+		request->response.state = HTTP_STATE_MESSAGE;
+		
 		return(ret);
 	}
-	return(RESPONSE_DONE_FINAL);
+		
+	if (request->response.state == HTTP_STATE_MESSAGE)
+	{
+		debug("WebSocket handler state %d.\n", request->response.state);
+		//ret = http_send(request->connection, "ok", 2);
+
+		//We're done sending the message.
+		request->response.state = HTTP_STATE_MESSAGE;
+		debug("WebSocket handler leaving state %d.\n", request->response.state);
+		return(ret);
+	}
+	    
+	if (request->response.state == HTTP_STATE_DONE)
+	{
+		debug("WebSocket handler entering state %d.\n", request->response.state);
+
+		if (request->response.context)
+		{
+			debug(" Freeing context data.\n");
+			db_free(request->response.context);
+			request->response.context = NULL;
+		}
+		return(RESPONSE_DONE_FINAL);
+	}
+
+	return(RESPONSE_DONE_NO_DEALLOC);
 }
 

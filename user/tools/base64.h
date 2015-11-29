@@ -25,8 +25,12 @@
 #ifndef BASE64_H
 #define BASE64_H
 
-#define base64_length(s) ((s + 2) / 3 * 4)
+#define BASE64_LENGTH(s) ((((s) + 2) * 4) / 3)
 
+/**
+ * Input length has to be a multiply of three when processing continuous
+ * blocks, to avoid padding between them.
+ */
 extern bool base64_encode(char *str, size_t str_len, char *buf, size_t buf_size);
 
 #endif

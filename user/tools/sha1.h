@@ -62,6 +62,10 @@ struct sha1_context
 	 */
 	sha1_type_u(80) buffer;
 	/**
+	 * @brief True if the end bit needed.
+	 */
+	bool end_bit;
+	/**
 	 * @brief True if a final padding chunk is needed.
 	 */
 	bool pad;

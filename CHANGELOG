@@ -1,3 +1,13 @@
+2015-11-39 Martin Grønholdt
+
+* user/handlers/websocket/websocket.c: More handshaking code.
+* user/slighttp/http-response.c (http_send_header): Handle NULL input better.
+* user/slighttp/http-response.h: Added 426 status.
+* user/slighttp/http-tcp.c (tcp_recv_cb): Remove redundant error check.
+* user/tools/base64.*: Last fixes, seems to work.
+* user/tools/sha1.*: Fixed a bug in the padding code.
+
+
 2015-11-25 Martin Grønholdt
 
 * user/slighttp/http-response.c (http_send_header): Bail out if input is to large.

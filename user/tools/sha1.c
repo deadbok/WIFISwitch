@@ -72,13 +72,30 @@ static bool sha1_pad(struct sha1_context *context, uint64_t size)
 	if (offset < 56)
 	{
 		//1-Bit;
+		if (context->end_bit)
+		{
+			context->buffer.b[offset++] = 0x80;
+			context->end_bit = false;
+		}
+	}
+	else if (offset < 64)
+	{
+		debug(" Need to add another chunk.\n");
+		//1-Bit;
+		//Should only get here if this is not called by sha1_final,
+		//therefore it is safe to set this.
 		context->buffer.b[offset++] = 0x80;
+		context->end_bit = false;
+		//Need another chunk to finish this.
+		os_bzero(context->buffer.b + offset, 64 - offset);
+		return(false);
 	}
 	else
 	{
 		debug(" Need to add another chunk.\n");
 		//Need another chunk to finish this.
 		os_bzero(context->buffer.b + offset, 64 - offset);
+		context->end_bit = true;
 		return(false);
 	}
 
@@ -178,8 +195,8 @@ void sha1_init(struct sha1_context *context)
 
 void sha1_process(uint32_t w[16], uint64_t size, struct sha1_context *context)
 {
-	debug("Processing chunk, " PRIu64 " bits.\n", size);
-	debug(" Current length " PRIu64 ".\n", context->length.qw[0]);
+	debug("Processing chunk, %" PRIu64 " bits.\n", size);
+	debug(" Current length %" PRIu64 ".\n", context->length.qw[0]);
 	
 	//Copy the message into the buffer.
 	os_memcpy(context->buffer.b, w, size >> 3);
@@ -203,7 +220,7 @@ void sha1_process(uint32_t w[16], uint64_t size, struct sha1_context *context)
 		sha1_process_chunk(context);
 	}
 	
-	debug(" Current length " PRIu64 ".\n", context->length.qw[0]);
+	debug(" Current length %" PRIu64 ".\n", context->length.qw[0]);
 	return;
 }
 
@@ -212,7 +229,7 @@ void sha1_final(struct sha1_context *context)
 	unsigned char i;
 	
 	debug("Finalising digest %p.\n", context);
-	debug(" Final length " PRIu64 ".\n", context->length.qw[0]);
+	debug(" Final length %" PRIu64 ".\n", context->length.qw[0]);
 	
 	if (context->pad)
 	{
@@ -227,5 +244,7 @@ void sha1_final(struct sha1_context *context)
 		//Swap the hash values into the final digest.
 		context->digest.dw[i] = SHA1_SWAP_32(context->h.dw[i]);
 	}
+	debug("Digest:\n");
+	db_hexdump(context->digest.b, 20);
 }
 	

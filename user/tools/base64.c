@@ -25,8 +25,9 @@
 #include "user_config.h"
 #include "base64.h"
 
-static char base64_enc_map[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-							   "abcdefghijklmnopqrstuvwxyz0123456789+/";
+static const char base64_enc_map[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+							         "abcdefghijklmnopqrstuvwxyz"
+							         "0123456789+/";
 
 bool base64_encode(char *str, size_t str_len, char *buf, size_t buf_size)
 {
@@ -37,16 +38,16 @@ bool base64_encode(char *str, size_t str_len, char *buf, size_t buf_size)
 	char octets[3];
 	unsigned char n_octets;
 	
-	debug("Base64 encoding %s end %p.\n", str, str_end);
+	debug("Base64 encoding %s length %d.\n", str, str_len);
 	
-	while (str_end > str_pos)
+	while (str_pos < str_end)
 	{
-		debug(" %d,%p: ", str_pos - str, str_pos);
+		debug(" %d:", str_pos - str);
 		//Get three bytes, with zero padding.
 		n_octets = 0;
 		for (unsigned char i = 0; i < 3; i++)
 		{
-			if (str_end >= (str_pos + 1))
+			if (str_pos < str_end)
 			{
 				n_octets++;
 				octets[i] = *str_pos++;
@@ -67,7 +68,7 @@ bool base64_encode(char *str, size_t str_len, char *buf, size_t buf_size)
 
 		//Look up 6-bit values in the map.
 		//First 6-bits.
-		*buf_pos++ = base64_enc_map[octets[0] >> 2];
+		*buf_pos++ = base64_enc_map[(octets[0] >> 2)];
 		debug("1");
 		//Second.
 		*buf_pos++ = base64_enc_map[((octets[0] & 0x03) << 4) |
@@ -88,7 +89,7 @@ bool base64_encode(char *str, size_t str_len, char *buf, size_t buf_size)
 		//Fourth or padding.
 		if (n_octets > 2)
 		{
-			*buf_pos++ = base64_enc_map[octets[2] & 0x3f];
+			*buf_pos++ = base64_enc_map[(octets[2] & 0x3f)];
 			debug("4");
 		}
 		else
@@ -99,13 +100,17 @@ bool base64_encode(char *str, size_t str_len, char *buf, size_t buf_size)
 	}
 
 	//Check if there is room in the buffer.
-	if (buf_end < (buf_pos + 1))
+	if (buf_end < buf_pos)
 	{
 		error("Not enough room in output buffer for zero terminator.\n");
 		return(false);
 	}
 	*buf_pos = '\0';
 
-	debug("\nDone.\n");
+
+	debug("\n Done.\n");
+	debug("Result:\n");
+	db_hexdump(buf, buf_pos - buf);
+
 	return(true);
 }

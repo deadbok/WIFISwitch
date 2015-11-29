@@ -65,6 +65,10 @@
  */
 #define HTTP_STATUS_405 HTTP_STATUS_LINE("405", "Method Not Allowed")
 /**
+ * @brief HTTP 426 upgrade required response.
+ */
+#define HTTP_STATUS_426 HTTP_STATUS_LINE("426", "Upgrade Required")
+/**
  * @brief HTTP 500 Internal server error..
  */
 #define HTTP_STATUS_500 HTTP_STATUS_LINE("500", "Internal Server Error")
@@ -90,7 +94,7 @@
 #define HTTP_404_HTML               "<!DOCTYPE html><head><title>Resource not found.</title></head><body><h1>404 Not Found</h1><br />Resource not found.</body></html>"                                    
 #define HTTP_404_HTML_LENGTH		129
 /**
- * @brief HTTP 404 response HTML.
+ * @brief HTTP 405 response HTML.
  */
 #define HTTP_405_HTML               "<!DOCTYPE html><head><title>Method Not Allowed.</title></head><body><h1>405 Method Not Allowed</h1><br />You cannot do that to this URL.</body></html>"                                    
 #define HTTP_405_HTML_LENGTH		150
