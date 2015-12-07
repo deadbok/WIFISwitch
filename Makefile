@@ -35,14 +35,14 @@ include mk/$(BUILD_OS).mk
 
 ### Compiler and linker configuration. ###
 # Compile flags.
-ESP_CFLAGS += -Os -std=c99 -Wall -Wl,-EL -ffunction-sections -fdata-sections -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH -DPROJECT_NAME='"$(PROJECT_NAME)"'
+ESP_CFLAGS += -Os -std=gnu99 -Wall -Wl,-EL -ffunction-sections -fdata-sections -fno-inline-functions -nostdlib -mlongcalls -mtext-section-literals -DDB_ESP8266 -D__ets__ -DICACHE_FLASH -DPROJECT_NAME='"$(PROJECT_NAME)"' -DBAUD_RATE=$(BAUD_RATE)
 # Linker flags used to generate the main object file
 ESP_LDFLAGS = -nostdlib -Wl,--gc-sections -Wl,--no-check-sections -u call_user_start -Wl,-static
 # Linker script used for the above linker step.
 ESP_LD_SCRIPT	= eagle.app.v6.ld
 # Possibly enable debug flag.
 ifdef DEBUG
-ESP_CFLAGS += -DDEBUG -g
+ESP_CFLAGS += -DDEBUG -ggdb -Og
 endif
 
 ### SDK directories used to build the firmware. ###
@@ -80,9 +80,11 @@ SDK_LIBDIR := $(addprefix -L$(SDK_BASE)/,$(SDK_LIBDIR))
 SDK_INCDIR := $(addprefix -I$(SDK_BASE)/,$(SDK_INCDIR))
 
 # Find all source files.
-SRC	:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.c))
+C_SRC	:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.c))
+AS_SRC	:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.S))
 # Generate object file names from source file names.
-OBJ	:= $(patsubst %.c,$(BUILD_BASE)/%.o,$(SRC))
+OBJ	:= $(patsubst %.c,$(BUILD_BASE)/%.o,$(C_SRC))
+OBJ	+= $(patsubst %.S,$(BUILD_BASE)/%.o,$(AS_SRC))
 # Add -l prefix to generate link flags.
 LIBS := $(addprefix -l,$(LIBS))
 # Generate firmware archive file name.
@@ -123,17 +125,21 @@ FW_FILE_CONFIG := $(addprefix $(FW_BASE)/,$(FW_FILE_CONFIG_ADDR).cfg)
 export DEBUG
 export PROJECT_NAME
 export ESP_CONFIG_SIG
+export BAUD_RATE
 
 ### Targets. ###
 
 # Look in module dirs for *.c and *.h files.
 vpath %.c $(SRC_DIR)
 vpath %.h $(SRC_DIR)
+vpath %.S $(SRC_DIR)
 
 # Define a compile template for the call function.
 define compile-objects
 $1/%.o: %.c
 	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(ESP_CFLAGS) -MD -Wa,-ahls=$(basename $$@).lst -c $$< -o $$@
+$1/%.o: %.S
+	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
 endef
 
 # Run these without checking if there up to date.
@@ -263,4 +269,4 @@ flashconfig: $(FW_FILE_CONFIG)
 $(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
 
 # Include gcc generated .d files with targets and dependencies.
--include $(patsubst %.c,$(BUILD_BASE)/%.d,$(SRC))
+-include $(patsubst %.c,$(BUILD_BASE)/%.d,$(C_SRC))

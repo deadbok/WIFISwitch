@@ -27,7 +27,11 @@
 
 #include "slighttp/http-handler.h"
 
+/**
+ * @brief Name of the protocols to support seperated by space.
+ */
 #define HTTP_WS_PROTOCOL "wifiswitch"
+
 /**
  *    The handshake from the client looks as follows:
  *
@@ -48,43 +52,56 @@
  *       Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
  *       Sec-WebSocket-Protocol: chat
  */
-/**
- *     0                   1                   2                   3
- *     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
- *    +-+-+-+-+-------+-+-------------+-------------------------------+
- *    |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
- *    |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
- *    |N|V|V|V|       |S|             |   (if payload len==126/127)   |
- *    | |1|2|3|       |K|             |                               |
- *    +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
- *    |     Extended payload length continued, if payload len == 127  |
- *    + - - - - - - - - - - - - - - - +-------------------------------+
- *    |                               |Masking-key, if MASK set to 1  |
- *    +-------------------------------+-------------------------------+
- *    | Masking-key (continued)       |          Payload Data         |
- *    +-------------------------------- - - - - - - - - - - - - - - - +
- *    :                     Payload Data continued ...                :
- *    + - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - +
- *    |                     Payload Data continued ...                |
- *    +---------------------------------------------------------------+
- */
  
-struct http_ws_frame
+/**
+ * Opcode:  4 bits
+ *
+ * Defines the interpretation of the "Payload data".  If an unknown
+ * opcode is received, the receiving endpoint MUST _Fail the
+ * WebSocket Connection_.  The following values are defined.
+ *
+ * * %x0 denotes a continuation frame
+ * * %x1 denotes a text frame
+ * * %x2 denotes a binary frame
+ * * %x3-7 are reserved for further non-control frames
+ * * %x8 denotes a connection close
+ * * %x9 denotes a ping
+ * * %xA denotes a pong
+ * * %xB-F are reserved for further control frames
+ */
+enum ws_opcode
+{
+	WS_OPCODE_CONT,
+	WS_OPCODE_TEXT,
+	WS_OPCODE_BIN,
+	WS_OPCODE_RES3,
+	WS_OPCODE_RES4,
+	WS_OPCODE_RES5,
+	WS_OPCODE_RES6,
+	WS_OPCODE_RES7,
+	WS_OPCODE_CLOSE,
+	WS_OPCODE_PING,
+	WS_OPCODE_PONG,
+	WS_OPCODE_RESB,
+	WS_OPCODE_RESC,
+	WS_OPCODE_RESD,
+	WS_OPCODE_RESE,
+	WS_OPCODE_RESF
+};
+
+struct ws_frame
 {
 	bool fin;
-	unsigned char rsv;
-	uint8_t opcode:4;
-	uint8_t mask:1;
-	uint64_t payload_len:7;
-	union
-	{
-		uint16_t ext_payload_len16;
-		uint64_t ext_payload_len64;
-	};
-	uint32_t masking_key;
-	char* payloadData;
+	uint8_t rsv;
+	uint8_t opcode;
+	bool mask;
+	uint64_t payload_len;
+	uint8_t masking_key[4];
+	char *data;
 };
 
 extern signed int http_ws_handler(struct http_request *request);
+extern void ws_send(struct ws_frame frame, struct tcp_connection *connection);
+extern void ws_send_text(char *msg, struct tcp_connection *connection);
 
 #endif

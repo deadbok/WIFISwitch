@@ -79,6 +79,7 @@
 #include "slighttp/http-handler.h"
 #include "handlers/deny/http-deny.h"
 #include "handlers/websocket/websocket.h"
+
 /**
  * @brief Linker symbol that points to the end of the ROM code in flash.
  */

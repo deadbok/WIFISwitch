@@ -1,3 +1,17 @@
+2015-12-07 Martin Grønholdt
+
+* Makefile: Add baud rate to defines.
+			Adjusted debugging for non implemented gdbstub.
+			Added assembly compilation for non implemented gdbstub.
+* mk/linux.mk: Added as.
+* user/driver/uart.c: Added C99 ints.
+* user/handlers/websocket/websocket.*: Very basic but working WebSocket.
+* user/net/tcp.*: Added support for per connection callbacks.
+* user/user_config.h: Added IRAM_ATTR to place stuff in RAM.
+
+
+
+
 2015-11-39 Martin Grønholdt
 
 * user/handlers/websocket/websocket.c: More handshaking code.

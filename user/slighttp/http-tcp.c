@@ -48,9 +48,10 @@ int http_response_mutex = 0;
  * @brief Callback when a connection is made.
  * 
  * Called whenever a connections is made. Sets up the data structures for
- * the server.
+ * the server. Status code is set to 200. Be positive, nothing will go
+ * wrong, I tell you.
  * 
-* @param connection Pointer to the connection that has connected.
+ * @param connection Pointer to the connection that has connected.
  */
 void tcp_connect_cb(struct tcp_connection *connection)
 {
@@ -163,7 +164,7 @@ void tcp_recv_cb(struct tcp_connection *connection)
     debug(" Request %p done.\n", request);
 }
 
-void tcp_sent_cb(struct tcp_connection *connection )
+void tcp_sent_cb(struct tcp_connection *connection)
 {
 	struct http_request *request = connection->user;
 	signed int ret = 0;

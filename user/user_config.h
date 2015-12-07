@@ -212,5 +212,6 @@ extern struct config *cfg;
  */
 extern os_signal_t signal_reset;
 
+#define IRAM_ATTR __attribute__((section(".iram.text")))
 
 #endif //USER_CONFIG_H

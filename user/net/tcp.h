@@ -45,7 +45,7 @@ struct tcp_callback_data
      * 
      * Usually a pointer to a `struct espconn`.
      */ 
-    void            *arg;
+    //void            *arg;
     /**
      * @brief espconn callback `data` parameter.
      * 
@@ -137,8 +137,6 @@ struct tcp_connection
     struct tcp_callback_data callback_data;
     /**
      * @brief Pointers to callback functions for handling connection states.
-     * 
-     * This is NULL on all but the listening connections.
      */
     struct tcp_callback_funcs *callbacks;
     /**
@@ -161,7 +159,6 @@ struct tcp_connection
 
 extern const char *state_names[];
 
-extern void tcp_print_connection_status(void);
 extern void tcp_free(struct tcp_connection *connection);
 extern bool tcp_listen(unsigned int port, tcp_callback connect_cb,  
                                 tcp_callback disconnect_cb, 
@@ -173,5 +170,12 @@ extern void tcp_disconnect(struct tcp_connection *connection);
 extern bool init_tcp(void);
 extern bool tcp_stop(unsigned int port);
 extern struct tcp_connection *tcp_get_connections(void);
+
+//Save some space if we're not in debug mode.
+#ifdef DEBUG
+extern void tcp_print_connection_status(void);
+#else
+#define tcp_print_connection_status
+#endif
 
 #endif

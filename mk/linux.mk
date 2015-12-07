@@ -18,6 +18,7 @@ XTENSA_TOOLS_ROOT ?= /home/oblivion/esp8266/esp-open-sdk/xtensa-lx106-elf/bin/
 # Base directory of the ESP8266 SDK package, absolute.
 SDK_BASE ?= /home/oblivion/esp8266/esp-open-sdk/sdk/
 # Select which tools to use as compiler, librarian and linker
+AS := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-as
 CC := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
 AR := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-ar
 LD := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc

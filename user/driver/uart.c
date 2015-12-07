@@ -14,6 +14,7 @@
  * You should have received a copy of the GNU General Public License along
  * with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <stdint.h>
 #include "ets_sys.h"
 #include "osapi.h"
 #include "driver/uart.h"
@@ -112,7 +113,7 @@ uart_config(uint8 uart_no)
  STATUS uart_tx_one_char(uint8 uart, uint8 TxChar)
 {
     while (true){
-        uint32 fifo_cnt = READ_PERI_REG(UART_STATUS(uart)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S);
+        uint32_t fifo_cnt = READ_PERI_REG(UART_STATUS(uart)) & (UART_TXFIFO_CNT<<UART_TXFIFO_CNT_S);
         if ((fifo_cnt >> UART_TXFIFO_CNT_S & UART_TXFIFO_CNT) < 126) {
             break;
         }
@@ -665,7 +666,7 @@ UART_SetParity(uint8 uart_no, UartParityMode Parity_mode)
 }
 
 void ICACHE_FLASH_ATTR
-UART_SetBaudrate(uint8 uart_no,uint32 baud_rate)
+UART_SetBaudrate(uint8 uart_no,uint32_t baud_rate)
 {
     uart_div_modify(uart_no, UART_CLK_FREQ /baud_rate);
 }
@@ -689,9 +690,9 @@ UART_SetFlowCtrl(uint8 uart_no,UART_HwFlowCtrl flow_ctrl,uint8 rx_thresh)
 }
 
 void ICACHE_FLASH_ATTR
-UART_WaitTxFifoEmpty(uint8 uart_no , uint32 time_out_us) //do not use if tx flow control enabled
+UART_WaitTxFifoEmpty(uint8 uart_no , uint32_t time_out_us) //do not use if tx flow control enabled
 {
-    uint32 t_s = system_get_time();
+    uint32_t t_s = system_get_time();
     while (READ_PERI_REG(UART_STATUS(uart_no)) & (UART_TXFIFO_CNT << UART_TXFIFO_CNT_S)){
 		
         if(( system_get_time() - t_s )> time_out_us){
@@ -704,11 +705,11 @@ UART_WaitTxFifoEmpty(uint8 uart_no , uint32 time_out_us) //do not use if tx flow
 
 
 bool ICACHE_FLASH_ATTR
-UART_CheckOutputFinished(uint8 uart_no, uint32 time_out_us)
+UART_CheckOutputFinished(uint8 uart_no, uint32_t time_out_us)
 {
-    uint32 t_start = system_get_time();
-    uint8 tx_fifo_len;
-    uint32 tx_buff_len;
+    uint32_t t_start = system_get_time();
+    uint8_t tx_fifo_len;
+    uint32_t tx_buff_len;
     while(1){
         tx_fifo_len =( (READ_PERI_REG(UART_STATUS(uart_no))>>UART_TXFIFO_CNT_S)&UART_TXFIFO_CNT);
         if(pTxBuffer){
@@ -736,13 +737,13 @@ UART_ResetFifo(uint8 uart_no)
 }
 
 void ICACHE_FLASH_ATTR
-UART_ClearIntrStatus(uint8 uart_no,uint32 clr_mask)
+UART_ClearIntrStatus(uint8 uart_no,uint32_t clr_mask)
 {
     WRITE_PERI_REG(UART_INT_CLR(uart_no), clr_mask);
 }
 
 void ICACHE_FLASH_ATTR
-UART_SetIntrEna(uint8 uart_no,uint32 ena_mask)
+UART_SetIntrEna(uint8 uart_no,uint32_t ena_mask)
 {
     SET_PERI_REG_MASK(UART_INT_ENA(uart_no), ena_mask);
 }
