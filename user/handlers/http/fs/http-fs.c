@@ -34,7 +34,7 @@
 #include "tools/strxtra.h"
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
-#include "handlers/fs/http-fs.h"
+#include "handlers/http/fs/http-fs.h"
 #include "slighttp/http-handler.h"
 #include "slighttp/http-response.h"
 

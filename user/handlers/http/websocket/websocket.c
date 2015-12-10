@@ -36,7 +36,7 @@
 #include "slighttp/http.h"
 #include "slighttp/http-tcp.h"
 #include "slighttp/http-response.h"
-#include "handlers/websocket/websocket.h"
+#include "handlers/http/websocket/websocket.h"
 
 #define HTTP_WS_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 

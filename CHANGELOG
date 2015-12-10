@@ -8,6 +8,8 @@
 * user/net/websocket.c: Isolated TCP related code here.
 * user/include/net/websocket.h: Isolated TCP related code here.
 * user/user_main.c: Removed REST handlers.
+* user/handlers/*: Moved to user/handlers/http.
+* user/handler/http/*: New directory for HTTP handlers.
 
 
 2015-12-07 Martin Grønholdt

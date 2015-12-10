@@ -1,4 +1,4 @@
-DIR := user/handlers/rest
+DIR := user/handlers/http/rest
 SOURCES :=
 #SOURCES := gpio.c mem.c net-names.c net-passwd.c network.c rest.c version.c
 

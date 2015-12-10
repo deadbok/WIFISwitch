@@ -1,4 +1,4 @@
-DIR := user/handlers/fs/
+DIR := user/handlers/http/fs/
 SOURCES := http-fs.c
 
 HANDLERS_FS_TEMP := $(addprefix $(DIR), $(SOURCES))

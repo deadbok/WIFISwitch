@@ -32,7 +32,7 @@
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
 #include "slighttp/http-response.h"
-#include "handlers/deny/http-deny.h"
+#include "handlers/http/deny/http-deny.h"
 
 /**
  * @brief Generate the response for a HEAD request from a file.

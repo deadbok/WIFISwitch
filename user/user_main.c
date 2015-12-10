@@ -74,10 +74,10 @@
 #include "net/capport.h"
 #include "slighttp/http.h"
 #include "driver/button.h"
-#include "handlers/fs//http-fs.h"
 #include "slighttp/http-handler.h"
-#include "handlers/deny/http-deny.h"
-#include "handlers/websocket/websocket.h"
+#include "handlers/http/fs//http-fs.h"
+#include "handlers/http/deny/http-deny.h"
+#include "handlers/http/websocket/websocket.h"
 
 /**
  * @brief Linker symbol that points to the end of the ROM code in flash.

@@ -1,4 +1,4 @@
-DIR := user/handlers/websocket/
+DIR := user/handlers/http/websocket/
 SOURCES := websocket.c
 
 HANDLERS_WS_TEMP := $(addprefix $(DIR), $(SOURCES))
