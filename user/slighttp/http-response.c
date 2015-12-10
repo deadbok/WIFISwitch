@@ -28,13 +28,13 @@
 #include "net/tcp.h"
 #include "fs/fs.h"
 #include "tools/strxtra.h"
-#include "http-common.h"
-#include "http-mime.h"
-#include "http.h"
-#include "http-request.h"
-#include "http-response.h"
-#include "http-tcp.h"
-#include "http-handler.h"
+#include "slighttp/http-common.h"
+#include "slighttp/http-mime.h"
+#include "slighttp/http.h"
+#include "slighttp/http-request.h"
+#include "slighttp/http-response.h"
+#include "slighttp/http-tcp.h"
+#include "slighttp/http-handler.h"
 
 /**
  * @brief Pointer to a pointer to the connection.

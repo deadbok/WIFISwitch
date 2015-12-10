@@ -21,7 +21,7 @@
  * MA 02110-1301, USA.
  */
 #include "user_interface.h"
-#include "config.h"
+#include "config/config.h"
 
 struct config *read_cfg_flash(void)
 {

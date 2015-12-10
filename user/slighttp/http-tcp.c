@@ -27,12 +27,12 @@
 #include "user_config.h"
 #include "net/net.h"
 #include "net/tcp.h"
-#include "http-common.h"
-#include "http-handler.h"
-#include "http-request.h"
-#include "http-response.h"
-#include "http.h"
-#include "http-tcp.h"
+#include "slighttp/http-common.h"
+#include "slighttp/http-handler.h"
+#include "slighttp/http-request.h"
+#include "slighttp/http-response.h"
+#include "slighttp/http.h"
+#include "slighttp/http-tcp.h"
 
 /**
  * @brief Ring buffer for incomming request, that are waiting for a response.

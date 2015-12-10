@@ -30,12 +30,12 @@
  */
 #define uint32 uint32_t
 
-#include "mem.h"
-#include "gpio.h"
-#include "osapi.h"
-#include "user_interface.h"
+#include <mem.h>
+#include <gpio.h>
+#include <osapi.h>
+#include <user_interface.h>
 #include "tools/missing_dec.h"
-#include "config.h"
+#include "config/config.h"
 
 /************************ Version ************************/
 /**

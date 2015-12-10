@@ -10,8 +10,8 @@
 #include "osapi.h"
 #include "tools/missing_dec.h"
 #include "user_config.h"
-#include "int_flash.h"
-#include "dbffs.h"
+#include "fs/int_flash.h"
+#include "fs/dbffs.h"
 
 /**
  * @brief Load type and offset to next header.

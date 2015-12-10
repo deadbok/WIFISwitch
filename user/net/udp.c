@@ -29,7 +29,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-#include "missing_dec.h"
+#include "tools/missing_dec.h"
 #include "osapi.h"
 #include "os_type.h"
 #include "user_interface.h"
@@ -37,8 +37,8 @@
 #include "mem.h"
 #include "user_config.h"
 #include "driver/uart.h"
-#include "net.h"
-#include "udp.h"
+#include "net/net.h"
+#include "net/udp.h"
 
                   
 /**

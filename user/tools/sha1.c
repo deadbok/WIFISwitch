@@ -29,7 +29,7 @@
 #include <stdbool.h>
 #include <inttypes.h>
 #include "user_config.h"
-#include "sha1.h"
+#include "tools/sha1.h"
 
 /**
  * @brief SHA1 circular left shift macro.

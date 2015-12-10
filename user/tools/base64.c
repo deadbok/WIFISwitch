@@ -23,7 +23,7 @@
  * MA 02110-1301, USA.
  */
 #include "user_config.h"
-#include "base64.h"
+#include "tools/base64.h"
 
 static const char base64_enc_map[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 							         "abcdefghijklmnopqrstuvwxyz"

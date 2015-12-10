@@ -15,8 +15,8 @@
 ### Toolchain configuration. ###
 # Base directory for the compiler.
 XTENSA_TOOLS_ROOT ?= /home/oblivion/esp8266/esp-open-sdk/xtensa-lx106-elf/bin/
-# Base directory of the ESP8266 SDK package, absolute.
-SDK_BASE ?= /home/oblivion/esp8266/esp-open-sdk/sdk/
+# Base directory of the ESP8266 SDK package.
+SDK_BASE ?= /home/oblivion/esp8266/esp-open-sdk/sdk
 # Select which tools to use as compiler, librarian and linker
 AS := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-as
 CC := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
@@ -27,10 +27,6 @@ OBJDUMP := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objdump
 READELF := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-readelf
 
 ### Build configuration. ###
-# Path for compiler to write object files.
-BUILD_BASE = build
-# Path to write the finished firmware build.
-FW_BASE	= firmware
 # Serial log file name.
 LOG_FILE = debug-$(shell date +%Y-%m-%d-%H-%M-%S).log
 
@@ -47,7 +43,7 @@ ESP_CFLAGS += -DGIT_VERSION='"$(GIT_VERSION)"'
 
 ### esptool.py ESP8266 flash tool configuration.
 # Path.
-ESPTOOL	:= python2 $(SDK_BASE)../esptool/esptool.py
+ESPTOOL	:= python2 $(SDK_BASE)/../esptool/esptool.py
 # Serial port.
 ESPPORT	:= /dev/ttyUSB0
 # Programming baud rate.
@@ -76,7 +72,9 @@ RM := rm $(VFLAG) -f
 ECHO := @echo
 #Change directory.
 CD := cd
+#Concantate
+CAT := cat
 #Get size of file.
-FILESIZE := stat --printf="%s"
+filesize = $(shell stat -L --printf="%s" $(1))
 #Serial terminal cmd.
 TERM_CMD = minicom -D $(ESPPORT) -o -b $(BAUD_RATE) -C ./debug.log

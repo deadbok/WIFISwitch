@@ -29,7 +29,7 @@
 #include "user_config.h"
 #include "gpio.h"
 #include "user_interface.h"
-#include "button.h"
+#include "driver/button.h"
 
 struct button_info buttons[BUTTONS_MAX];
 

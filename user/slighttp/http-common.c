@@ -30,8 +30,8 @@
 #include "espconn.h"
 #include "user_config.h"
 #include "net/tcp.h"
-#include "http.h"
-#include "http-common.h"
+#include "slighttp/http.h"
+#include "slighttp/http-common.h"
 
 void http_print_clf_status(struct http_request *request)
 {

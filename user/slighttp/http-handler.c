@@ -24,9 +24,9 @@
 #include "user_config.h"
 #include "tools/dl_list.h"
 #include "tools/strxtra.h"
-#include "http-response.h"
-#include "http-handler.h"
-#include "http-mime.h"
+#include "slighttp/http-response.h"
+#include "slighttp/http-handler.h"
+#include "slighttp/http-mime.h"
 
 /**
  * @brief Struct to keep info on a registered handler.

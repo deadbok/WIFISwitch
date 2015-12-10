@@ -1,3 +1,15 @@
+2015-12-10 Martin Grønholdt
+
+* 3rdparty/jsmn/jsmn.c: Use new include layout.
+* Makefile: Total rework due to a file name clash bug.
+* mk/*: Fitted to the new build system.
+* users/*: Reorganised all source files, moving include files into "include".
+* user/handlers/websocket/*: Split HTTP handshake from TCP code.
+* user/net/websocket.c: Isolated TCP related code here.
+* user/include/net/websocket.h: Isolated TCP related code here.
+* user/user_main.c: Removed REST handlers.
+
+
 2015-12-07 Martin Grønholdt
 
 * Makefile: Add baud rate to defines.

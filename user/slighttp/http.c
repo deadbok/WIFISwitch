@@ -54,10 +54,10 @@
 #include "osapi.h"
 #include "user_config.h"
 #include "net/tcp.h"
-#include "http-common.h"
-#include "http-tcp.h"
-#include "http-handler.h"
-#include "http.h"
+#include "slighttp/http-common.h"
+#include "slighttp/http-tcp.h"
+#include "slighttp/http-handler.h"
+#include "slighttp/http.h"
 #include "tools/ring.h"
 
 /**

@@ -58,11 +58,11 @@
  * has signalled that the current one is done. All function sending TCP must
  * therefore be able to split the send data, over consecutive calls. 
  */
-#include "ets_sys.h"
-#include "osapi.h"
-#include "gpio.h"
-#include "os_type.h"
-#include "user_interface.h"
+#include <ets_sys.h>
+#include <osapi.h>
+#include <gpio.h>
+#include <os_type.h>
+#include <user_interface.h>
 #include "user_config.h"
 #include "task.h"
 #include "driver/uart.h"
@@ -74,7 +74,6 @@
 #include "net/capport.h"
 #include "slighttp/http.h"
 #include "driver/button.h"
-#include "handlers/rest/rest.h"
 #include "handlers/fs//http-fs.h"
 #include "slighttp/http-handler.h"
 #include "handlers/deny/http-deny.h"
@@ -192,17 +191,9 @@ static void connected(os_signal_t mode)
 		init_captive_portal("wifiswitch");
 		//Start in network configuration mode.
 		init_http(80);
-		db_printf("Adding memory REST handler.\n");
-		http_add_handler("/rest/fw/mem", &http_rest_mem_handler);
-		db_printf("Adding version REST handler.\n");
-		http_add_handler("/rest/fw/version", &http_rest_version_handler);
-		db_printf("Adding network password REST handler.\n");
-		http_add_handler("/rest/net/password", &http_rest_net_passwd_handler);
-		db_printf("Adding network names REST handler.\n");
-		http_add_handler("/rest/net/networks", &http_rest_net_names_handler);
-		db_printf("Adding default network REST handler.\n");
-		http_add_handler("/rest/net/network", &http_rest_network_handler);
 		http_fs_init("/connect/");
+		db_printf("Adding WebSocket handler.\n");
+		http_add_handler("/ws*", &http_ws_handler);
 		db_printf("Adding file system handler.\n");
 		http_add_handler("/*", &http_fs_handler);
 		db_printf("Adding file system error status handler.\n");

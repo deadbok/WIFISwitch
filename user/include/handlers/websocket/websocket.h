@@ -25,12 +25,8 @@
 #ifndef HTTP_WEBSOCKET_H
 #define HTTP_WEBSOCKET_H
 
+#include "net/tcp.h"
 #include "slighttp/http-handler.h"
-
-/**
- * @brief Name of the protocols to support seperated by space.
- */
-#define HTTP_WS_PROTOCOL "wifiswitch"
 
 /**
  *    The handshake from the client looks as follows:
@@ -52,56 +48,12 @@
  *       Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo=
  *       Sec-WebSocket-Protocol: chat
  */
- 
+
 /**
- * Opcode:  4 bits
- *
- * Defines the interpretation of the "Payload data".  If an unknown
- * opcode is received, the receiving endpoint MUST _Fail the
- * WebSocket Connection_.  The following values are defined.
- *
- * * %x0 denotes a continuation frame
- * * %x1 denotes a text frame
- * * %x2 denotes a binary frame
- * * %x3-7 are reserved for further non-control frames
- * * %x8 denotes a connection close
- * * %x9 denotes a ping
- * * %xA denotes a pong
- * * %xB-F are reserved for further control frames
+ * @brief HTTP handler to handle the initial WebSocket handshake.
+ * 
+ * @param request Pointer to the HTTP request data.
  */
-enum ws_opcode
-{
-	WS_OPCODE_CONT,
-	WS_OPCODE_TEXT,
-	WS_OPCODE_BIN,
-	WS_OPCODE_RES3,
-	WS_OPCODE_RES4,
-	WS_OPCODE_RES5,
-	WS_OPCODE_RES6,
-	WS_OPCODE_RES7,
-	WS_OPCODE_CLOSE,
-	WS_OPCODE_PING,
-	WS_OPCODE_PONG,
-	WS_OPCODE_RESB,
-	WS_OPCODE_RESC,
-	WS_OPCODE_RESD,
-	WS_OPCODE_RESE,
-	WS_OPCODE_RESF
-};
-
-struct ws_frame
-{
-	bool fin;
-	uint8_t rsv;
-	uint8_t opcode;
-	bool mask;
-	uint64_t payload_len;
-	uint8_t masking_key[4];
-	char *data;
-};
-
 extern signed int http_ws_handler(struct http_request *request);
-extern void ws_send(struct ws_frame frame, struct tcp_connection *connection);
-extern void ws_send_text(char *msg, struct tcp_connection *connection);
 
 #endif

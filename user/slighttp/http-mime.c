@@ -22,7 +22,7 @@
  * MA 02110-1301, USA.
  */ 
 #include "osapi.h"
-#include "http-mime.h"
+#include "slighttp/http-mime.h"
 
 /**
  * @brief Mapping file extensions to MIME-types.

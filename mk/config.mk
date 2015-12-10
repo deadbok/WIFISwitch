@@ -30,10 +30,14 @@ FLASH_SIZE ?= 512
 NETWORK_MODE = 1
 
 ### Project directory configuration. ###
-# Modules (subdirectories) of the project to include when compiling.
-MODULES	= user user/fs user/net user/slighttp user/tools user/driver
-MODULES	+= user/handlers/fs user/handlers/deny user/handlers/rest
-MODULES += user/handlers/websocket user/config user/jsmn
+#Root directory of the firmware source files.
+SRC_DIR = user
+#Root directory of the firmware include files.
+INCLUDE_DIR = $(SRC_DIR)/include
+# Path for compiler to write object files.
+BUILD_DIR = build
+# Path to write the finished firmware build.
+FW_BASE	= firmware
 # Libraries used in this project, mainly provided by the SDK
 LIBS = c gcc hal pp phy net80211 lwip wpa main
 # Directory for generating the file system root. A Makefile is expected
@@ -42,6 +46,8 @@ LIBS = c gcc hal pp phy net80211 lwip wpa main
 FS_DIR := fs/
 # Directory to use, as root, when creating the file system image.
 FS_ROOT_DIR := fs/root_out/
+# Directory to use as source, when generating file system root.
+FS_SRC_DIR := fs/root_src/
 # Directory to copy log files of the ESP8266 serial output to.
 LOG_DIR := logs
 # Directory with custom build tools.

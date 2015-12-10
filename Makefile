@@ -24,6 +24,13 @@
 # - 2015-10-09: Removed archive generation step.
 # - 2015-10-09: Lots of comments.
 # - 2015-11-03: Added distclean rule.
+# - 2015-12-09: Complete rewrite, since the "recursive magic" faild.
+
+#From: John Graham-Cumming
+#	   http://blog.jgc.org/2011/07/gnu-make-recursive-wildcard-function.html
+#Recursivly finds all files in a directory and all subdirectories
+#rwildcard=$(shell echo "Colecting files $1; $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d)))
+rwildcard=$(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2) $(filter $(subst *,%,$2),$d))
 
 # Initial Compiler flags.
 ESP_CFLAGS =
@@ -32,6 +39,15 @@ ESP_CFLAGS =
 include mk/config.mk
 # Include OS specific configuration.
 include mk/$(BUILD_OS).mk
+
+### Source files.
+#Start with no source files.
+C_SRC =
+AS_SRC	= 
+#Include per directory Make files, that will add source files to the
+#above variables.
+ESP_MAKEFILES = $(call rwildcard,$(SRC_DIR),*/esp.mk)
+include $(ESP_MAKEFILES)
 
 ### Compiler and linker configuration. ###
 # Compile flags.
@@ -51,69 +67,58 @@ SDK_LIBDIR	= lib
 # Linker scripts directory.
 SDK_LDDIR	= ld
 # Include file directories.
-SDK_INCDIR	= include include/json
+SDK_INCDIR = include include/json
 
 ### Firmware image configuration. ###
 ifeq ("$(FLASH_SIZE)","512")
 	# These two files contain the actual program code.
 	# Flash address and file name of firmware resident code.
-	FW_FILE_1 = $(addprefix $(FW_BASE)/,$(FW_FILE_1_ADDR).bin)
 	FW_FILE_1_ADDR := 0x00000
-	FW_FILE_1_SIZE = $(shell $(FILESIZE) $(FW_FILE_1))
+	FW_FILE_1 = $(addprefix $(FW_BASE)/,$(FW_FILE_1_ADDR).bin)
 	# Flash address and file name of firmware ROM code.
-	FW_FILE_2 = $(addprefix $(FW_BASE)/,$(FW_FILE_2_ADDR).bin)
 	FW_FILE_2_ADDR := 0x40000
-	FW_FILE_2_SIZE = $(shell $(FILESIZE) $(FW_FILE_2))
-	#Max size of any of the firmware files. 512Kb / 2 - 4KB at the start - 16Kb at the end.
+	FW_FILE_2 = $(addprefix $(FW_BASE)/,$(FW_FILE_2_ADDR).bin)
+	# Max size of any of the firmware files. 512Kb / 2 - 4KB at the start - 16Kb at the end.
 	FW_FILE_MAX := 241664
 else 
 	$(error Flash size not supported.)
 endif
+FW_FILE_1_SIZE = $(call filesize,$(FW_FILE_1))
 
 ### Internal paths. Should not need modification. ### 
-SRC_DIR := $(MODULES)
-# Add build path to module paths, to generate all object files in BUILD_BASE.
-BUILD_DIR := $(addprefix $(BUILD_BASE)/,$(MODULES))
-
 # Add the SDK base path to generate include and lib flags.
 SDK_LIBDIR := $(addprefix -L$(SDK_BASE)/,$(SDK_LIBDIR))
 SDK_INCDIR := $(addprefix -I$(SDK_BASE)/,$(SDK_INCDIR))
-
-# Find all source files.
-C_SRC	:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.c))
-AS_SRC	:= $(foreach sdir,$(SRC_DIR),$(wildcard $(sdir)/*.S))
+# Create include dir flag
+INCDIR = $(addprefix -I,$(INCLUDE_DIR))
+#List of directories under build/
+BUILD_DIRS := $(addprefix $(BUILD_DIR)/,$(dir $(ESP_MAKEFILES)))
 # Generate object file names from source file names.
-OBJ	:= $(patsubst %.c,$(BUILD_BASE)/%.o,$(C_SRC))
-OBJ	+= $(patsubst %.S,$(BUILD_BASE)/%.o,$(AS_SRC))
+OBJ	:= $(patsubst %.c,$(BUILD_DIR)/%.o,$(C_SRC))
+OBJ	+= $(patsubst %.S,$(BUILD_DIR)/%.o,$(AS_SRC))
 # Add -l prefix to generate link flags.
 LIBS := $(addprefix -l,$(LIBS))
-# Generate firmware archive file name.
-TARGET_AR := $(addprefix $(BUILD_BASE)/,$(TARGET).a)
-# Add build base directory to target name.
-TARGET := $(addprefix $(BUILD_BASE)/,$(TARGET))
-# Generate a list of all files to be included in the flash file system.
-FS_FILES := $(shell find $(FS_DIR) -type f -name '*')
 # Add path and flag to generate linker flags.
 ESP_LD_SCRIPT := $(addprefix -Tld/,$(ESP_LD_SCRIPT))
-# Look for include files in module directories
-INCDIR := $(addprefix -I,$(SRC_DIR))
-# Generate compiler flags from EXTRA_INCDIR.
-EXTRA_INCDIR := $(addprefix -I,$(EXTRA_INCDIR))
-# Look for include files under /include in each module.
-MODULE_INCDIR := $(addsuffix /include,$(INCDIR))
+# Generate firmware file name.
+TARGET := $(addprefix $(BUILD_DIR)/,$(TARGET))
 
 ### File system variables. ###
-# Get size of the file system image
-FS_SIZE = $(shell printf '%d\n' $$($(FILESIZE) $(FW_FILE_FS) ))
-
-# File system image flash location, just after the resident code.
-FS_FILE_ADDR = $(shell printf '0x%X\n' $$(( ($$($(FILESIZE) $(FW_FILE_1)) + 0x4000) & (0xFFFFC000) )) )
-# File system highest address.
+# File system image is flashed 4KB aligned just after the resident code.
+# File system highest possible address.
 FS_END = 0x3b000
 # Maximum image size.
 FS_MAX_SIZE = $(shell printf '%d\n' $$(($(FS_END) - $(FS_FILE_ADDR) - 1)))
 # File system image file name and path.
-FW_FILE_FS = $(FW_BASE)/$(FS_FILE_ADDR).fs
+FW_FILE_FS = $(FW_BASE)/www.fs
+# Generate a list of source files for flash file system root.
+FS_SRC_FILES = $(call rwildcard,$(FS_SRC_DIR),*)
+# Generate a list of all files to be included in the flash file system.
+FS_FILES = $(call rwildcard,$(FS_ROOT_DIR),*)
+# Get size of file system image.
+FS_SIZE = $(call filesize,$(FW_FILE_FS))
+# Calculate the 4Kb aligned address of the file system in flash.
+FS_FILE_ADDR = $(shell printf '0x%X\n' $$(( ($(call filesize,$(FW_FILE_1)) + 0x4000) & (0xFFFFC000) )) ) 
 
 ### Config flash variables. ###
 # Address to flash configuration data.
@@ -123,90 +128,137 @@ FW_FILE_CONFIG := $(addprefix $(FW_BASE)/,$(FW_FILE_CONFIG_ADDR).cfg)
 
 ### Exports for sub-make. ###
 export DEBUG
+export DEBUGFS
 export PROJECT_NAME
 export ESP_CONFIG_SIG
 export BAUD_RATE
 
 ### Targets. ###
+# Build c source files.
+$(BUILD_DIR)/%.o: %.c
+	$(CC) $(INCDIR) $(SDK_INCDIR) $(ESP_CFLAGS) -MD -Wa,-ahls=$(basename $@).lst -c $< -o $@
+# Build assembler source files.
+$(BUILD_DIR)/%.o: %.S
+	$(CC) $(INCDIR) $(SDK_INCDIR) $(ESP_CFLAGS) -c $< -o $@
 
-# Look in module dirs for *.c and *.h files.
-vpath %.c $(SRC_DIR)
-vpath %.h $(SRC_DIR)
-vpath %.S $(SRC_DIR)
+# Run these without checking if they're up to date.
+.PHONY: all flash flashblank clean distclean debug debugflash docs flashfs flashconfign info
 
-# Define a compile template for the call function.
-define compile-objects
-$1/%.o: %.c
-	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(ESP_CFLAGS) -MD -Wa,-ahls=$(basename $$@).lst -c $$< -o $$@
-$1/%.o: %.S
-	$(CC) $(INCDIR) $(MODULE_INCDIR) $(EXTRA_INCDIR) $(SDK_INCDIR) $(CFLAGS)  -c $$< -o $$@
-endef
-
-# Run these without checking if there up to date.
-.PHONY: all checkdirs flash flashblank clean distclean debug debugflash docs flashfs flashconfig
-
-# Generate firmware.
-all: checkdirs $(FW_FILE_1) $(FW_FILE_2) $(FW_FILE_FS) $(FW_FILE_CONFIG)
+# Main build rule.
+all: info $(BUILD_DIRS) $(OBJ) $(FW_FILE_1) $(FW_FILE_2) $(FW_FILE_FS) $(FW_FILE_CONFIG)
 	$(ECHO) "$(N_LIST_OBJECTS) largest functions:"
 	$(ECHO) "   Num:    Value  Size Type    Bind   Vis      Ndx Name"
-	@$(READELF) -s $(TARGET_AR) | awk '$$4 == "FUNC" { print }' | sort -r -n -k 3 | head -n $(N_LIST_OBJECTS)
+	@$(READELF) -s $(TARGET) | awk '$$4 == "FUNC" { print }' | sort -r -n -k 3 | head -n $(N_LIST_OBJECTS)
 	$(ECHO) "$(N_LIST_OBJECTS) largest objects:"
 	$(ECHO) "   Num:    Value  Size Type    Bind   Vis      Ndx Name"
-	@$(READELF) -s $(TARGET_AR) | awk '$$4 == "OBJECT" { print }' | sort -r -n -k 3 | head -n $(N_LIST_OBJECTS)
+	@$(READELF) -s $(TARGET) | awk '$$4 == "OBJECT" { print }' | sort -r -n -k 3 | head -n $(N_LIST_OBJECTS)
 	./$(TOOLS_DIR)/mem_usage.sh $(TARGET) 81920 $(FW_FILE_MAX)
 	$(ECHO) File system uses $(FS_SIZE) bytes of ROM, $$(( $(FS_MAX_SIZE) - $(FS_SIZE) )) bytes free of $(FS_MAX_SIZE).
 	$(ECHO) Resident firmware size $(FW_FILE_1_SIZE) bytes of ROM, $$(( $(FW_FILE_MAX) - $(FW_FILE_1_SIZE) )) bytes free of $(FW_FILE_MAX).
 
 # Generate the firmware image from the final ELF file.
 $(FW_BASE)/%.bin: $(TARGET) | $(FW_BASE)
+	$(ECHO)
+	$(ECHO) --- CREATING FIRMWARE BINARY --- 
+	$(ECHO)
 	$(ESPTOOL) elf2image -o $(FW_BASE)/ $(TARGET)
 
 # Link the target ELF file.
-$(TARGET): $(TARGET_AR)
-	$(LD) $(SDK_LIBDIR) $(ESP_LD_SCRIPT) $(ESP_LDFLAGS) -Wl,--start-group $(LIBS) $(TARGET_AR) -Wl,--end-group,-Map,$(basename $@).map -o $@
+$(TARGET): $(OBJ)
+	$(ECHO)
+	$(ECHO) --- LINKING --- 
+	$(ECHO)
+	$(LD) $(SDK_LIBDIR) $(ESP_LD_SCRIPT) $(ESP_LDFLAGS) -Wl,--start-group $(LIBS) $(OBJ) -Wl,--end-group,-Map,$(basename $@).map -o $@
 # This is for future OTA support.
 #	$(OBJCOPY) --only-section .text -O binary $(TARGET) $(BUILD_BASE)/eagle.app.v6.text.bin
 #	$(OBJCOPY) --only-section .data -O binary $(TARGET) $(BUILD_BASE)/eagle.app.v6.data.bin
 #	$(OBJCOPY) --only-section .rodata -O binary $(TARGET) $(BUILD_BASE)/eagle.app.v6.rodata.bin
 #	$(OBJCOPY) --only-section .irom0.text -O binary $(TARGET) $(BUILD_BASE)/eagle.app.v6.irom0text.bin
 
+#### Flash file system stuff. ####
+# Build the file system tools.
+.PHONY: $(FS_CREATE)
+$(FS_CREATE):
+	$(MAKE) -C tools/dbffs-tools all install
 
-$(TARGET_AR): $(OBJ)
-	$(AR) cru $@ $^
-	
+# Generate file system.
+$(FS_FILES): $(FS_SRC_FILES)
+	$(ECHO)
+	$(ECHO) --- CREATING FIRMWARE FILE SYSTEM ROOT --- 
+	$(ECHO)
+	$(MAKE) -C $(FS_DIR)
+
+# Build the file system image.
+$(FW_FILE_FS): $(FS_FILES) $(FS_CREATE) $(FW_FILE_1)
+	$(ECHO)
+	$(ECHO) --- CREATING FIRMWARE FILE SYSTEM IMAGE --- 
+	$(ECHO) Files: $(FS_FILES)
+	$(ECHO)
+	$(DBFFS_CREATE) $(FS_ROOT_DIR) $(FW_FILE_FS)
+	$(ECHO) File system start offset: $(FS_FILE_ADDR), end offset: $(FS_END), maximum size $(FS_MAX_SIZE) bytes.
+
+# Flash file system.	
+flashfs: $(FW_FILE_FS)
+	tools/testsize.sh $(FW_FILE_FS) $(FS_MAX_SIZE)
+	$(ECHO) File system uses $(FS_SIZE) bytes of ROM, $$(( $(FS_MAX_SIZE) - $(FS_SIZE) )) bytes free of $(FS_MAX_SIZE).
+	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FS_FILE_ADDR) $(FW_FILE_FS)
+
+#### ESP firmware binary configuration stuff. ####
+# Build the configuration tools.
+.PHONY: $(GEN_CONFIG)
+$(GEN_CONFIG):
+	$(MAKE) -C tools/esp-config-tools all install
+
+# Generate configuration data.
+$(FW_FILE_CONFIG): $(GEN_CONFIG) $(FW_FILE_FS)
+	$(ECHO)
+	$(ECHO) --- CREATING FIRMWARE CONFIG --- 
+	$(ECHO)
+	$(GEN_CONFIG) $(FW_FILE_CONFIG) $(FS_FILE_ADDR) $(NETWORK_MODE)
+
+# Flash configuration data.
+flashconfig: $(FW_FILE_CONFIG)
+	tools/testsize.sh $(FW_FILE_CONFIG) 4096
+	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_CONFIG_ADDR) $(FW_FILE_CONFIG)
+
 #### Create directories. ####
-checkdirs: $(BUILD_DIR) $(FW_BASE) $(LOG_DIR) $(TOOLS_DIR)
-
-$(BUILD_DIR) $(FW_BASE) $(LOG_DIR) $(TOOLS_DIR):
+$(BUILD_DIR) $(BUILD_DIRS) $(FW_BASE) $(FS_ROOT_DIR) $(LOG_DIR) $(TOOLS_DIR) $(SRC_DIRS):
 	$(MKDIR) $@
-
+	
 #### Generic flashing. ####
 #Flash everything.
-flash: all 
+flash: all
+	$(ECHO)
+	$(ECHO) --- FLASHING FIRMWARE --- 
+	$(ECHO)
 	./$(TOOLS_DIR)/testsize.sh $(FW_FILE_FS) $(FS_MAX_SIZE)
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_1_ADDR) $(FW_FILE_1) $(FW_FILE_CONFIG_ADDR) $(FW_FILE_CONFIG) $(FW_FILE_2_ADDR) $(FW_FILE_2) $(FS_FILE_ADDR) $(FW_FILE_FS)
 
 # Flash empty configuration values for the SDK.
 flashblank:
+	$(ECHO)
+	$(ECHO) --- FLASHING BLANK SDK CONFIGURATION --- 
+	$(ECHO)
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash 0x7E000 bin/blank.bin
-
+	
+#### Do not keep it greeasy. ####
 # An end to the tears, and the in between years, and the troubles I've seen. 
 clean:
-	$(RM) -R $(FW_BASE) $(BUILD_BASE)
+	$(RM) -R $(FW_BASE) $(BUILD_DIR)
 	$(RM) $(DBFFS_CREATE)
 	$(RM) $(GEN_CONFIG)
 	$(MAKE) -C fs clean
 	
 # Clean everything
 distclean:
-	$(RM) -R $(FW_BASE) $(BUILD_BASE)
+	$(RM) -R $(FW_BASE) $(BUILD_DIR)
 	$(MAKE) -C tools/dbffs-tools clean
 	$(MAKE) -C tools/esp-config-tools clean
 	$(RM) $(DBFFS_CREATE)
 	$(RM) $(GEN_CONFIG)
 	$(MAKE) -C fs distclean
 
-
+#### Debugging. ####
 # Run minicom and save serial output in LOG_DIR.
 debug: $(LOG_DIR)
 # Remove the old log
@@ -227,46 +279,16 @@ doxygen: .doxyfile
 	doxygen .doxyfile
 	$(MAKE) -C tools/dbffs-tools/
 
-#### Flash file system stuff. ####
-# Build the file system tools.
-.PHONY: $(FS_CREATE)
-$(FS_CREATE):
-	$(MAKE) -C tools/dbffs-tools all install
-
-# Build the file system image.
-$(FW_FILE_FS): $(FS_FILES) $(FS_CREATE)
-	$(MAKE) -C $(FS_DIR)
-	$(DBFFS_CREATE) $(FS_ROOT_DIR) $(FW_FILE_FS)
-	$(ECHO) File system start offset: $(FS_FILE_ADDR)
-	$(ECHO) File system end offset: $(FS_END)
-	$(ECHO) File system maximum size: $(FS_MAX_SIZE)
-
-# Flash file system.	
-flashfs: $(FW_FILE_FS)
-	tools/testsize.sh $(FW_FILE_FS) $(FS_MAX_SIZE)
-	$(ECHO) File system uses $(FS_SIZE) bytes of ROM, $$(( $(FS_MAX_SIZE) - $(FS_SIZE) )) bytes free of $(FS_MAX_SIZE).
-	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FS_FILE_ADDR) $(FW_FILE_FS)
-
-#### ESP firmware binary configuration stuff. ####
-# Build the configuration tools.
-.PHONY: $(GEN_CONFIG)
-$(GEN_CONFIG):
-	$(MAKE) -C tools/esp-config-tools all install
-
-# Generate configuration data.
-$(FW_FILE_CONFIG): $(GEN_CONFIG) $(FW_FILE_1) $(FW_FILE_2)
-	$(GEN_CONFIG) $(FW_FILE_CONFIG) $(FS_FILE_ADDR) $(NETWORK_MODE)
-
-# Flash configuration data.
-flashconfig: $(FW_FILE_CONFIG)
-	tools/testsize.sh $(FW_FILE_CONFIG) 4096
-	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FW_FILE_CONFIG_ADDR) $(FW_FILE_CONFIG)
-
-# Thought I would never grok this, but it is quite simple.
-# For each BUILD_DIR use eval to generate, and parse, a rule from the 
-# earlier defined compile-objects template substituting $1, in the
-# template, with the current BUILD_DIR.
-$(foreach bdir,$(BUILD_DIR),$(eval $(call compile-objects,$(bdir))))
+# Print some initial project info.	
+info:
+	$(ECHO) Project: $(PROJECT_NAME) version $(VERSION)
+	$(ECHO) Source dir: $(SRC_DIR)
+	$(ECHO) Include dir: $(INCLUDE_DIR)
+	$(ECHO) Build dir: $(BUILD_DIR)
+	$(ECHO) Makefiles: $(ESP_MAKEFILES)
+	$(ECHO)
+	$(ECHO) --- BUILDING --- 
+	$(ECHO)
 
 # Include gcc generated .d files with targets and dependencies.
 -include $(patsubst %.c,$(BUILD_BASE)/%.d,$(C_SRC))

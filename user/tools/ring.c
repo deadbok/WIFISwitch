@@ -23,7 +23,7 @@
  */ 
 #include "user_interface.h"
 #include "user_config.h"
-#include "ring.h"
+#include "tools/ring.h"
 
 /**
  * @brief Initialise and allocate space for a ring buffer.

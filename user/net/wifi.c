@@ -30,7 +30,7 @@
 #include "user_config.h"
 #include "tools/missing_dec.h"
 #include "tools/strxtra.h"
-#include "wifi.h"
+#include "net/wifi.h"
 
 static os_signal_t connected_signal;
 static os_signal_t disconnected_signal;

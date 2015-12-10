@@ -175,7 +175,7 @@ extern struct tcp_connection *tcp_get_connections(void);
 #ifdef DEBUG
 extern void tcp_print_connection_status(void);
 #else
-#define tcp_print_connection_status
+#define tcp_print_connection_status(...)
 #endif
 
 #endif
