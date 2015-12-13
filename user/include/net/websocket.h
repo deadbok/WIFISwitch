@@ -28,11 +28,25 @@
 #include "net/tcp.h"
 
 /**
+ * @brief Maximum number of open websocket connections.
+ */
+#define WS_MAX_OPEN 10
+/**
+ * @brief Maximum number of registered WebSocket protocol handlers.
+ */
+#define WS_MAX_HANDLERS 10
+
+#define WS_ERROR -1
+
+/**
  * @brief Name of the protocols to support seperated by space.
  */
+//TODO: Move to "wifiswitch" handler.
 #define WS_PROTOCOL "wifiswitch"
 
 /**
+ * @brief WebSocket frame opcode values.
+ * 
  * Opcode:  4 bits
  *
  * Defines the interpretation of the "Payload data".  If an unknown
@@ -58,6 +72,7 @@ enum ws_opcode
 	WS_OPCODE_RES5,
 	WS_OPCODE_RES6,
 	WS_OPCODE_RES7,
+	//Control frames.
 	WS_OPCODE_CLOSE,
 	WS_OPCODE_PING,
 	WS_OPCODE_PONG,
@@ -68,6 +83,9 @@ enum ws_opcode
 	WS_OPCODE_RESF
 };
 
+/**
+ * @brief Struct for keeping a WebSocket frame.
+ */
 struct ws_frame
 {
 	bool fin;
@@ -79,6 +97,77 @@ struct ws_frame
 	char *data;
 };
 
+/**
+ * @brief Callback function definition for recieved frames.
+ */
+typedef signed long int (*ws_callback)(struct ws_frame *frame, struct tcp_connection *connection);
+/**
+ * @brief Type of an ID used to identify a registered WebSocket protocol handler.
+ */
+typedef unsigned char ws_handler_id_t;
+
+/**
+ * @brief Structure used for registering a WebSocket handler.
+ */
+struct ws_handler
+{
+	/**
+	 * @brief Name of the protocol.
+	 */
+	char *protocol;
+	/**
+	 * @brief Callback on connection open.
+	 */
+	ws_callback open;
+	/**
+	 * @brief Callback on data recieved.
+	 * 
+	 */
+	ws_callback received;
+	/**
+	 * @brief Callback when data has been sent.
+	 */
+	ws_callback sent;
+	/**
+	 * Callback on connection close.
+	 */
+	ws_callback close;
+	/**
+	 * @brief Callback on reciving a ping frame.
+	 */
+	ws_callback ping;
+	/**
+	 * @brief Callback on reciving a pong frame.
+	 */
+	ws_callback pong;
+};
+
+/**
+ * @brief Array of registered protocols.
+ */
+extern struct ws_handler ws_handlers[WS_MAX_HANDLERS];
+/**
+ * @brief Number of registered protocols.
+ */
+extern unsigned char ws_n_handlers;
+
+/**
+ * @brief Register a WebSocket protocol handler.
+ * 
+ * @param handler Pointer to a ws_handler structure with handler data.
+ * @return Handler ID on success, negative value on error.
+ */
+extern int ws_register_handler(struct ws_handler handler);
+/**
+ * @brief Unregister a webSocket protocol handler.
+ */
+extern bool ws_unregister_handler(ws_handler_id_t handler_id);
+/**
+ * @brief Find a handler for a protocol.
+ * 
+ * @param protocol Name of the protocol.
+ */
+extern int ws_find_handler(char *protocol);
 /**
  * @brief Register WebSocket sent callback to a connection.
  * 

@@ -69,6 +69,10 @@ enum http_ws_headers
 						  "sec-websocket-version" }
 
 /**
+ * @brief The protocol of the current handshake.
+ */
+static char *ws_handshake_protocol = NULL;
+/**
  * @brief Generate accept header value from the client key.
  */
 static char *websocket_gen_accept_value(char *key)
@@ -139,10 +143,27 @@ static char *websocket_gen_accept_value(char *key)
  */
 static void http_ws_sent_cb(struct tcp_connection *connection)
 {
+	int handler_id;
+	
 	debug("WebSocket handshake sent (%p).\n", connection);
 	
-	tcp_sent_cb(connection);
+	//Get protoocal handler and save it in the connection.
+	handler_id = ws_find_handler(ws_handshake_protocol);
+	if (handler_id < 0)
+	{
+		error(" Could not find a WebSocket handler for protocol \"%s\"\n.", ws_handshake_protocol);
+		return;
+	}
 	
+	//TODO: Free other HTTP stuf we no longer need.
+	//http_free_request(connection->user);
+	
+	connection->user = ws_handlers + handler_id;
+	
+	//Call HTTP sent handler like a normal HTTP handler.
+	http_tcp_sent_cb(connection);
+	//Set WebSocket TCP handlers on the connection.
+	ws_register_recv_cb(connection);
 	ws_register_sent_cb(connection);	
 }
 	
@@ -167,6 +188,7 @@ signed int http_ws_handler(struct http_request *request)
 	
 	if (request->response.state == HTTP_STATE_NONE)
 	{
+		//TODO: Need the check for presence of and validate all headers.
 		debug(" Evaluating headers.\n");
 		while (header)
 		{
@@ -194,6 +216,7 @@ signed int http_ws_handler(struct http_request *request)
 							break;
 						case HTTP_WS_HEADER_PROTOCOL:
 							debug("  Protocol header.\n");
+							ws_handshake_protocol = header->value;
 							break;
 						case HTTP_WS_HEADER_VERSION:
 							debug("  Version header.\n");
@@ -240,14 +263,16 @@ signed int http_ws_handler(struct http_request *request)
 		ret += http_send_header(request->connection, "Sec-WebSocket-Accept",
 								accept_value);
 		//Protocol.
+		//TODO: Get from registered handlers.
 		ret += http_send_header(request->connection, "Sec-WebSocket-Protocol",
 								WS_PROTOCOL);
 		//Send end of headers.
 		ret += http_send(request->connection, "\r\n", 2);
-		
-		//Set WebSocket TCP handler on the connection.
-		ws_register_recv_cb(request->connection);
-		//Set HTTP WebSocket Sent handshake handler.
+
+		/* Set HTTP WebSocket Sent handshake handler, that will clean up
+		 * uneeded stuff after the handshake has been sent, and set
+		 * the final WebSocket callbacks, on the connection.
+		 */
 		request->connection->callbacks->sent_callback = http_ws_sent_cb;
 		debug(" WebSocket sent callback %p set.\n", request->connection->callbacks->sent_callback);
 		

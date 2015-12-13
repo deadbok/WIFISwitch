@@ -1,3 +1,15 @@
+2015-12-13 Martin Grønholdt
+
+* Makefile: Fixed, did noot set FS_RILES correctly.
+* README.md: Spelling.
+* docs/TODO.md: Fixed wrong footnote.
+* user/handlers/http/websocket/websocket.c: Added most of the protocol handling code.
+* user/include/net/websocket.h: Added most of the WebSocket stuff.
+* user/include/net/websocket.h: To keep with my style, prefix by http_.
+* user/net/websocket.c: Most of the handler glue code is done.
+* user/net/esp.mk: Doing the same, nicer.
+
+
 2015-12-10 Martin Grønholdt
 
 * 3rdparty/jsmn/jsmn.c: Use new include layout.

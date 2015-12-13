@@ -114,7 +114,7 @@ FW_FILE_FS = $(FW_BASE)/www.fs
 # Generate a list of source files for flash file system root.
 FS_SRC_FILES = $(call rwildcard,$(FS_SRC_DIR),*)
 # Generate a list of all files to be included in the flash file system.
-FS_FILES = $(call rwildcard,$(FS_ROOT_DIR),*)
+FS_FILES = $(patsubst $(FS_SRC_DIR)%,$(FS_ROOT_DIR)%,$(FS_SRC_FILES))
 # Get size of file system image.
 FS_SIZE = $(call filesize,$(FW_FILE_FS))
 # Calculate the 4Kb aligned address of the file system in flash.
@@ -146,6 +146,7 @@ $(BUILD_DIR)/%.o: %.S
 
 # Main build rule.
 all: info $(BUILD_DIRS) $(OBJ) $(FW_FILE_1) $(FW_FILE_2) $(FW_FILE_FS) $(FW_FILE_CONFIG)
+# TODO: Print only project entries.
 	$(ECHO) "$(N_LIST_OBJECTS) largest functions:"
 	$(ECHO) "   Num:    Value  Size Type    Bind   Vis      Ndx Name"
 	@$(READELF) -s $(TARGET) | awk '$$4 == "FUNC" { print }' | sort -r -n -k 3 | head -n $(N_LIST_OBJECTS)
@@ -181,7 +182,7 @@ $(TARGET): $(OBJ)
 $(FS_CREATE):
 	$(MAKE) -C tools/dbffs-tools all install
 
-# Generate file system.
+# Generate file system. (pathsubst is to force stuff to happen, when there are no files in the root yet.)
 $(FS_FILES): $(FS_SRC_FILES)
 	$(ECHO)
 	$(ECHO) --- CREATING FIRMWARE FILE SYSTEM ROOT --- 

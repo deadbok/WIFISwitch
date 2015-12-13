@@ -1,7 +1,10 @@
-/** @file http-tcp.h
+
+/**
+ * @file wifiswitch.h
  *
- * @brief TCP stuff for the HTTP server.
- *
+ * @brief Websocket wifiswitch protocol code.
+ * 
+ * 
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
@@ -20,19 +23,17 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
- */ 
-#ifndef HTTP_TCP_H
-#define HTTP_TCP_H
-#include "tools/ring.h"
+ */
+#include <stddef.h>
+#include <stdint.h>
+#include <stdbool.h>
+#include <inttypes.h>
+#include "user_config.h"
+#include "tools/jsmn.h"
+#include "net/websocket.h"
 
-extern struct ring_buffer request_buffer;
-extern int http_response_mutex;
+#define WS_PR_WIFISWITCH "wifiswitch"
 
-extern void http_tcp_connect_cb(struct tcp_connection *connection);
-extern void http_tcp_reconnect_cb(struct tcp_connection *connection);
-extern void http_tcp_disconnect_cb(struct tcp_connection *connection);
-extern void http_tcp_write_finish_cb(struct tcp_connection *connection);
-extern void http_tcp_recv_cb(struct tcp_connection *connection);
-extern void http_tcp_sent_cb(struct tcp_connection *connection);
+extern struct ws_handler ws_wifiswitch_handler;
 
-#endif //HTTP_TCP_H
+extern signed long int ws_wifiswitch_recieved(struct ws_frame *frame, struct tcp_connection *connection);

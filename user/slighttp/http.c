@@ -82,8 +82,8 @@ bool init_http(unsigned int port)
     {
 		return(false);
 	}
-	if (!tcp_listen(port, tcp_connect_cb, tcp_disconnect_cb, 
-				   tcp_write_finish_cb, tcp_recv_cb, tcp_sent_cb))
+	if (!tcp_listen(port, http_tcp_connect_cb, http_tcp_disconnect_cb, 
+				   http_tcp_write_finish_cb, http_tcp_recv_cb, http_tcp_sent_cb))
 	{
 		return(false);
 	}
