@@ -43,6 +43,12 @@
 struct ws_handler ws_handlers[WS_MAX_HANDLERS];
 unsigned char ws_n_handlers = 0;
 
+void init_ws(void)
+{
+	debug("Initialising WebSocket server.\n");
+	os_memset(ws_handlers, 0, sizeof(struct ws_handler) * WS_MAX_HANDLERS);
+}
+
 /**
  * @brief Register a WebSocket protocol handler.
  * 
@@ -56,12 +62,13 @@ int ws_register_handler(struct ws_handler handler)
 	debug(" Registering WebSocket protocol handler \"%s\".", handler.protocol);
 	
 	//Find an empty entry.
-	for (i = 0; !ws_handlers[i].protocol && (i < ws_n_handlers); i++);
+	for (i = 0; ws_handlers[i].protocol && (i < ws_n_handlers); i++);
 	
-	if (ws_handlers[i].protocol)
+	if (!ws_handlers[i].protocol)
 	{
 		debug(" Adding handler with ID %d.\n", i);
 		os_memcpy(ws_handlers + i, &handler, sizeof(struct ws_handler));
+		ws_n_handlers++;
 	}
 	else
 	{
@@ -99,6 +106,7 @@ bool ws_unregister_handler(ws_handler_id_t handler_id)
 		debug(" Zeroing handler data %d.\n", handler_id);
 		os_memset(ws_handlers + handler_id, 0, sizeof(struct ws_handler));
 	}
+	ws_n_handlers--;
 	return(true);
 }
 
@@ -110,9 +118,10 @@ int ws_find_handler(char *protocol)
 	
 	for (i = 0; i < ws_n_handlers; i++)
 	{
-		if (os_strcmp(ws_handlers[i].protocol, protocol) != 0)
+		debug(" Handler \"%s\".\n", ws_handlers[i].protocol);
+		if (os_strcmp(ws_handlers[i].protocol, protocol) == 0)
 		{
-			debug(" Protocol ID %d.\n", i);
+			debug(" Protocol found. ID %d.\n", i);
 			return(i);
 		}
 	}
@@ -200,29 +209,41 @@ static void ws_unmask(char *data, struct ws_frame *frame)
 	}	
 }	
 
-static void ws_handle_binary(struct ws_frame *frame, struct tcp_connection *connection)
-{
-	debug(" Binary frame.\n");
-}
-
-static void ws_handle_text(struct ws_frame *frame, struct tcp_connection *connection)
-{
-	debug(" Text frame.\n");
-}
-
 static void ws_handle_control(struct ws_frame *frame, struct tcp_connection *connection)
 {
+	struct ws_handler *handler = connection->user;
 	debug(" Control frame.\n");
 	switch(frame->opcode)
 	{
 		case WS_OPCODE_CLOSE:
-			ws_handle_control(frame, connection);
+			if (handler->close)
+			{
+				handler->close(frame, connection);
+			}
+			else
+			{
+				error(" No close handler.\n");
+			}
 			break;
 		case WS_OPCODE_PING:
-			ws_handle_control(frame, connection);
+			if (handler->ping)
+			{
+				handler->ping(frame, connection);
+			}
+			else
+			{
+				debug(" No ping handler.\n");
+			}
 			break;
 		case WS_OPCODE_PONG:
-			ws_handle_control(frame, connection);
+			if (handler->pong)
+			{
+				handler->pong(frame, connection);
+			}
+			else
+			{
+				debug(" No pong handler.\n");
+			}
 			break;
 		default:
 			debug(" Uknown frame type 0x%x.\n", frame->opcode);
@@ -238,6 +259,7 @@ static void ws_handle_control(struct ws_frame *frame, struct tcp_connection *con
  */
 static void ws_recv_cb(struct tcp_connection *connection)
 {
+	struct ws_handler *handler = connection->user;
 	struct ws_frame frame;
 	size_t payload_offset;
 	
@@ -259,17 +281,7 @@ static void ws_recv_cb(struct tcp_connection *connection)
 		frame.data[frame.payload_len] = '\0';
 		debug(" Data %" PRIu64 " bytes.\n", frame.payload_len);
 
-		switch(frame.opcode)
-		{
-			case WS_OPCODE_TEXT:
-				ws_handle_text(&frame, connection);
-				break;
-			case WS_OPCODE_BIN:
-				ws_handle_binary(&frame, connection);
-				break;
-			default:
-				debug(" Unknown frame type 0x%x.\n", frame.opcode);
-		}
+		handler->receive(&frame, connection);
 	}
 	else
 	{

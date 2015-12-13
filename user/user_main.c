@@ -78,6 +78,7 @@
 #include "handlers/http/fs//http-fs.h"
 #include "handlers/http/deny/http-deny.h"
 #include "handlers/http/websocket/websocket.h"
+#include "handlers/websocket/wifiswitch.h"
 
 /**
  * @brief Linker symbol that points to the end of the ROM code in flash.
@@ -168,6 +169,13 @@ static void connected(os_signal_t mode)
 	os_timer_disarm(&status_timer);
 	//Setup timer, pass call back as parameter.
 	os_timer_setfn(&status_timer, (os_timer_func_t *)status_check, NULL);
+	
+	//Setup WebSocket handler.
+	init_ws();
+	if (!ws_register_wifiswitch())
+	{
+		error(" Could not register wifiswitch webSocket protocol.\n");
+	}
 	
 	if (!config_mode)
 	{

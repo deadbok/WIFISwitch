@@ -120,10 +120,10 @@ struct ws_handler
 	 */
 	ws_callback open;
 	/**
-	 * @brief Callback on data recieved.
+	 * @brief Callback on data received.
 	 * 
 	 */
-	ws_callback received;
+	ws_callback receive;
 	/**
 	 * @brief Callback when data has been sent.
 	 */
@@ -151,6 +151,10 @@ extern struct ws_handler ws_handlers[WS_MAX_HANDLERS];
  */
 extern unsigned char ws_n_handlers;
 
+/**
+ * @brief Initialise WebSocket server.
+ */
+extern void init_ws(void);
 /**
  * @brief Register a WebSocket protocol handler.
  * 

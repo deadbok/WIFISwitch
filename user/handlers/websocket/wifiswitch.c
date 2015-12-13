@@ -34,7 +34,20 @@
 
 #define WS_PR_WIFISWITCH "wifiswitch"
 
+static ws_handler_id_t ws_wifiswitch_hid;
+
 struct ws_handler ws_wifiswitch_handler = { WS_PR_WIFISWITCH, NULL, ws_wifiswitch_recieved, NULL, NULL, NULL, NULL};
+
+bool ws_register_wifiswitch(void)
+{
+	debug("Registering wifiswitch WebSocket protocol handler.\n");
+	ws_wifiswitch_hid = ws_register_handler(ws_wifiswitch_handler);
+	if (ws_wifiswitch_hid < 0)
+	{
+		return(false);
+	}
+	return(true);
+}
 
 signed long int ws_wifiswitch_recieved(struct ws_frame *frame, struct tcp_connection *connection)
 {

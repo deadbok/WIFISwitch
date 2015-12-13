@@ -22,6 +22,5 @@ WebSocket frame recieved.
 -------------------------
 
 * Parse frame data.
-* Determine handler from protocol and opcode.
-* Call handler recieve callback.
+* Call handler recieve callback set in connection->user.
 

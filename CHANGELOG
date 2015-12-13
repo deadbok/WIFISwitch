@@ -1,6 +1,16 @@
 2015-12-13 Martin Grønholdt
 
-* Makefile: Fixed, did noot set FS_RILES correctly.
+* docs/websocket.md: Handler is in connection->user.
+* user/handlers/websocket/wifiswitch.c: Registration code.
+* user/include/handlers/websocket/wifiswitch.h: Registration code.
+* user/include/net/websocket.h: Spelling.
+* user/net/websocket.c: Handler callbacks works, more testing.
+* user/user_main.c (connected): Init WebSocket server and register wifiswitch protocol. 
+
+
+2015-12-13 Martin Grønholdt
+
+* Makefile: Fixed, did not set FS_FILES correctly.
 * README.md: Spelling.
 * docs/TODO.md: Fixed wrong footnote.
 * user/handlers/http/websocket/websocket.c: Added most of the protocol handling code.

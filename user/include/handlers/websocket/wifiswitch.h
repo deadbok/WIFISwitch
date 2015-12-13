@@ -36,4 +36,5 @@
 
 extern struct ws_handler ws_wifiswitch_handler;
 
+extern bool ws_register_wifiswitch(void);
 extern signed long int ws_wifiswitch_recieved(struct ws_frame *frame, struct tcp_connection *connection);
