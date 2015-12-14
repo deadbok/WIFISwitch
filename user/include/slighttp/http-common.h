@@ -37,7 +37,7 @@
  * 
  * Skip initial spaces in a string.
  */
-#define HTTP_SKIP_SPACES(string) while (*string == ' ')                \
+#define HTTP_SKIP_SPACES(string) while (*string == ' ')\
 									*string++
 
 /**

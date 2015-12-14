@@ -36,7 +36,7 @@
 
 static ws_handler_id_t ws_wifiswitch_hid;
 
-struct ws_handler ws_wifiswitch_handler = { WS_PR_WIFISWITCH, NULL, ws_wifiswitch_recieved, NULL, NULL, NULL, NULL};
+struct ws_handler ws_wifiswitch_handler = { WS_PR_WIFISWITCH, NULL, ws_wifiswitch_received, NULL, NULL, NULL, NULL};
 
 bool ws_register_wifiswitch(void)
 {
@@ -49,8 +49,16 @@ bool ws_register_wifiswitch(void)
 	return(true);
 }
 
-signed long int ws_wifiswitch_recieved(struct ws_frame *frame, struct tcp_connection *connection)
+signed long int ws_wifiswitch_received(struct ws_frame *frame, struct tcp_connection *connection)
 {
+	uint32_t value;
+	
+	debug("Wifiswitch WebSocket data received.\n");
+	if (frame->opcode != WS_OPCODE_TEXT)
+	{
+		error(" I only understand text data.\n");
+		return(WS_ERROR);
+	}
 	/*
 	 * wifiswitch protocol code.
 	 */
@@ -65,24 +73,63 @@ signed long int ws_wifiswitch_recieved(struct ws_frame *frame, struct tcp_connec
 	if ( (n_tokens < 3) || tokens[0].type != JSMN_OBJECT)
 	{
 		warn("Could not parse JSON request.\n");
-		return(-WS_ERROR);
+		return(WS_ERROR);
 	}
 	for (unsigned int i = 1; i < n_tokens; i++)
 	{
 		debug(" JSON token %d.\n", i);
 		if (tokens[i].type == JSMN_STRING)
 		{
-			debug(" JSON token start with a string.\n");
-			if (strncmp(frame->data + tokens[i].start, "type", 4) == 0)
+			value = frame->data[tokens[i].start] << 24 |
+					frame->data[tokens[i].start + 1] << 16 |
+					frame->data[tokens[i].start + 2] << 8 |
+					frame->data[tokens[i].start + 3];
+			debug(" JSON token start with a string (0x%.4x).\n", value);
+			//0x74797065 is ASCII values for "type".
+			if (value == 0x74797065)
 			{
 				i++;
 				if (tokens[i].type == JSMN_STRING)
 				{
-					debug(" JSON string comes next.\n");
-					
-					char *type = frame->data + tokens[i].start;
-					debug(" Request type %s.\n", type);							
+					debug(" JSON string comes next.\n");			
+					/* The first 2 bytes of type is unique by using them as an
+					 * 16 bit uint, we save a string comparison.
+					 */
+		 			value = frame->data[tokens[i].start] << 8 |
+							frame->data[tokens[i].start + 1];
+					switch (value)
+					{
+						case 0x6677:
+							debug(" fw request.\n");
+							break;
+						case 0x6e65:
+							debug(" network request.\n");
+							break;
+						case 0x7374:
+							debug(" station request.\n");
+							break;
+						case 0x6170:
+							debug(" ap request.\n");
+							break;
+						case 0x6770:
+							debug(" gpio message.\n");
+							if (++i == n_tokens)
+							{
+								debug(" GPIO read request.\n");
+							}
+							break;
+						default:
+							warn("Unknown wifiswitch request (0x%.2x).\n", value);
+					}
 				}
+				else
+				{
+					warn("Unexpected JSON type in wifiswitch request.\n");
+				}
+			}
+			else
+			{
+				warn("Type token expected.\n");
 			}
 		}
 	}

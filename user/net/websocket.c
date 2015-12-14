@@ -126,6 +126,7 @@ int ws_find_handler(char *protocol)
 		}
 	}
 	warn(" Could not find a matching protocol handler.\n");
+	return(WS_ERROR);
 }
 
 /**

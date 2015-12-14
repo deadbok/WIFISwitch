@@ -36,7 +36,7 @@ type: "ap".
 |  Name | Description | Values | Access |
 | :---: | :---------- | :----: | :----: |
 | ssid | Network name | "name" | R/W |
-| passwd | Network password | "password" | WO |
+| passwd | Network password | "password" | W |
 | channel | Network channel | channel | R/W |
 | hostname | Switch hostname | hostname | R/W |
 | ip | IP address | ip | RO |

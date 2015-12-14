@@ -1,3 +1,12 @@
+2015-12-14 Martin Grønholdt
+
+* build.sh: Pass any parameter to make.
+* docs/ws_proto.md: Small consistency fixes.
+* user/handlers/websocket/wifiswitch.c: Basic parsing.
+* user/include/handlers/websocket/wifiswitch.h: Spelling.
+* user/net/websocket.c: Fail on missing handler.
+
+
 2015-12-13 Martin Grønholdt
 
 * docs/websocket.md: Handler is in connection->user.
