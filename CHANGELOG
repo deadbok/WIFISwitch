@@ -1,3 +1,16 @@
+2013-12-15 Martin Grønholdt
+
+* docs/ws_proto.md: GPIO response changed.
+* fs/root_src/index.html: Update GPIO response.
+* tests/ws_test_server/wsserver.js: Update GPIO response.
+* user/handlers/websocket/wifiswitch.c: GPIO response code added.
+* user/include/handlers/websocket/wifiswitch.h: GPIO defines added.
+* user/include/net/websocket.h: Remove WS_PROTOCOL.
+* user/include/tools/json-gen.h: Doc.
+* user/include/user_config.h: Added WS_WIFISWITCH_GPIO_ENABLED.
+* user/handlers/http/websocket/websocket.c: Send all supported protocols in the handshake headers.
+
+
 2015-12-14 Martin Grønholdt
 
 * build.sh: Pass any parameter to make.

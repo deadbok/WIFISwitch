@@ -34,6 +34,20 @@
 
 #define WS_PR_WIFISWITCH "wifiswitch"
 
+
+#ifndef WS_WIFISWITCH_GPIO_ENABLED
+#warning "No GPIO's has been enabled for access via the wifiswitch protocol."
+/**
+ * @brief Bit mask of which GPIO pins the WebSocket API can control.
+ */
+#define WS_WIFISWITCH_GPIO_ENABLED 0
+#endif
+
+/**
+ * @brief Number of GPIO's
+ */
+#define WS_WIFISWITCH_GPIO_PINS 16
+
 extern struct ws_handler ws_wifiswitch_handler;
 
 extern bool ws_register_wifiswitch(void);

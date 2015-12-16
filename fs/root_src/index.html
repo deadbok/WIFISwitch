@@ -49,7 +49,7 @@
 			
 			var msg = JSON.parse(event.data);
 			if (msg.type === "gpio") {
-				if (msg.gpios[1]) {
+				if (msg["5"]) {
 					state = true;
 					button.className = "button-on button";
 				}
@@ -68,10 +68,10 @@
 		function buttonSwitch() {
 			state = !state;
 			if (state) {
-				socket.send(JSON.stringify({type: "gpio", gpios : [ 0, 1 ]}));
+				socket.send(JSON.stringify({type: "gpio", 5: 1}));
 			}
 			else {
-				socket.send(JSON.stringify({type: "gpio", gpios : [ 0, 0 ]}));
+				socket.send(JSON.stringify({type: "gpio", 5: 0}));
 			}
 		}
 	</script>

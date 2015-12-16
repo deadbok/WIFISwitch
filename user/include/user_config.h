@@ -96,6 +96,10 @@
  * @brief Bit mask of which GPIO pins the REST interface can control.
  */
 #define REST_GPIO_ENABLED 0x30
+/**
+ * @brief Bit mask of which GPIO pins the WebSocket API can control.
+ */
+#define WS_WIFISWITCH_GPIO_ENABLED 0x30
 
 /**
  * @brief Baud rate of the serial console.

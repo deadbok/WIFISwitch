@@ -264,8 +264,11 @@ signed int http_ws_handler(struct http_request *request)
 								accept_value);
 		//Protocol.
 		//TODO: Get from registered handlers.
-		ret += http_send_header(request->connection, "Sec-WebSocket-Protocol",
-								WS_PROTOCOL);
+		for (i = 0; (ws_handlers[i].protocol && (i < WS_MAX_HANDLERS)); i++)
+		{
+			ret += http_send_header(request->connection, "Sec-WebSocket-Protocol",
+									ws_handlers[i].protocol);
+		}
 		//Send end of headers.
 		ret += http_send(request->connection, "\r\n", 2);
 

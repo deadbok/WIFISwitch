@@ -39,12 +39,6 @@
 #define WS_ERROR -1
 
 /**
- * @brief Name of the protocols to support seperated by space.
- */
-//TODO: Move to "wifiswitch" handler.
-#define WS_PROTOCOL "wifiswitch"
-
-/**
  * @brief WebSocket frame opcode values.
  * 
  * Opcode:  4 bits
@@ -98,7 +92,7 @@ struct ws_frame
 };
 
 /**
- * @brief Callback function definition for recieved frames.
+ * @brief Callback function definition for received frames.
  */
 typedef signed long int (*ws_callback)(struct ws_frame *frame, struct tcp_connection *connection);
 /**

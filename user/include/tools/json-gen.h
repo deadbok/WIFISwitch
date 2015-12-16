@@ -49,6 +49,8 @@ extern char *json_create_pair(char *string, char *value, bool quotes);
  * @param json_string Pointer to previous string representation of the object, or NULL to create.
  * @param member Pointer to the string representation of the element to add.
  * @return Pointer to the string representation of the of the new JSON object.
+ * 
+ * *Makes a copy of element.*
  */
 #define json_add_to_array(json_string, element) json_add_to_type(json_string, element, JSON_TYPE_ARRAY)
 /**
@@ -57,14 +59,18 @@ extern char *json_create_pair(char *string, char *value, bool quotes);
  * @param json_string Pointer to previous string representation of the object, or NULL to create.
  * @param member Pointer to the string representation of the member to add.
  * @return Pointer to the string representation of the of the new JSON object.
+ * 
+ *  * *Makes a copy of member.*
  */
 #define json_add_to_object(json_string, member) json_add_to_type(json_string, member, JSON_TYPE_OBJECT)
 /**
- * @brief Add an member/element to a JSON object/array.
+ * @brief Add a(n) member/element to a JSON object/array.
  * 
  * @param json_string Pointer to previous string representation of the object, or NULL to create.
  * @param element Pointer to the string representation of the element/member to add.
  * @return Pointer to the string representation of the of the new JSON object.
+ * 
+ *  * *Makes a copy of member/element.*
  */
 extern char *json_add_to_type(char *json_string, char *element, char *type);
 

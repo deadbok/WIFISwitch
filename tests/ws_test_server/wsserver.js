@@ -28,7 +28,8 @@ function originIsAllowed(origin) {
 }
 
 var fw_mode = "station";
-var gpios = [ 0, 0 ];
+var gpio_en = [ 4, 5, 9 ];
+var gpio_states = {};
 
 wsServer.on('request', function(request) {
     if (!originIsAllowed(request.origin)) {
@@ -97,13 +98,15 @@ wsServer.on('request', function(request) {
 			else if (data.type === "gpio") {
 				console.log("GPIO message");
 				
-				if (data.hasOwnProperty("gpios")) {
-					for (var i = 0; i < data.gpios.length; i++) {
-						gpios[i] = data.gpios[i];
+				for (var key in data) {
+					if (data.hasOwnProperty(key)) {
+						if (!isNAN(key)) {
+							gpio_states[key] = data[key];
+						}
 					}
 				}
 				
-				var message = JSON.stringify({ type : "gpio", gpios : gpios});
+				var message = JSON.stringify({ type : "gpio", gpios : gpio_en} + gpio_states);
 				console.log("Sending: " + message);
 				connection.sendUTF(message);				
 			}
@@ -120,8 +123,8 @@ wsServer.on('request', function(request) {
     });
     
     setInterval(function() {
-		gpios[1] = Math.floor((Math.random() * 2));
-		var message = JSON.stringify({ type : "gpio", gpios : gpios});
+		gpio_states[5] = Math.floor((Math.random() * 2));
+		var message = JSON.stringify({ type : "gpio", 5 : gpio_states[5]});
 		console.log("Sending: " + message);
 		connection.sendUTF(message);
 	}, 3333)

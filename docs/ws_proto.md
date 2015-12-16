@@ -46,7 +46,8 @@ type: "gpio".
 
 |  Name | Description | Values | Access |
 | :---: | :---------- | :----: | :----: |
-| gpios | Get/set GPIO states. | Array of gpio states | R/W* |
+| gpios | Get accessible GPIOs. | Array of accessible GPIOs| R |
+| *n* | Get/set a GPIO state of *n*. | *gpio number*: *0/1* | R/W* |
 
 * Writes will be silently dropped, if the GPIO support only read operations.
 

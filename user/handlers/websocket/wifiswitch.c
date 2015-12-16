@@ -28,7 +28,9 @@
 #include <stdbool.h>
 #include <inttypes.h>
 #include "user_config.h"
+#include "tools/strxtra.h"
 #include "tools/jsmn.h"
+#include "tools/json-gen.h"
 #include "net/websocket.h"
 #include "handlers/websocket/wifiswitch.h"
 
@@ -49,9 +51,81 @@ bool ws_register_wifiswitch(void)
 	return(true);
 }
 
+/**
+ * @brief Create response to a gpio type request.
+ * 
+ * @return Pointer to JSON response.
+ */
+static char *ws_wifiswitch_gpio_response(void)
+{
+	char json_value[3];
+	char *json_response = NULL;
+	char *pair;
+	char *json_gpio_en = NULL;
+	
+	debug("Creating JSON gpio response.\n");
+	
+	//Create type object.
+	pair = json_create_pair("type", "gpio", true);
+	json_response = json_add_to_object(json_response, pair);
+	db_free(pair); 
+	//Run through all GPIO's.
+	for (unsigned int i = 0; i < WS_WIFISWITCH_GPIO_PINS; i++)
+	{
+		if (((WS_WIFISWITCH_GPIO_ENABLED >> i) & 1) == 1)
+		{
+			//Create an array of the enabled ones.
+			debug(" GPIO%d is enabled.\n", i);
+			if (!itoa(i, json_value, 10))
+			{
+				warn("Could not convert GPIO pin number to string.\n");
+			}
+			//Starts of with json_gpio_en = NULL, to create a new array.
+			json_gpio_en = json_add_to_array(json_gpio_en, json_value);
+		}
+	}
+	pair = json_create_pair("gpios", json_gpio_en, false);
+	debug(" Add \"%s\".\n", pair);
+	json_response = json_add_to_object(json_response, pair);
+	db_free(json_gpio_en);
+	db_free(pair);
+	//Run through all GPIO's, again. Ended up deciding it was the nicest way.
+	for (unsigned int i = 0; i < WS_WIFISWITCH_GPIO_PINS; i++)
+	{
+		if (((WS_WIFISWITCH_GPIO_ENABLED >> i) & 1) == 1)
+		{
+			//Create an array of the enabled ones.
+			debug(" GPIO%d is enabled.\n", i);
+			if (!itoa(i, json_value, 10))
+			{
+				warn("Could not convert GPIO pin number to string.\n");
+			}
+			//Create an array of objects with GPIO state of enabled pins.
+			if (GPIO_INPUT_GET(i))
+			{
+				debug(" GPIO is on.\n");
+				pair = json_create_pair(json_value, "1", false);
+			}
+			else
+			{
+				debug(" GPIO is off.\n");
+				pair = json_create_pair(json_value, "0", false);
+			}				
+			json_response = json_add_to_object(json_response, pair);
+			db_free(pair);
+			
+		}
+	}
+	
+	return(json_response);
+}
+	
+
 signed long int ws_wifiswitch_received(struct ws_frame *frame, struct tcp_connection *connection)
 {
 	uint32_t value;
+	char *response = NULL;
+	signed long int ret = 0;
 	
 	debug("Wifiswitch WebSocket data received.\n");
 	if (frame->opcode != WS_OPCODE_TEXT)
@@ -116,6 +190,7 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct tcp_connec
 							if (++i == n_tokens)
 							{
 								debug(" GPIO read request.\n");
+								response = ws_wifiswitch_gpio_response();
 							}
 							break;
 						default:
@@ -133,6 +208,11 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct tcp_connec
 			}
 		}
 	}
-	ws_send_text("{ \"type\" : \"gpio\", \"gpios\" : [ 0, 1 ] }", connection);
-	return(os_strlen("{ \"type\" : \"gpio\", \"gpios\" : [ 0, 1 ] }"));
+	if (response)
+	{
+		ret = os_strlen(response);
+		ws_send_text(response, connection);
+	}
+	
+	return(ret);
 }
