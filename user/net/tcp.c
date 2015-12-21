@@ -439,6 +439,7 @@ static void tcp_sent_cb(void *arg)
     tcp_print_connection_status();
     
     connection = find_connection(conn, false);
+    net_sent_callback();
 
 	if (connection)
 	{
@@ -451,7 +452,6 @@ static void tcp_sent_cb(void *arg)
 			connection->callbacks->sent_callback(connection);
 		}
 		//Call send buffer handler.
-		net_sent_callback();
 		debug("Leaving TCP sent call back (%p).\n", conn);
 		return;
 	}

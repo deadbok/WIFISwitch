@@ -73,7 +73,6 @@ char *json_create_pair(char *string, char *value, bool quotes)
 	return(ret);
 }
 
-
 char *json_add_to_type(char *json_string, char *element, char *type)
 {
 	size_t element_size;

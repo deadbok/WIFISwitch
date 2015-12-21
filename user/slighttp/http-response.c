@@ -314,6 +314,8 @@ signed int http_handle_response(struct http_request *request)
 		if (ret == RESPONSE_DONE_NO_DEALLOC)
 		{
 			debug(" Handler is done, no new handler is to be called, connection and request data are kept.\n");
+						//Done sending, print log line.
+			http_print_clf_status(request);
 			return(RESPONSE_DONE_NO_DEALLOC);
 		}
 		debug(" Handler is done, finding next handler.\n");

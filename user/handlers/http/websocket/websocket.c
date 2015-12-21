@@ -265,6 +265,7 @@ signed int http_ws_handler(struct http_request *request)
 		//Key.						
 		ret += http_send_header(request->connection, "Sec-WebSocket-Accept",
 								accept_value);
+		db_free(accept_value);
 		//Protocol.
 		//TODO: Get from registered handlers.
 		for (i = 0; (ws_handlers[i].protocol && (i < WS_MAX_HANDLERS)); i++)

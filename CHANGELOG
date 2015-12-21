@@ -1,4 +1,16 @@
-2013-12-22 Martin Grønholdt
+2015-21-22 Martin Grønholdt
+
+* user/handlers/http/websocket/websocket.c (http_ws_handler): Free up memory.
+* user/include/slighttp/http-request.h: Oops, , not :.
+* user/handlers/websocket/wifiswitch.c (ws_wifiswitch_received): Free up memory.
+* user/net/net.c (net_sent_callback): Free up memory. 
+* user/net/tcp.c (tcp_sent_cb): Call send buffer handling earlier to avoid dealloc issues.
+* user/net/websocket.c (ws_send): Free up memory.
+* user/slighttp/http-response.c (http_handle_response): Print status line in all branches.
+* user/slighttp/http-tcp.c (http_tcp_connect_cb): Wrong info in mem alloc.
+
+
+2015-12-21 Martin Grønholdt
 
 * user/handlers/http/fs/http-fs.c (http_fs_open_file): Free headers early.
 * user/handlers/http/websocket/websocket.c: Free headers early. Return correct response size on upgrade.
@@ -20,7 +32,7 @@
 * user/tools/ring.c: Move doxygen comments to include file.
 
 
-2013-12-15 Martin Grønholdt
+2015-12-15 Martin Grønholdt
 
 * docs/ws_proto.md: GPIO response changed.
 * fs/root_src/index.html: Update GPIO response.

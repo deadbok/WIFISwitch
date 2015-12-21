@@ -60,7 +60,7 @@ void http_tcp_connect_cb(struct tcp_connection *connection)
     debug("HTTP new connection (%p).\n", connection);
    
     //Allocate memory for the request data, and tie it to the connection.
-    request = (struct http_request *)db_zalloc(sizeof(struct http_request), "request tcp_connect_cb"); 
+    request = (struct http_request *)db_zalloc(sizeof(struct http_request), "request http_tcp_connect_cb"); 
     debug(" Allocated memory for request data: %p.\n", request);
     //Reset send buffer position.
     request->response.send_buffer_pos = request->response.send_buffer;

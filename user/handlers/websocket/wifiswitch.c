@@ -260,6 +260,7 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct tcp_connec
 	{
 		ret = os_strlen(response);
 		ws_send_text(response, connection);
+		db_free(response);
 	}
 	
 	return(ret);

@@ -141,6 +141,7 @@ void net_sent_callback(void)
 		{
 			error("Send failed.\n");
 		}
+		db_free(queue_item);
 	}
 }
 

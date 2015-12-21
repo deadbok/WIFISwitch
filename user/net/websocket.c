@@ -335,6 +335,7 @@ void ws_send(struct ws_frame frame, struct tcp_connection *connection)
 	raw_frame_pos += frame.payload_len;
 	db_hexdump((char *)raw_frame, raw_frame_pos - raw_frame);
 	net_send((char *)raw_frame, raw_frame_pos - raw_frame, connection->conn);
+	db_free(raw_frame);
 }
 
 /**
