@@ -25,14 +25,6 @@
 #include "user_config.h"
 #include "tools/ring.h"
 
-/**
- * @brief Initialise and allocate space for a ring buffer.
- * 
- * @param rb Pointer to the ring buffer structure.
- * @param size Size of an entry in the buffer.
- * @param capacity Desired capacity of the buffer.
- * @return
- */
 void init_ring(struct ring_buffer *rb, size_t size, size_t capacity)
 {
 	debug("Creating ring buffer at %p.\n", rb);
@@ -47,11 +39,6 @@ void init_ring(struct ring_buffer *rb, size_t size, size_t capacity)
 	debug(" Buffer size: %d bytes.\n", size*capacity); 
 }
 
-/**
- * @brief Get a pointer to a new item at the end of the buffer.
- * 
- * @param rb Pointer to a buffer to add the item to.
- */
 void *ring_push_back(struct ring_buffer *rb)
 {
 	void *ret;
@@ -81,11 +68,6 @@ void *ring_push_back(struct ring_buffer *rb)
 	return(ret);
 }
 
-/**
- * @brief Get a pointer to a copy of the next item in the buffer, and free it.
- * 
- * @param rb Pointer to a buffer to get the item from.
- */
 void *ring_pop_front(struct ring_buffer *rb)
 {
 	void *new_head;

@@ -2,6 +2,9 @@
  * @file websocket.h
  *
  * @brief Websocket connection handling.
+ * 
+ * *Uses tcp_connection.user, as an array of WS_MAX_WAIT_FRAMES frames
+ * waiting to be send.*
  *
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -35,7 +38,14 @@
  * @brief Maximum number of registered WebSocket protocol handlers.
  */
 #define WS_MAX_HANDLERS 10
+/**
+ * @brief Maximum size of the WebSocket  frame header.
+ */
+#define WS_MAX_HEADER_SIZE 14
 
+/**
+ * @brief Error return value for WebSocket functions.
+ */
 #define WS_ERROR -1
 
 /**

@@ -55,8 +55,26 @@ struct ring_buffer
 	 size_t item_size;
 };
 
+/**
+ * @brief Initialise and allocate space for a ring buffer.
+ * 
+ * @param rb Pointer to the ring buffer structure.
+ * @param size Size of an entry in the buffer.
+ * @param capacity Desired capacity of the buffer.
+ * @return
+ */
 extern void init_ring(struct ring_buffer *rb, size_t size, size_t capacity);
+/**
+ * @brief Get a pointer to a new item at the end of the buffer.
+ * 
+ * @param rb Pointer to a buffer to add the item to.
+ */
 extern void *ring_push_back(struct ring_buffer *rb);
+/**
+ * @brief Get a pointer to a copy of the next item in the buffer, and free it.
+ * 
+ * @param rb Pointer to a buffer to get the item from.
+ */
 extern void *ring_pop_front(struct ring_buffer *rb);
 
 #endif

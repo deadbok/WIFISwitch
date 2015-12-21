@@ -25,6 +25,7 @@
  */
 #include <stddef.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include <stdbool.h>
 #include <inttypes.h>
 #include "user_config.h"
@@ -119,26 +120,68 @@ static char *ws_wifiswitch_gpio_response(void)
 	
 	return(json_response);
 }
-	
+
+static void ws_wifiswitch_gpio_parse(char *request, jsmn_parser *parser, jsmntok_t *tokens, int n_tokens)
+{
+	int i;
+	char gpio = -1;
+	char *token;
+	char *token_end;
+
+	debug("Parsing wifiswitch gpio request.\n");	
+	//Assumes the top level token is an object.
+	for (i = 1; i < n_tokens; i++)
+	{
+		debug(" JSON token %d.\n", i);
+		token = request + tokens[i].start;
+		if (tokens[i].type == JSMN_STRING)
+		{
+			token_end = token;
+			debug(" JSON token is a string \"%s\".\n", token);
+			gpio = strtol(token, &token_end, 10);
+			if (token == token_end)
+			{
+				debug(" Unexpected token.\n");
+				gpio = -1;
+			}
+		}
+		if (tokens[i].type == JSMN_PRIMITIVE)
+		{
+			debug(" JSON token is a primitive.\n");
+			if (gpio > -1)
+			{
+				debug(" Have GPIO%d, setting state %c.\n", gpio, *token);
+				if ((*token == '0') || (*token == '1'))
+				{
+					GPIO_OUTPUT_SET(gpio, *token - 48);
+				}
+				else
+				{
+					warn("Unsupported GPIO state %c.\n", *token);
+				}
+				gpio = -1;
+				
+			}
+		}
+	}
+}
 
 signed long int ws_wifiswitch_received(struct ws_frame *frame, struct tcp_connection *connection)
 {
 	uint32_t value;
 	char *response = NULL;
 	signed long int ret = 0;
+	jsmn_parser parser;
+	jsmntok_t tokens[10];
+	int n_tokens;
 	
 	debug("Wifiswitch WebSocket data received.\n");
+	db_hexdump(frame->data, frame->payload_len);
 	if (frame->opcode != WS_OPCODE_TEXT)
 	{
 		error(" I only understand text data.\n");
 		return(WS_ERROR);
 	}
-	/*
-	 * wifiswitch protocol code.
-	 */
-	jsmn_parser parser;
-	jsmntok_t tokens[10];
-	int n_tokens;
 	
 	jsmn_init(&parser);
 	n_tokens  = jsmn_parse(&parser, frame->data, frame->payload_len, tokens, 10);
@@ -149,6 +192,7 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct tcp_connec
 		warn("Could not parse JSON request.\n");
 		return(WS_ERROR);
 	}
+	//Assumes the top level token is an object.
 	for (unsigned int i = 1; i < n_tokens; i++)
 	{
 		debug(" JSON token %d.\n", i);
@@ -187,11 +231,15 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct tcp_connec
 							break;
 						case 0x6770:
 							debug(" gpio message.\n");
-							if (++i == n_tokens)
+							//If there are only three tokens, the only valid request is one with only type.
+							if (n_tokens > 3)
 							{
-								debug(" GPIO read request.\n");
-								response = ws_wifiswitch_gpio_response();
+								debug(" Full GPIO request.\n");
+								ws_wifiswitch_gpio_parse(frame->data, &parser, tokens, n_tokens);
 							}
+							debug(" Creating GPIO response.\n");
+							response = ws_wifiswitch_gpio_response();
+
 							break;
 						default:
 							warn("Unknown wifiswitch request (0x%.2x).\n", value);
@@ -204,7 +252,7 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct tcp_connec
 			}
 			else
 			{
-				warn("Type token expected.\n");
+				debug("Not a type token, ignoring.\n");
 			}
 		}
 	}

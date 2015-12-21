@@ -1,3 +1,25 @@
+2013-12-22 Martin Grønholdt
+
+* user/handlers/http/fs/http-fs.c (http_fs_open_file): Free headers early.
+* user/handlers/http/websocket/websocket.c: Free headers early. Return correct response size on upgrade.
+* user/handlers/websocket/wifiswitch.c: Handles gpio requests.
+* user/include/net/net.h: Added buffering of outgoing messages. net_sending is now readable through net_is_sending().
+* user/include/net/tcp.h (struct tcp_connection): Remove sending, use new net_send code. 
+* user/include/net/udp.h (struct udp_connection): Remove sending, use new net_send code.
+* user/include/net/websocket.h: Max WebSocket header const.
+* user/include/tools/ring.h: Move doxygen comments here.
+* user/net/net.c: Added buffering of outgoing messages.
+* user/net/tcp.c (print_status): Removed.
+				 (tcp_send): Remove use net_send.
+* user/net/udp.: Use net_send.
+* user/net/websocket.c: Use net_send.
+* user/slighttp/http-request.c (http_free_request_headers): Added, fees mem allocated by request headers.
+* user/include/slighttp/http-request.h (http_free_request_headers): Added, fees mem allocated by request headers.
+* user/slighttp/http-response.c: Use net_send.
+* user/slighttp/http-tcp.c: Use net_is_sending().
+* user/tools/ring.c: Move doxygen comments to include file.
+
+
 2013-12-15 Martin Grønholdt
 
 * docs/ws_proto.md: GPIO response changed.

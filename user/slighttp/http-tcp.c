@@ -140,7 +140,7 @@ void http_tcp_recv_cb(struct tcp_connection *connection)
 	request->response.handler = http_get_handler(request, NULL);
 
 	//Put in buffer if there is stuff there already.
-	if ((request_buffer.count > 0) || net_sending)
+	if ((request_buffer.count > 0) || net_is_sending())
 	{
 		if (request_buffer.count < (HTTP_REQUEST_BUFFER_SIZE - 1))
 		{

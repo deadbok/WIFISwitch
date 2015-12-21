@@ -43,6 +43,7 @@
 signed int http_deny_handler(struct http_request *request)
 {
 	debug("Denying access to %s.\n", request->uri);
+	http_free_request_headers(request);
 	request->response.status_code = 403;
 	return(RESPONSE_DONE_CONTINUE);
 }

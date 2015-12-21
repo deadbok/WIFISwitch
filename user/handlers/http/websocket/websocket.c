@@ -156,12 +156,14 @@ static void http_ws_sent_cb(struct tcp_connection *connection)
 	}
 	
 	//TODO: Free other HTTP stuf we no longer need.
+	http_free_request_headers(connection->user);
 	//http_free_request(connection->user);
 	
-	connection->user = ws_handlers + handler_id;
-	
 	//Call HTTP sent handler like a normal HTTP handler.
+	debug(" Calling HTTP send handler to clean up after itself.\n");
 	http_tcp_sent_cb(connection);
+	//Set a pointer to the handler struct.
+	connection->user = ws_handlers + handler_id;
 	//Set WebSocket TCP handlers on the connection.
 	ws_register_recv_cb(connection);
 	ws_register_sent_cb(connection);	
@@ -251,7 +253,8 @@ signed int http_ws_handler(struct http_request *request)
 		{
 			ret += http_send_header(request->connection,
 									"Sec-WebSocket-Version", "13");
-			return(RESPONSE_DONE_FINAL);
+			request->response.state = HTTP_STATE_DONE;
+			return(ret);
 		}
 		
 		//Upgrade.
@@ -272,7 +275,7 @@ signed int http_ws_handler(struct http_request *request)
 		//Send end of headers.
 		ret += http_send(request->connection, "\r\n", 2);
 
-		/* Set HTTP WebSocket Sent handshake handler, that will clean up
+		/* Set HTTP WebSocket sent handshake handler, that will clean up
 		 * uneeded stuff after the handshake has been sent, and set
 		 * the final WebSocket callbacks, on the connection.
 		 */

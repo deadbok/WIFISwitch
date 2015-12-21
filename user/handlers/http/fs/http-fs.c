@@ -208,7 +208,7 @@ static bool http_fs_open_file(struct http_request *request, bool err)
  * @brief Send a file.
  * 
  * *This function is stupid, and does not do much checking, please make
- * sure that the supllied request is valid and sound.*
+ * sure that the supplied request is valid and sound.*
  * 
  * Check and headers should be over, when calling this.
  * 
@@ -349,6 +349,7 @@ signed int http_fs_handler(struct http_request *request)
 		return(RESPONSE_DONE_ERROR);
 	}
 	
+	http_free_request_headers(request);
 	//Skip on error.
 	if (request->response.status_code > 399)
 	{
@@ -382,6 +383,7 @@ signed int http_fs_error_handler(struct http_request *request)
 		return(RESPONSE_DONE_ERROR);
 	}
 	
+	http_free_request_headers(request);
 	//Set error status is to error since we got here.
 	if (request->response.status_code < 400)
 	{

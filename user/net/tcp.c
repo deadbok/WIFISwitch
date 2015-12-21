@@ -55,7 +55,7 @@ static unsigned char n_tcp_connections = 0;
  */
 static struct tcp_connection *tcp_connections = NULL;
 /**
- * @brief Number of listenong connections.
+ * @brief Number of listening connections.
  */
 static unsigned char n_tcp_listening_connections = 0;
 /**
@@ -212,54 +212,6 @@ static void add_listening_connection(struct tcp_connection *connection)
 }
 
 /**
- * @brief Internal function to print espconn status.
- * 
- * @param status Status to print.
- */
-static void print_status(const int status)
-{
-    switch(status)
-    {
-        case ESPCONN_OK:
-            debug("OK.\n");
-            break;
-        case ESPCONN_MEM:
-            error("Out of memory.\n");
-            break;
-        case ESPCONN_TIMEOUT:
-            warn("Timeout.\n");
-            break;            
-        case ESPCONN_RTE:
-            error("Routing problem.\n");
-            break;
-        case ESPCONN_INPROGRESS:
-            db_printf("Operation in progress...\n");
-            break;
-        case ESPCONN_ABRT:
-            warn("Connection aborted.\n");
-            break;
-        case ESPCONN_RST:
-            warn("Connection reset.\n");
-            break;
-        case ESPCONN_CLSD:
-            warn("Connection closed.\n");
-            break;
-        case ESPCONN_CONN:
-            os_printf("Not connected.\n");
-            break;
-        case ESPCONN_ARG:
-            os_printf("Illegal argument.\n");
-            break;
-        case ESPCONN_ISCONN:
-            warn("Already connected.\n");
-            break;
-        default:
-            warn("Unknown status: %d\n", status);
-            break;    
-    }
-}
-
-/**
  * @brief Internal callback for when a new connection has been made.
  * 
  * @param arg Pointer to an espconn connection structure.
@@ -297,7 +249,7 @@ static void tcp_connect_cb(void *arg)
 	espconn_regist_sentcb(connection->conn, tcp_sent_cb);
 
 	//Nothing's happening.
-	connection->sending = false;
+	//connection->sending = false;
 	connection->closing = false;
 	
 	//Save connection addresses.
@@ -333,12 +285,6 @@ static bool tcp_handle_disconnect(struct tcp_connection *connection)
 	{
 		//Clear previous data.
 		os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
-		//Set new data
-		//connection->callback_data.arg = arg;
-		if (connection->sending)
-		{
-			net_sending = false;
-		}
 
 		//Call callback.
 		if (connection->callbacks->disconnect_callback != NULL)
@@ -367,8 +313,8 @@ static void tcp_reconnect_cb(void *arg, sint8 err)
     struct espconn *conn = arg;
     struct tcp_connection *connection;
             
-    debug("TCP reconnected (%p).\n", conn);
-    print_status(err);
+    debug("TCP reconnected (%p) status %d.\n", conn, err);
+    //print_status(err);
     tcp_print_connection_status();
     
     connection = find_connection(conn, false);
@@ -431,8 +377,6 @@ static void tcp_write_finish_cb(void *arg)
 	{
 		//Clear previous data.
 		os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
-		//Set new data
-		//connection->callback_data.arg = arg;
 
 		//Call callback.
 		if (connection->callbacks->write_finish_fn != NULL)
@@ -467,7 +411,6 @@ static void tcp_recv_cb(void *arg, char *data, unsigned short length)
 		//Clear previous data.
 		os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
 		//Set new data
-		//connection->callback_data.arg = arg;
 		connection->callback_data.data = data;
 		connection->callback_data.length = length;
 
@@ -480,7 +423,6 @@ static void tcp_recv_cb(void *arg, char *data, unsigned short length)
 		return;
 	}
 	warn("Could not find receiving connection.\n");
-	debug("Leaving TCP receive call back (%p).\n", conn);
 }
 
 /**
@@ -500,18 +442,16 @@ static void tcp_sent_cb(void *arg)
 
 	if (connection)
 	{
-		net_sending = false;
-		connection->sending = false;
 		//Clear previous data.
 		os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
-		//Set new data
-		//connection->callback_data.arg = arg;
 
 		//Call callback.
 		if (connection->callbacks->sent_callback != NULL)
 		{
 			connection->callbacks->sent_callback(connection);
 		}
+		//Call send buffer handler.
+		net_sent_callback();
 		debug("Leaving TCP sent call back (%p).\n", conn);
 		return;
 	}
@@ -622,17 +562,13 @@ bool tcp_listen(unsigned int port,
 		
 	debug(" Accepting connections on port %d...", port);
 	ret = espconn_accept(conn);
-#ifdef DEBUG
-	print_status(ret);
-#endif
+	debug(" Accept call return %d.\n", ret);
 	if (ret == ESPCONN_OK)
 	{
 		debug(" Setting connection time out to 60 secs...");
 		//Set time out for all connections.
 		ret = espconn_regist_time(conn, 60, 0);
-	#ifdef DEBUG
-		print_status(ret);
-	#endif
+		debug(" Timeout call return %d.\n", ret);
 	}
 	if (ret != ESPCONN_OK)
 	{
@@ -716,52 +652,6 @@ bool tcp_stop(unsigned int port)
 struct tcp_connection *tcp_get_connections(void)
 {
 	return(tcp_connections);
-}
-
-/** 
- * @brief Send TCP data.
- * 
- * @param connection Connection used for sending the data.
- * @param data Pointer to the data to send.
- * @param size Length of data in bytes.
- * 
- * @return true on success, false otherwise.
- */
-bool tcp_send(struct tcp_connection *connection, char *data, size_t size)
-{
-	signed char ret;
-	
-    debug("Sending %d bytes of TCP data (%p using %p),\n", size, data, connection);
-	debug(" espconn pointer %p.\n", connection->conn);
-	
-	if ((connection->sending) || (net_sending))
-	{
-		error(" Still sending something else.\n");
-		return(false);
-	}    
-#ifdef DEBUG
-	uart0_tx_buffer((unsigned char *)data, size);
-#endif //DEBUG
-	if (connection->conn)
-	{
-		net_sending = true;
-		connection->sending = true;
-		ret = espconn_send(connection->conn, (unsigned char*)data, size);
-		debug(" Send status %d: ", ret);
-#ifdef DEBUG
-		print_status(ret);
-#endif //DEBUG
-		if (!ret)
-		{
-			return(true);
-		}
-	}
-	else
-	{
-		warn(" Connection is empty.\n");
-	}
-	debug(" Send returned an error status.\n");
-	return(false);
 }
 
 /**
@@ -883,14 +773,7 @@ void tcp_print_connection_status(void)
 			}
 			connection = connection->next;
 		}
-		if (connections == 1)
-		{
-			debug("1 TCP connection.\n");
-		}
-		else
-		{
-			debug("%d TCP connections.\n", connections);
-		}
+		debug("%d TCP connection(s).\n", connections);
 	}
 }
 #endif

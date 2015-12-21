@@ -207,8 +207,8 @@ static void udp_sent_cb(void *arg)
 
 	if (connection)
 	{
-		net_sending = false;
-		connection->sending = false;
+		//net_sending = false;
+		//connection->sending = false;
 		//Clear previous data.
 		os_memset(&connection->callback_data, 0, sizeof(struct udp_callback_data));
 		//Set new data
@@ -220,6 +220,7 @@ static void udp_sent_cb(void *arg)
 		{
 			connection->callbacks->sent_callback(connection);
 		}
+		net_sent_callback();
 		debug("Leaving UDP sent call back (%p).\n", conn);
 		return;
 	}
@@ -401,7 +402,7 @@ bool db_udp_send(struct udp_connection *connection, char *data, size_t size)
     debug("Sending %d bytes of UDP data (%p using %p),\n", size, data, connection);
 	debug(" espconn pointer %p.\n", connection->conn);
 	
-	if ((connection->sending) || (net_sending))
+	if (net_is_sending())
 	{
 		error(" Still sending something else.\n");
 		return(false);
@@ -411,9 +412,9 @@ bool db_udp_send(struct udp_connection *connection, char *data, size_t size)
 #endif //DEBUG
 	if (connection->conn)
 	{
-		net_sending = true;
-		connection->sending = true;
-		return(espconn_send(connection->conn, (unsigned char*)data, size));
+		//net_sending = true;
+		//connection->sending = true;
+		return(net_send((unsigned char*)data, size, connection->conn));
 	}
 	warn(" Connection is empty.\n");
 	return(false);

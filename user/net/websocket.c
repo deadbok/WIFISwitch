@@ -31,12 +31,7 @@
 #include <stdbool.h>
 #include <inttypes.h>
 #include "user_config.h"
-//#include "tools/sha1.h"
-//#include "tools/base64.h"
-//#include "tools/strxtra.h"
-//#include "slighttp/http.h"
-//#include "slighttp/http-tcp.h"
-//#include "slighttp/http-response.h"
+#include "net/net.h"
 #include "net/websocket.h"
 
 
@@ -309,10 +304,11 @@ void ws_send_text(char *msg, struct tcp_connection *connection)
 	
 void ws_send(struct ws_frame frame, struct tcp_connection *connection)
 {
-	//14 is max header size
-	size_t raw_frame_size = 14 + frame.payload_len;
+	size_t raw_frame_size = WS_MAX_HEADER_SIZE + frame.payload_len;
 	uint8_t *raw_frame;
 	uint8_t *raw_frame_pos;
+	
+	debug("Sending WebSocket frame using %p.\n", connection);
 	
 	raw_frame = db_malloc(raw_frame_size, "ws_send raw_frame");
 	raw_frame_pos = raw_frame;
@@ -338,7 +334,7 @@ void ws_send(struct ws_frame frame, struct tcp_connection *connection)
 	os_memcpy(raw_frame_pos, frame.data, frame.payload_len);
 	raw_frame_pos += frame.payload_len;
 	db_hexdump((char *)raw_frame, raw_frame_pos - raw_frame);
-	tcp_send(connection, (char *)raw_frame, raw_frame_pos - raw_frame);
+	net_send((char *)raw_frame, raw_frame_pos - raw_frame, connection->conn);
 }
 
 /**

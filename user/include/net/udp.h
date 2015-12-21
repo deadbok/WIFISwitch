@@ -125,7 +125,7 @@ struct udp_connection
     /**
      * @brief Is the connection sending data.
      */
-    bool sending;
+    //bool sending;
     /**
      * @brief Is the connection closing.
      */

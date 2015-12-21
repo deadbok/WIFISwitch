@@ -260,7 +260,7 @@ static bool send_buffer(struct http_request *request)
 	
 	if (buffer_use)
 	{
-		return(tcp_send(request->connection, request->response.send_buffer, buffer_use));
+		return(net_send(request->response.send_buffer, buffer_use, request->connection->conn));
 	}
 	debug( "Buffer empty.\n");
 	return(true);

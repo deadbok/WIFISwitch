@@ -284,6 +284,28 @@ bool http_parse_request(struct tcp_connection *connection, unsigned short length
 }
 
 /**
+ * @brief Free data allocated for request headers.
+ * 
+ * @param request Pointer to the request to free headers in.
+ */
+void http_free_request_headers(struct http_request *request)
+{
+	if (request->headers)
+	{
+		debug("Deallocating request headers.\n");
+		
+		do
+		{
+			struct http_header *next = request->headers->next;
+			
+			db_free(request->headers->name);
+			db_free(request->headers->value);
+			db_free(request->headers);
+			request->headers = next;
+		} while (request->headers);
+	}
+}
+/**
  * @brief Free data allocated by a request.
  * 
  * @param request Pointer to the request to free.
@@ -313,20 +335,7 @@ void http_free_request(struct http_request *request)
 			debug("Deallocating request message.\n");
 			db_free(request->message);
 		}
-		if (request->headers)
-		{
-			debug("Deallocating request headers.\n");
-			
-			do
-			{
-				struct http_header *next = request->headers->next;
-				
-				db_free(request->headers->name);
-				db_free(request->headers->value);
-				db_free(request->headers);
-				request->headers = next;
-			} while (request->headers);
-		}
+		http_free_request_headers(request);
 		debug("Deallocating request.\n");
 		db_free(request);
 	}
