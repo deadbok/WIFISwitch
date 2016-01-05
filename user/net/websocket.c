@@ -5,7 +5,7 @@
  * @brief Websocket (RFC6455) connection handling.
  * 
  * In true ESP8266 fashion, a sent callback must happen between
- * sending data. Code does will probably fail if sending more than
+ * sending data. Code will probably fail if sending more than
  * the SDK send buffer can handle. 
  * 
  * @copyright
@@ -213,14 +213,37 @@ static void ws_unmask(char *data, struct ws_frame *frame)
 
 static void ws_handle_control(struct ws_frame *frame, struct net_connection *connection)
 {
-	struct ws_handler *handler = connection->user;
+	struct ws_connection *ws_conn = connection->user;
 	debug(" Control frame.\n");
+	if (!ws_conn)
+	{
+		warn("No WebSocket connection data.\n");
+		return;
+	}	
+	if (!ws_conn->handler)
+	{
+		warn("No WebSocket handler.\n");
+		return;
+	}
 	switch(frame->opcode)
 	{
 		case WS_OPCODE_CLOSE:
-			if (handler->close)
+			if (ws_conn->handler->close)
 			{
-				handler->close(frame, connection);
+				if (ws_conn->closing)
+				{
+					debug("Handling server requested close.\n");
+					ws_conn->handler->close(frame, connection);
+					ws_free(connection);
+					//Disconnect TCP.
+					tcp_disconnect(connection);
+				}
+				else
+				{
+					debug("Handling client requested close.\n");
+					ws_conn->handler->close(frame, connection);
+					ws_close(connection);
+				}
 			}
 			else
 			{
@@ -228,9 +251,9 @@ static void ws_handle_control(struct ws_frame *frame, struct net_connection *con
 			}
 			break;
 		case WS_OPCODE_PING:
-			if (handler->ping)
+			if (ws_conn->handler->ping)
 			{
-				handler->ping(frame, connection);
+				ws_conn->handler->ping(frame, connection);
 			}
 			else
 			{
@@ -238,9 +261,9 @@ static void ws_handle_control(struct ws_frame *frame, struct net_connection *con
 			}
 			break;
 		case WS_OPCODE_PONG:
-			if (handler->pong)
+			if (ws_conn->handler->pong)
 			{
-				handler->pong(frame, connection);
+				ws_conn->handler->pong(frame, connection);
 			}
 			else
 			{
@@ -261,11 +284,21 @@ static void ws_handle_control(struct ws_frame *frame, struct net_connection *con
  */
 static void ws_recv_cb(struct net_connection *connection)
 {
-	struct ws_handler *handler = connection->user;
+	struct ws_connection *ws_conn = connection->user;
 	struct ws_frame frame;
 	size_t payload_offset;
 	
 	debug("WebSocket data received, %d bytes.\n", connection->callback_data.length);
+	if (!ws_conn)
+	{
+		warn("No WebSocket connection data.\n");
+		return;
+	}
+	if (!ws_conn->handler)
+	{
+		warn("No WebSocket handler.\n");
+		return;
+	}
 	db_hexdump(connection->callback_data.data, connection->callback_data.length);
 	connection->type = NET_CT_WS;
 	connection->ctrlfuncs = &ws_ctrlfuncs;
@@ -285,7 +318,7 @@ static void ws_recv_cb(struct net_connection *connection)
 		frame.data[frame.payload_len] = '\0';
 		debug(" Data %" PRIu64 " bytes.\n", frame.payload_len);
 
-		handler->receive(&frame, connection);
+		ws_conn->handler->receive(&frame, connection);
 	}
 	else
 	{
@@ -366,26 +399,27 @@ static void ws_send_close(struct ws_frame *frame, struct net_connection *connect
 
 void ws_close(struct net_connection *connection)
 {
+	struct ws_connection *ws_conn = connection->user;
 	struct ws_frame frame;
-	struct ws_handler *handler = connection->user;
 	
 	debug("Closing WebSocket connection %p.\n", connection);
-	
-	debug(" No data answering close.\n");
-	frame.payload_len = 0;
-	frame.data = "";
-	
-	ws_send_close(&frame, connection);
-	
-	if (handler)
+	if (ws_conn)
 	{
-		if (handler->close)
+		if (ws_conn->handler)
 		{
-			debug(" Calling protocol close handler %p.\n", handler->close);
-			handler->close(NULL, connection);
+			ws_conn->closing = true;
 		}
 	}
-	tcp_disconnect(connection);
+	else
+	{
+		warn("No WebSocket connection data.\n");
+	}
+	frame.payload_len = 0;
+	frame.data = "";
+
+	ws_send_close(&frame, connection);
+	
+	db_printf("WebSocket connection closed.\n");
 }
 
 /**
@@ -395,8 +429,40 @@ void ws_close(struct net_connection *connection)
  */
 static void ws_sent_cb(struct net_connection *connection)
 {
+	struct ws_connection *ws_conn = connection->user;
+	
 	debug("WebSocket sent (%p).\n", connection);
 	connection->type = NET_CT_WS;
+	
+	if (!ws_conn)
+	{
+		warn("No WebSocket connection data.\n");
+		return;
+	}
+	
+	if (ws_conn->handler)
+	{
+		if (ws_conn->handler->sent)
+		{
+			ws_conn->handler->sent(NULL, connection);
+		}
+		if (ws_conn->closing)
+		{
+			ws_free(connection);
+			tcp_disconnect(connection);
+		}
+	}
+}
+
+void ws_free(struct net_connection *connection)
+{
+	debug("Free WebSocket connection %p.\n", connection);
+	
+	if (connection->user)
+	{
+		db_free(connection->user);
+		connection->user = NULL;
+	}
 }
 
 void ws_register_sent_cb(struct net_connection *connection)

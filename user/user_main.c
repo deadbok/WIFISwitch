@@ -178,6 +178,10 @@ static void status_check(void)
 		}
 		connections = connections->next;
 	}
+	if (net_is_sending())
+	{
+		debug(" Someone is sending something.\n");
+	}
 }
 
 /**
@@ -298,7 +302,7 @@ void user_init(void)
     //system_print_meminfo();
     db_printf("SDK version %s.\n", system_get_sdk_version());
     db_printf("Free heap %u\n", system_get_free_heap_size());
-    db_printf("ROM firmware portion ends at %p.\n", &_irom0_text_end);
+    debug("ROM firmware portion ends at %p.\n", &_irom0_text_end);
 
 	cfg = read_cfg_flash();
 

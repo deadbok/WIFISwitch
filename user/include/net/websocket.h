@@ -156,6 +156,26 @@ extern struct ws_handler ws_handlers[WS_MAX_HANDLERS];
 extern unsigned char ws_n_handlers;
 
 /**
+ * @brief WebSocket connection info.
+ */
+struct ws_connection
+{
+	/**
+	 * @brief Handler for the connection.
+	 */
+	struct ws_handler *handler;
+	/**
+	 * @brief Is the connection closing.
+	 * 
+	 * Set by calling #ws_close.
+	 * *If set when entering the sent callback, the TCP connection will
+	 * be disconnected.*
+	 */
+	bool closing;
+};
+	
+
+/**
  * @brief Initialise WebSocket server.
  */
 extern void init_ws(void);
@@ -205,6 +225,10 @@ extern void ws_send_text(char *msg, struct net_connection *connection);
 /**
  * @brief Close the WebSocket connection gracefully.
  */
-void ws_close(struct net_connection *connection);
+extern void ws_close(struct net_connection *connection);
+/**
+ * @brief Free WebSocket connection.
+ */
+extern void ws_free(struct net_connection *connection);
 
 #endif

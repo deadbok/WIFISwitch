@@ -144,11 +144,13 @@ static char *websocket_gen_accept_value(char *key)
  */
 static void http_ws_sent_cb(struct net_connection *connection)
 {
+	struct ws_connection *ws_conn = NULL;
 	int handler_id;
 	int ret;
 	
 	debug("WebSocket handshake sent (%p).\n", connection);
 	
+	ws_conn = db_zalloc(sizeof(struct ws_connection), "http_ws_sent_cb ws_conn");
 	//Get protoocal handler and save it in the connection.
 	handler_id = ws_find_handler(ws_handshake_protocol);
 	if (handler_id < 0)
@@ -166,10 +168,12 @@ static void http_ws_sent_cb(struct net_connection *connection)
 	http_tcp_sent_cb(connection);
 	
 	//Set a pointer to the handler struct.
-	connection->user = ws_handlers + handler_id;
+	ws_conn->handler = ws_handlers + handler_id;
+	connection->user = ws_conn;
 	//Set WebSocket TCP handlers on the connection.
 	ws_register_recv_cb(connection);
-	ws_register_sent_cb(connection);	
+	ws_register_sent_cb(connection);
+	db_printf("WebSocket connection opened.\n");	
 }
 	
 /**
@@ -291,5 +295,5 @@ signed int http_ws_handler(struct http_request *request)
 		return(ret);
 	}
 		
-	return(RESPONSE_DONE_NO_DEALLOC);
+	return(RESPONSE_DONE_FINAL);
 }

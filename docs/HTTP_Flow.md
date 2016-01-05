@@ -54,14 +54,19 @@ Create response (receive callback -> handler).
 Sent callback.
 --------------
 
-When the data has been sent we get here.
+When the data has been sent we get here. Basically keeps calling the
+handlers until it is done, ending here again after each call. When done,
+move on to the next request in the buffer, if any.
+
+Response state handling is in #http_handle_response
 
 * Call handler.
+* If return is positive, data has been sent, exit and leave it to the
+  next sent callback.* If return is positive, data has been sent, exit and leave it to the
+  next sent callback.
 * If return is RESPONSE_DONE_CONTINUE.
   * Find next handler.
   * Call handler.
-* If return is positive, data has been sent, exit and leave it to the
-  next sent callback.
 * If return is RESPONSE_DONE_FINAL
   * If there are waiting request in the ring buffer.
     * Get one.

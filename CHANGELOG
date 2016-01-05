@@ -24,6 +24,14 @@
 * user/slighttp/http-response.c: Use net code.
 * user/slighttp/http.c: Use net code.
 * user/user_main.c: Handle network connection time out.
+* docs/HTTP_Flow.md: Added better explanation about the send call back.
+* user/handlers/http/websocket/websocket.c: HTTP handler returns RESPONSE_DONE_FINAL, to correctly free up HTTP stuf when WebSocket connection has been established.
+* user/user_main.c: Don't print ROM end address in release build.
+* docs/websocket.md: Added section on close.
+* fs/root_src/index.html: Sensible time out for reestablishing WebSocket connection.
+* user/handlers/http/websocket/websocket.c (http_ws_sent_cb): Use struct ws_connection.
+* user/include/net/websocket.h: Add struct ws_connection.
+* user/net/websocket.c: Worked on connection closing.
 
 
 2015-12-22 Martin Grønholdt

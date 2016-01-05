@@ -15,12 +15,21 @@ Setup and handshake.
 * Sent handler called.
   * Free request data.
   * Free unused TCP data.
-  * Find protocol and save in the `user` memeber of the `tcp_connection` struct.
-  * Set real websocket TCP handlers.
+  * Find protocol and save in the `user` member of the `tcp_connection` struct.
+  * Set real WebSocket TCP handlers.
 
-WebSocket frame recieved.
+WebSocket frame received.
 -------------------------
 
 * Parse frame data.
-* Call handler recieve callback set in connection->user.
+* Call handler receive or control callback set in connection->user.
 
+WebSocket close.
+----------------
+
+* Both sides may request connection close.
+* Because of limitations in the ESP8266, the connection will automatically
+  time out, and close by itself.
+* Situations where it is safe to close the TCP connection:
+  * In the close callback, after having requested the connection close.
+  * In send call back, after answering a close request from the client.
