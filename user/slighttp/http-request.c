@@ -42,7 +42,7 @@
  * @param connection Pointer to the connection used.
  * @return Size of the method string.
  */
-static size_t http_get_request_type(struct tcp_connection *connection)
+static size_t http_get_request_type(struct net_connection *connection)
 {
     struct http_request *request = connection->user;
     /* Cast first 4 bytes of string to and uint and use that in a switch
@@ -207,7 +207,7 @@ static void http_parse_headers(
  * @param connection Pointer to the connection data.
  * @return `true`on success.
  */
-bool http_parse_request(struct tcp_connection *connection, unsigned short length)
+bool http_parse_request(struct net_connection *connection, unsigned short length)
 {
     struct http_request *request = connection->user;
     char *request_entry, *next_entry;

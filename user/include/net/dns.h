@@ -24,6 +24,7 @@
 #ifndef DNS_H
 #define DNS_H
 
+#include <stdint.h>
 /**
  * @brief DNS header.
  */
@@ -32,7 +33,7 @@ struct dns_header
 	/**
 	 * @brief ID set by the sender.
 	 */
-	unsigned short ID; //16 bits.
+	uint16_t ID; //16 bits.
 	/**
 	 * @brief Query/Response flag, 0 on query.
 	 */
@@ -68,19 +69,19 @@ struct dns_header
 	/**
 	 * @brief Question count.
 	 */
-	unsigned short QDCount; //16 bits
+	uint16_t QDCount; //16 bits
 	/**
 	 * @brief Answer count.
 	 */
-	unsigned short ANCount; //16 bits.
+	uint16_t ANCount; //16 bits.
 	/**
 	 * @brief Authority record count.
 	 */
-	unsigned short NSCount; //16 bits.
+	uint16_t NSCount; //16 bits.
 	/**
 	 * @brief Additional record count.
 	 */
-	unsigned short ARCount; //16 bits.
+	uint16_t ARCount; //16 bits.
 } __attribute__((packed)); //96 bits / 8 = 12 bytes.
 
 #endif

@@ -35,6 +35,7 @@
 #include "net/websocket.h"
 #include "slighttp/http.h"
 #include "slighttp/http-tcp.h"
+#include "slighttp/http-request.h"
 #include "slighttp/http-response.h"
 #include "handlers/http/websocket/websocket.h"
 
@@ -141,9 +142,10 @@ static char *websocket_gen_accept_value(char *key)
  * Handle the first callback after the handshake is sent,
  * and replace the handler with the WebSocket one.
  */
-static void http_ws_sent_cb(struct tcp_connection *connection)
+static void http_ws_sent_cb(struct net_connection *connection)
 {
 	int handler_id;
+	int ret;
 	
 	debug("WebSocket handshake sent (%p).\n", connection);
 	
@@ -155,13 +157,14 @@ static void http_ws_sent_cb(struct tcp_connection *connection)
 		return;
 	}
 	
-	//TODO: Free other HTTP stuf we no longer need.
+	//TODO: Free other HTTP stuff we no longer need.
 	http_free_request_headers(connection->user);
 	//http_free_request(connection->user);
 	
 	//Call HTTP sent handler like a normal HTTP handler.
 	debug(" Calling HTTP send handler to clean up after itself.\n");
 	http_tcp_sent_cb(connection);
+	
 	//Set a pointer to the handler struct.
 	connection->user = ws_handlers + handler_id;
 	//Set WebSocket TCP handlers on the connection.

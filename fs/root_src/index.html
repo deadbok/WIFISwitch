@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<title>WIFI Switch.</title>
-<meta charset="utf-8">
-<link href="css/normalize.css" rel="stylesheet" type="text/css" />
-<link href="css/custom.css" rel="stylesheet" type="text/css" />
-<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
+	<title>WIFI Switch.</title>
+	<meta charset="utf-8">
+	<link href="css/normalize.css" rel="stylesheet" type="text/css" />
+	<link href="css/custom.css" rel="stylesheet" type="text/css" />
+	<meta name="viewport" content="width=device-width, height=device-height, initial-scale=1">
 </head>
 <body>
 	<nav role="navigation">
@@ -14,6 +14,7 @@
 			<li><a href="index.html" class="menu">WIFISwitch</a></li>			
 			<li><a href="about.html" class="menu">About</a></li>
 		</ul>
+		<span class="disconnected" id="status">&#9679;</span>
 	</nav>
 	<section>
 		<div class="button" id="button" onclick="buttonSwitch()"></div>
@@ -24,7 +25,10 @@
 	<script src="js/menu.js" type="text/javascript"></script>
 	<script type="text/javascript">
 		var button = document.getElementById("button");
+		var connection_status = document.getElementById("status");
 		var state = false;
+		var socket;
+		var connection = false;
 		
 		//Create WebSocket address from http uri.
 		var loc = window.location
@@ -35,38 +39,13 @@
 			ws_uri = "ws:";
 		}
 		ws_uri += "//" + loc.host + "/ws/";
-        var socket = new WebSocket(ws_uri, "wifiswitch");
-
-        socket.onopen = function(event) {
-			console.log("Connected to backend");
-			
-			socket.send(JSON.stringify({type: "gpio"}));
-       };
-        
-        // Display messages received from the server
-        socket.onmessage = function(event) {
-			console.log("Backend message:" + event.data);
-			
-			var msg = JSON.parse(event.data);
-			if (msg.type === "gpio") {
-				if (msg["5"]) {
-					state = true;
-					button.className = "button-on button";
-				}
-				else {
-					state = false;
-					button.className = "button-off button";
-				}
-			}
-        };
-
-        // Display any errors that occur
-        socket.onerror = function(event) {
-			console.log("Backend error:" + event);
-        };
-
+		
 		function buttonSwitch() {
 			state = !state;
+			if (!connection) {
+				wsConnect();
+			}
+				
 			if (state) {
 				socket.send(JSON.stringify({type: "gpio", 5: 1}));
 			}
@@ -74,6 +53,53 @@
 				socket.send(JSON.stringify({type: "gpio", 5: 0}));
 			}
 		}
+		
+		function wsConnect() {
+			socket = new WebSocket(ws_uri, "wifiswitch");
+
+			socket.onopen = function(event) {
+				console.log("Connected to backend");
+				
+				socket.send(JSON.stringify({type: "gpio"}));
+				connection_status.className = "connected";
+				connection = true;
+		   };
+			
+			// Display messages received from the server
+			socket.onmessage = function(event) {
+				console.log("Backend message:" + event.data);
+				
+				var msg = JSON.parse(event.data);
+				if (msg.type === "gpio") {
+					if (msg["5"]) {
+						state = true;
+						button.className = "button-on button";
+					}
+					else {
+						state = false;
+						button.className = "button-off button";
+					}
+				}
+				connection_status.className = "connected";
+			};
+
+			// Display any errors that occur
+			socket.onerror = function(event) {
+				console.log("Backend error: " + event);
+			};
+			
+			//The ESP8266 will close the connection after a time with no activity on the connection.
+			socket.onclose = function(event) {
+				console.log("Backend close: " + event);
+				connection_status.className = "disconnected";
+				connection = false;
+				setTimeout(function(){ wsConnect(); }, 30000);
+			}
+		}
+		
+		connection_status.className = "disconnected";
+		//Initial connection.
+		wsConnect();
 	</script>
 	<noscript>Sorry I need JavaScript!</noscript>
 </body>

@@ -117,12 +117,17 @@
 #define HTTP_ERROR_HTML_END_LENGTH		26
 
 extern unsigned char http_send_status_line(
-	struct tcp_connection *connection, unsigned short status_code);
+	struct net_connection *connection,
+	unsigned short status_code);
 extern unsigned short http_send_header(
-	struct tcp_connection *connection, char *name, char *value);
+	struct net_connection *connection,
+	char *name,
+	char *value);
 extern signed int http_send_default_headers(
-	struct http_request *request, size_t size, char *mime);
-extern void http_process_response(struct tcp_connection *connection);
+	struct http_request *request,
+	size_t size,
+	char *mime);
+extern void http_process_response(struct net_connection *connection);
 extern signed int http_handle_response(struct http_request *request);
 
 #endif //HTTP_RESPONSE_H

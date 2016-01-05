@@ -48,109 +48,11 @@ static unsigned char n_udp_connections;
 /**
  * @brief Doubly-linked list of active connections.
  */
-static struct udp_connection *udp_connections = NULL;
+static struct net_connection *udp_connections = NULL;
 
 //Forward declaration of callback functions.
 static void udp_recv_cb(void *arg, char *data, unsigned short length);
 static void udp_sent_cb(void *arg);
-
-/**
- * @brief Find a connection using its local port.
- * 
- * @param conn Pointer to a `struct espconn`.
- * @return Pointer to a struct #udp_connection for conn.
- */
-static struct udp_connection *find_listening_connection(unsigned int port)
-{
-	struct udp_connection *connection = udp_connections;
-
-	if (connection == NULL)
-	{
-		warn("No connections.\n");
-		return(NULL);
-	}
-
-	debug(" Looking for listening connection on port %d.\n", port);
-
-    while (connection != NULL)
-    {
-		debug("Connection %p (%p).\n", connection, connection->conn);
-		if ((connection->local_port == port) &&
-			(connection->callbacks))
-		{
-			debug(" Connection found %p.\n", connection);
-			return(connection);
-		}
-		connection = connection->next;
-	}
-	warn("Connection not found.\n");
-	return(NULL);
-}
-
-/**
- * @brief Add a connection to the list of active connections.
- * 
- * @param connection Pointer to the connection to add.
- */
-static void add_active_connection(struct udp_connection *connection)
-{
-	struct udp_connection *connections = udp_connections;
-	
-	debug("Adding %p to active connections.\n", connection);
-	//Add the connection to the list of active connections.
-	if (connections == NULL)
-	{
-		udp_connections = connection;
-		connection->prev = NULL;
-		connection->next = NULL;
-	}
-	else
-	{
-		DL_LIST_ADD_END(connection, connections);
-	}
-	n_udp_connections++;
-	debug(" Connections: %d.\n", n_udp_connections);
-}
-
-/**
- * @brief Print the status of all connections in the list.
- */
-void udp_print_connection_status(void)
-{
-	struct udp_connection *connection = udp_connections;
-	unsigned int connections = 0;
-	
-	if (!connection)
-	{
-		debug("No UDP connections.\n");
-	}
-	else
-	{
-		while (connection)
-		{
-			connections++;
-			if (connection->conn->state == ESPCONN_NONE)
-			{
-				debug("UDP connection %p (%p).\n", connection, connection->conn);
-				debug(" Remote address " IPSTR ":%d.\n", 
-					  IP2STR(connection->remote_ip),
-					  connection->remote_port);
-				debug(" SDK remote address " IPSTR ":%d.\n", 
-					  IP2STR(connection->conn->proto.udp->remote_ip),
-					  connection->conn->proto.udp->remote_port);
-			}
-			connection = connection->next;
-		}
-		if (connections == 1)
-		{
-			debug("1 UDP connection.\n");
-		}
-		else
-		{
-			debug("%d UDP connections.\n", connections);
-		}
-	}
-}
 
 /**
  * @brief Internal callback, called when data is received.
@@ -160,21 +62,22 @@ void udp_print_connection_status(void)
 static void udp_recv_cb(void *arg, char *data, unsigned short length)
 {
     struct espconn  *conn = arg;
-    struct udp_connection *connection;
+    struct net_connection *connection;
     
     debug("UDP received (%p) %d bytes.\n", arg, length);
 #ifdef DEBUG
     db_hexdump(data, length);
 #endif
     
-    connection = find_listening_connection(conn->proto.udp->local_port);
+    connection = net_find_connection_by_port(udp_connections, conn->proto.udp->local_port);
     
 	if (connection)
 	{
+		//Something has happened.
+		connection->timeout = 0;
 		//Clear previous data.
-		os_memset(&connection->callback_data, 0, sizeof(struct udp_callback_data));
+		os_memset(&connection->callback_data, 0, sizeof(struct net_callback_funcs));
 		//Set new data
-		connection->callback_data.arg = arg;
 		connection->callback_data.data = data;
 		connection->callback_data.length = length;
 
@@ -199,20 +102,18 @@ static void udp_recv_cb(void *arg, char *data, unsigned short length)
 static void udp_sent_cb(void *arg)
 {
     struct espconn *conn = arg;
-    struct udp_connection *connection;
+    struct net_connection *connection;
     
     debug("UDP sent (%p).\n", conn);
     
-    connection = find_listening_connection(conn->proto.udp->local_port);
+    net_find_connection_by_port(udp_connections, conn->proto.udp->local_port);
 
 	if (connection)
 	{
-		//net_sending = false;
-		//connection->sending = false;
+		//Something has happened.
+		connection->timeout = 0;
 		//Clear previous data.
-		os_memset(&connection->callback_data, 0, sizeof(struct udp_callback_data));
-		//Set new data
-		connection->callback_data.arg = arg;
+		os_memset(&connection->callback_data, 0, sizeof(struct net_callback_data));
 
 		debug(" Listener found %p.\n", connection);
 		//Call callback.
@@ -239,14 +140,14 @@ static void udp_sent_cb(void *arg)
  * @return `true` on success.
  */
 bool udp_listen(unsigned int port,
-								  udp_callback recv_cb,
-								  udp_callback sent_cb)
+								  net_callback recv_cb,
+								  net_callback sent_cb)
 {
     int ret;
     struct espconn *conn;
-    struct udp_callback_funcs *callbacks;
-	struct udp_connection *connections = udp_connections;
-	struct udp_connection *listening_connection = NULL;
+    struct net_callback_funcs *callbacks;
+	struct net_connection *connections = udp_connections;
+	struct net_connection *listening_connection = NULL;
     
     debug("Adding UDP listener on port %d.\n", port);
     udp_print_connection_status();
@@ -267,7 +168,7 @@ bool udp_listen(unsigned int port,
 	}
 	
 	//Allocate memory for the new connection.
-	listening_connection = (struct udp_connection *)db_zalloc(sizeof(struct udp_connection), "listening_connection udp_listen");
+	listening_connection = (struct net_connection *)db_zalloc(sizeof(struct net_connection), "listening_connection udp_listen");
 	if (!listening_connection)
 	{
 		error("Could not allocate memory for connection.\n");
@@ -285,7 +186,7 @@ bool udp_listen(unsigned int port,
 		error("Could not allocate memory for UDP connection.\n");
 		return(false);
 	}
-	listening_connection->callbacks = (struct udp_callback_funcs *)db_zalloc(sizeof(struct udp_callback_funcs), "callbacks udp_listen");
+	listening_connection->callbacks = (struct net_callback_funcs *)db_zalloc(sizeof(struct net_callback_funcs), "callbacks udp_listen");
 	if (!listening_connection->callbacks)
 	{
 		error("Could not allocate memory for UDP for call back pointers.\n");
@@ -296,8 +197,12 @@ bool udp_listen(unsigned int port,
 	callbacks = listening_connection->callbacks;
 	
 	//Setup UDP connection configuration.
+	//Something has happened.
+	listening_connection->timeout = 0;
 	//UDP connection.
 	conn->type = ESPCONN_UDP;
+	listening_connection->type = NET_CT_UDP;
+	
 	//No state.
 	conn->state = ESPCONN_NONE;
 	//Set port.
@@ -322,7 +227,7 @@ bool udp_listen(unsigned int port,
 		return(false);
 	}
 	debug("OK.\n");
-	add_active_connection(listening_connection);
+	net_add_connection(&udp_connections, listening_connection);
     return(true);
 }
 
@@ -356,22 +261,22 @@ bool init_udp(void)
 bool udp_stop(unsigned int port)
 {
 	int ret;
-	struct udp_connection *listening_connection;
+	struct net_connection *connection;
 	
 	debug("Stop listening for UDP on port %d.\n", port);
 	
-	listening_connection = find_listening_connection(80);
+	connection = net_find_listening_connection_by_port(udp_connections, port);
 	
-	if (!listening_connection)
+	if (!connection)
 	{
 		warn("No listening connections.\n");
 		return(false);
 	}	
 	
-		debug("Closing UDP listening connection %p.\n", listening_connection);
-		ret = espconn_delete(listening_connection->conn);
+		debug("Closing UDP listening connection %p.\n", connection);
+		ret = espconn_delete(connection->conn);
 		debug(" Return status %d.\n", ret);
-		db_free(listening_connection);
+		db_free(connection);
 		debug(" Connection data freed.\n");
 		return(true);
 }
@@ -379,9 +284,9 @@ bool udp_stop(unsigned int port)
 /**
  * @brief Pointer to first connection in a list of all connections.
  * 
- * @return Pointer to a struct #udp_connection.
+ * @return Pointer to a struct #net_connection.
  */
-struct udp_connection *udp_get_connections(void)
+struct net_connection *udp_get_connections(void)
 {
 	return(udp_connections);
 }
@@ -397,7 +302,7 @@ struct udp_connection *udp_get_connections(void)
  * 
  * @return true on success, false otherwise.
  */
-bool db_udp_send(struct udp_connection *connection, char *data, size_t size)
+bool db_udp_send(struct net_connection *connection, char *data, size_t size)
 {
     debug("Sending %d bytes of UDP data (%p using %p),\n", size, data, connection);
 	debug(" espconn pointer %p.\n", connection->conn);
@@ -427,7 +332,7 @@ bool db_udp_send(struct udp_connection *connection, char *data, size_t size)
  * 
  * @param connection Connection to disconnect.
  */
-void db_udp_disconnect(struct udp_connection *connection)
+void db_udp_disconnect(struct net_connection *connection)
 {
 	int ret;
 	
@@ -445,9 +350,10 @@ void db_udp_disconnect(struct udp_connection *connection)
  * clean up after itself.
  * @param connection Pointer to the data to free.
  */
-void udp_free(struct udp_connection *connection)
+ //TODO: Merge with TCP code into net_connection_free.
+void udp_free(struct net_connection *connection)
 {
-	struct udp_connection *connections = udp_connections;
+	struct net_connection *connections = udp_connections;
 	
     debug("Freeing up connection (%p).\n", connection);
     /* As far as I can tell the espconn library takes care of freeing up the
@@ -475,3 +381,11 @@ void udp_free(struct udp_connection *connection)
     }
     warn("Could not deallocate connection.\n");
 }
+
+#ifdef DEBUG
+void udp_print_connection_status(void)
+{
+	debug("UDP connection(s):\n");
+	net_print_connection_status(udp_connections);
+}	
+#endif

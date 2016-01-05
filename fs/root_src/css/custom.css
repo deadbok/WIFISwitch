@@ -37,6 +37,7 @@ nav ul
 	margin: 0.25em auto;
 	margin-right: auto;
 	margin-left: auto;
+	float: left;
 }
 
 nav li
@@ -70,7 +71,24 @@ nav li a:hover
 	padding: 0.5em 0.5em;
 	text-decoration: none;
 }
-	
+
+nav .hidden-menu
+{
+	display: none;
+}
+
+nav span
+{
+	float: right;
+	margin-top: 0.5em;
+	margin-right: 0.5em;
+}
+
+section
+{
+	padding: 2em 1em;
+}
+
 footer
 {
 	position: fixed;
@@ -82,16 +100,6 @@ footer
 	padding-top: 0.5em;
 	padding-bottom: 0.5em;
 	padding-left: 1em;
-}
-
-nav .hidden-menu
-{
-	display: none;
-}
-
-section
-{
-	padding: 2em 1em;
 }
 
 .button
@@ -142,6 +150,16 @@ section
 {
 	border-color: #2d2;
 	background: #dfd;
+}
+
+.connected
+{
+	color: rgb(0, 255, 0);
+}
+
+.disconnected
+{
+	color: rgb(255, 0, 0);
 }
 
 button {

@@ -51,7 +51,7 @@
 
 /************************ Network ************************/
 /**
- * @brief Network connection time-out.
+ * @brief Network WIFI connection time-out.
  * 
  * Seconds before the firmware stops trying to connect to the configured WIFI
  * network, and switches to network configuration mode.
@@ -64,9 +64,14 @@
 #define SOFTAP_PASSWORD "0123456789"
 
 /**
- * @brief How often to check the status in miliseconds.
+ * @brief How often to check the status in milliseconds.
  */
 #define CHECK_TIME 5000
+
+/**
+ * @brief WebSocket connection time out in milliseconds.
+ */
+#define WS_WIFISWITCH_TIMEOUT 30000
 
 /************************ Physical pin functions. ************************/
 /**

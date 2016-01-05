@@ -24,6 +24,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
+#ifndef WIFISWITCH_H
+#define WIFISWITCH_H
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -34,6 +37,13 @@
 
 #define WS_PR_WIFISWITCH "wifiswitch"
 
+#ifndef WS_WIFISWITCH_TIMEOUT
+#warning "No connection time out set for WebSocket protocol wifiswitch."
+/**
+ * @brief Connection time out in milliseconds.
+ */
+#define WS_WIFISWITCH_TIMEOUT 60000
+#endif
 
 #ifndef WS_WIFISWITCH_GPIO_ENABLED
 #warning "No GPIO's has been enabled for access via the wifiswitch protocol."
@@ -51,4 +61,7 @@
 extern struct ws_handler ws_wifiswitch_handler;
 
 extern bool ws_register_wifiswitch(void);
-extern signed long int ws_wifiswitch_received(struct ws_frame *frame, struct tcp_connection *connection);
+extern signed long int ws_wifiswitch_received(struct ws_frame *frame, struct net_connection *connection);
+extern signed long int ws_wifiswitch_close(struct ws_frame *frame, struct net_connection *connection);
+
+#endif //WIFISWITCH_H

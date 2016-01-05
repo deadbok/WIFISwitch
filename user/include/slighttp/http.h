@@ -181,7 +181,7 @@ struct http_header
 	 */
 	char *name;
 	/**
-	 * @brief Header balue.
+	 * @brief Header value.
 	 */
 	char *value;
 	/**
@@ -198,7 +198,7 @@ struct http_request
     /**
      * @brief Pointer to the connection data.
      */
-    struct tcp_connection *connection;
+    struct net_connection *connection;
     /**
      * @brief Type of HTTP request.
      */
@@ -225,10 +225,14 @@ struct http_request
     struct http_response response;
 };
 
-//extern char *http_fs_doc_root;
-
+/**
+ * @brief Initialise the HTTP server,
+ * 
+ * @param port Port to bind to.
+ * @return `true`on success.
+ */
 extern bool init_http(unsigned int port);
 extern bool http_get_status(void);
-extern size_t http_send(struct tcp_connection *connection, char *data, size_t size);
+extern size_t http_send(struct net_connection *connection, char *data, size_t size);
 
 #endif

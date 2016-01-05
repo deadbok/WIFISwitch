@@ -39,13 +39,7 @@
 #include "driver/uart.h"
 #include "net/net.h"
 #include "net/tcp.h"
-
-/**
- * @brief Array to look up a string from connection state.
- */
-const char *state_names[] = {"ESPCONN_NONE", "ESPCONN_WAIT", "ESPCONN_LISTEN",\
-                             "ESPCONN_CONNECT", "ESPCONN_WRITE", "ESPCONN_READ",\
-                             "ESPCONN_CLOSE"};                    
+               
 /**
  * @brief Number of active connections.
  */
@@ -53,7 +47,7 @@ static unsigned char n_tcp_connections = 0;
 /**
  * @brief Doubly-linked list of active connections.
  */
-static struct tcp_connection *tcp_connections = NULL;
+static struct net_connection *tcp_connections = NULL;
 /**
  * @brief Number of listening connections.
  */
@@ -61,7 +55,11 @@ static unsigned char n_tcp_listening_connections = 0;
 /**
  * @brief Doubly-linked list of listening connections.
  */
-static struct tcp_connection *tcp_listening_connections = NULL;
+static struct net_connection *tcp_listening_connections = NULL;
+/**
+ * @brief Structure with TCP connection control functions.
+ */
+static struct net_ctrlfuncs tcp_ctrlfuncs = { tcp_disconnect };
 
 //Forward declaration of callback functions.
 static void tcp_connect_cb(void *arg);
@@ -70,146 +68,6 @@ static void tcp_disconnect_cb(void *arg);
 static void tcp_write_finish_cb(void *arg);
 static void tcp_recv_cb(void *arg, char *data, unsigned short length);
 static void tcp_sent_cb(void *arg);
-
-/**
- * @brief Find a connection from the SDK pointer.
- * 
- * Find a connection using its remote IP and port.
- * 
- * @param conn Pointer to a `struct espconn`.
- * @param listening Includes listening connections if `true` else skip them.
- * @return Pointer to a struct #tcp_connection for conn.
- */
-static struct tcp_connection *find_connection(struct espconn *conn, bool listening)
-{
-	struct tcp_connection *connection;
-
-	if (conn == NULL)
-	{
-		warn("Empty parameter.\n");
-		return(NULL);
-	}
-	debug(" Looking for connection for remote " IPSTR ":%d.\n", 
-		  IP2STR(conn->proto.tcp->remote_ip),
-		  conn->proto.tcp->remote_port);
-	//Look for listening connection.
-	if (listening)
-	{
-		debug(" Using listening connections.\n");
-		connection = tcp_listening_connections;
-	}
-	else
-	{
-		debug(" Using active connections.\n");
-		connection = tcp_connections;
-	}
-
-	if (connection == NULL)
-	{
-		warn("No connections.\n");
-		return(NULL);
-	}
-	
-    while (connection != NULL)
-    {
-		debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
-		debug(" Remote address " IPSTR ":%d.\n", 
-		  IP2STR(connection->remote_ip),
-		  connection->remote_port);
-		if ((os_memcmp(connection->remote_ip, conn->proto.tcp->remote_ip, 4) == 0) &&
-			(connection->remote_port == conn->proto.tcp->remote_port))
-		{
-			debug(" Connection found %p.\n", connection);
-			return(connection);
-		}	
-		connection = connection->next;
-	}
-		
-	warn("Connection not found.\n");
-	return(NULL);
-}
-
-/**
- * @brief Find a connection using its local port.
- * 
- * @param conn Pointer to a `struct espconn`.
- * @return Pointer to a struct #tcp_connection for conn.
- */
-static struct tcp_connection *find_listening_connection(unsigned int port)
-{
-	struct tcp_connection *connection = tcp_listening_connections;
-
-	if (connection == NULL)
-	{
-		warn("No connections.\n");
-		return(NULL);
-	}
-
-	debug(" Looking for listening connection on port %d.\n", port);
-    while (connection != NULL)
-    {
-		debug("Connection %p (%p) state \"%s\".\n", connection, connection->conn, state_names[connection->conn->state]);
-		if ((connection->local_port == port) &&
-			(connection->callbacks))
-		{
-			debug(" Connection found %p.\n", connection);
-			return(connection);
-		}
-		connection = connection->next;
-	}
-	warn("Connection not found.\n");
-	return(NULL);
-}
-
-/**
- * @brief Add a connection to the list of active connections.
- * 
- * @param connection Pointer to the connection to add.
- */
-static void add_active_connection(struct tcp_connection *connection)
-{
-	struct tcp_connection *connections = tcp_connections;
-	
-	debug("Adding %p to active connections.\n", connection);
-	//Add the connection to the list of active connections.
-	if (connections == NULL)
-	{
-		tcp_connections = connection;
-		connection->prev = NULL;
-		connection->next = NULL;
-	}
-	else
-	{
-		DL_LIST_ADD_END(connection, connections);
-	}
-	n_tcp_connections++;
-	debug(" Connections: %d.\n", n_tcp_connections);
-}
-
-/**
- * @brief Add a connection to the list of listening connections.
- * 
- * @param connection Pointer to the connection to add.
- */
-static void add_listening_connection(struct tcp_connection *connection)
-{
-	struct tcp_connection *connections = tcp_listening_connections;
-	
-	debug("Adding %p to listening connections.\n", connection);
-	//Add the connection to the list of listening connections.
-	if (connections == NULL)
-	{
-		tcp_listening_connections = connection;
-		connection->prev = NULL;
-		connection->next = NULL;
-	}
-	else
-	{
-		DL_LIST_ADD_END(connection, connections);
-	}
-	n_tcp_listening_connections++;
-	debug(" Listening connections: %d.\n", n_tcp_connections);
-}
 
 /**
  * @brief Internal callback for when a new connection has been made.
@@ -221,24 +79,24 @@ static void add_listening_connection(struct tcp_connection *connection)
 static void tcp_connect_cb(void *arg)
 {
 	struct espconn *conn = arg;
-    struct tcp_connection *connection;
-    struct tcp_connection *listening_connection;
+    struct net_connection *connection;
+    struct net_connection *listening_connection;
     
     debug("TCP connected (%p).\n", conn);
     tcp_print_connection_status();
     
-    listening_connection = find_listening_connection(conn->proto.tcp->local_port);
+    listening_connection = net_find_connection_by_port(tcp_listening_connections, conn->proto.tcp->local_port);
     
-	connection = (struct tcp_connection *)db_zalloc(sizeof(struct tcp_connection), "connection tcp_connect_cb");
+	connection = (struct net_connection *)db_zalloc(sizeof(struct net_connection), "connection tcp_connect_cb");
 	connection->conn = arg;
 	
-	connection->callbacks = (struct tcp_callback_funcs *)db_zalloc(sizeof(struct tcp_callback_funcs), "connection->callbacks tcp_connect_cb");
+	connection->callbacks = (struct net_callback_funcs *)db_zalloc(sizeof(struct net_callback_funcs), "connection->callbacks tcp_connect_cb");
 	if (!connection->callbacks)
 	{
 		error("Could not allocate memory for TCP for call back pointers.\n");
 		return;
 	}
-	os_memcpy(connection->callbacks, listening_connection->callbacks, sizeof(struct tcp_callback_funcs));
+	os_memcpy(connection->callbacks, listening_connection->callbacks, sizeof(struct net_callback_funcs));
 	
 	//Register SDK callbacks.
 	espconn_regist_connectcb(connection->conn, tcp_connect_cb);
@@ -248,9 +106,15 @@ static void tcp_connect_cb(void *arg)
 	espconn_regist_recvcb(connection->conn, tcp_recv_cb);
 	espconn_regist_sentcb(connection->conn, tcp_sent_cb);
 
+	connection->ctrlfuncs = &tcp_ctrlfuncs;
+	
+	//TCP connection.
+	connection->type = NET_CT_TCP;
 	//Nothing's happening.
-	//connection->sending = false;
 	connection->closing = false;
+	//Something has happened.
+	connection->timeout = TCP_TIMEOUT;
+	connection->inactivity = 0;
 	
 	//Save connection addresses.
 	os_memcpy(connection->local_ip, conn->proto.tcp->local_ip, 4);
@@ -262,7 +126,8 @@ static void tcp_connect_cb(void *arg)
 		  IP2STR(connection->remote_ip),
 		  connection->remote_port);
 
-	add_active_connection(connection);
+	net_add_connection(&tcp_connections, connection);
+	n_tcp_connections++;
 	
 	//Call callback.
 	connection->callbacks->connect_callback(connection);
@@ -278,13 +143,15 @@ static void tcp_connect_cb(void *arg)
  * 
  * @return True on success false otherwise.
  */
-static bool tcp_handle_disconnect(struct tcp_connection *connection)
+static bool tcp_handle_disconnect(struct net_connection *connection)
 {
 	debug("Handling TCP re/dis-connect.\n");
 	if (connection)
 	{
+		//Something has happened.
+		connection->inactivity = 0;
 		//Clear previous data.
-		os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
+		os_memset(&connection->callback_data, 0, sizeof(struct net_callback_data));
 
 		//Call callback.
 		if (connection->callbacks->disconnect_callback != NULL)
@@ -297,7 +164,6 @@ static bool tcp_handle_disconnect(struct tcp_connection *connection)
 	return(false);
 }
 	
-
 /**
  * @brief Internal error handler.
  * 
@@ -311,13 +177,12 @@ static bool tcp_handle_disconnect(struct tcp_connection *connection)
 static void tcp_reconnect_cb(void *arg, sint8 err)
 {
     struct espconn *conn = arg;
-    struct tcp_connection *connection;
+    struct net_connection *connection;
             
     debug("TCP reconnected (%p) status %d.\n", conn, err);
-    //print_status(err);
     tcp_print_connection_status();
     
-    connection = find_connection(conn, false);
+    connection = net_find_connection(tcp_connections, conn);
     
     debug("Handling as disconnect.\n");
     
@@ -342,12 +207,12 @@ static void tcp_reconnect_cb(void *arg, sint8 err)
 static void tcp_disconnect_cb(void *arg)
 {
     struct espconn *conn = arg;
-    struct tcp_connection *connection;
+    struct net_connection *connection;
             
     debug("TCP disconnected (%p).\n", arg);
     tcp_print_connection_status();
     
-    connection = find_connection(conn, false);
+    connection = net_find_connection(tcp_connections, conn);
     
     if (tcp_handle_disconnect(connection))
     {
@@ -366,17 +231,19 @@ static void tcp_disconnect_cb(void *arg)
 static void tcp_write_finish_cb(void *arg)
 {
     struct espconn *conn = arg;
-    struct tcp_connection *connection;
+    struct net_connection *connection;
     
     debug("TCP write done (%p).\n", arg);
     tcp_print_connection_status();
     
-    connection = find_connection(conn, false);
+    connection = net_find_connection(tcp_connections, conn);
     
 	if (connection)
 	{
+		//Something has happened.
+		connection->inactivity = 0;
 		//Clear previous data.
-		os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
+		os_memset(&connection->callback_data, 0, sizeof(struct net_callback_data));
 
 		//Call callback.
 		if (connection->callbacks->write_finish_fn != NULL)
@@ -398,18 +265,20 @@ static void tcp_write_finish_cb(void *arg)
 static void tcp_recv_cb(void *arg, char *data, unsigned short length)
 {
     struct espconn  *conn = arg;
-    struct tcp_connection *connection;
+    struct net_connection *connection;
     
     debug("TCP received (%p).\n", arg);
     debug("%s\n", data);
     tcp_print_connection_status();
     
-    connection = find_connection(conn, false);
-    
+    connection = net_find_connection(tcp_connections, conn);
 	if (connection)
 	{
+		//Something has happened.
+		connection->inactivity = 0;  
+
 		//Clear previous data.
-		os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
+		os_memset(&connection->callback_data, 0, sizeof(struct net_callback_data));
 		//Set new data
 		connection->callback_data.data = data;
 		connection->callback_data.length = length;
@@ -417,6 +286,7 @@ static void tcp_recv_cb(void *arg, char *data, unsigned short length)
 		//Call callback.
 		if (connection->callbacks->recv_callback != NULL)
 		{
+			debug(" Entering callback %p.\n", connection->callbacks->recv_callback);
 			connection->callbacks->recv_callback(connection);
 		}
 		debug("Leaving TCP receive call back (%p).\n", conn);
@@ -433,18 +303,20 @@ static void tcp_recv_cb(void *arg, char *data, unsigned short length)
 static void tcp_sent_cb(void *arg)
 {
     struct espconn *conn = arg;
-    struct tcp_connection *connection;
-    
+    struct net_connection *connection;
+	    
     debug("TCP sent (%p).\n", conn);
     tcp_print_connection_status();
     
-    connection = find_connection(conn, false);
+    connection = net_find_connection(tcp_connections, conn);
     net_sent_callback();
 
 	if (connection)
 	{
+		//Something has happened.
+		connection->inactivity = 0;
 		//Clear previous data.
-		os_memset(&connection->callback_data, 0, sizeof(struct tcp_callback_data));
+		os_memset(&connection->callback_data, 0, sizeof(struct net_callback_data));
 
 		//Call callback.
 		if (connection->callbacks->sent_callback != NULL)
@@ -474,24 +346,25 @@ static void tcp_sent_cb(void *arg)
  * @param write_finish_cb Callback when a write has been done.
  * @param recv_cb Callback when something has been received.
  * @param sent_cb Callback when something has been sent.
- * @return `true` on success.
+ * @return Pointer to struct net_connection, or NULL on failure.
  */
-bool tcp_listen(unsigned int port,
-								  tcp_callback connect_cb, 
-								  tcp_callback disconnect_cb,
-								  tcp_callback write_finish_cb,
-								  tcp_callback recv_cb,
-								  tcp_callback sent_cb)
+struct net_connection *tcp_listen(unsigned int port,
+				net_callback connect_cb, 
+				net_callback disconnect_cb,
+				net_callback write_finish_cb,
+				net_callback recv_cb,
+				net_callback sent_cb)
 {
     int ret;
     struct espconn *conn;
-    struct tcp_callback_funcs *callbacks;
-	struct tcp_connection *connections = tcp_connections;
-	struct tcp_connection *listening_connection = NULL;
+    struct net_callback_funcs *callbacks;
+	struct net_connection *connections = tcp_connections;
+	struct net_connection *listening_connection = NULL;
     
     debug("Adding TCP listener on port %d.\n", port);
     tcp_print_connection_status();
     //Check that nobody else is listening on the port.
+    debug(" Checking if port is in use.\n");
     if (connections != NULL)
     {
 		while (connections != NULL)
@@ -500,7 +373,7 @@ bool tcp_listen(unsigned int port,
 				(connections->callbacks))
 			{
 				error("Port %d is in use.\n", port);
-				return(false);
+				return(NULL);
 			}
 			//Next listener.
 			connections = connections->next;
@@ -508,36 +381,41 @@ bool tcp_listen(unsigned int port,
 	}
 	
 	//Allocate memory for the new connection.
-	listening_connection = (struct tcp_connection *)db_zalloc(sizeof(struct tcp_connection), "listening_connection tcp_listen");
+	listening_connection = (struct net_connection *)db_zalloc(sizeof(struct net_connection), "listening_connection tcp_listen");
 	if (!listening_connection)
 	{
 		error("Could not allocate memory for connection.\n");
-		return(false);
+		return(NULL);
 	}
 	listening_connection->conn = (struct espconn *)db_zalloc(sizeof(struct espconn), "espconn tcp_listen");
 	if (!listening_connection->conn)
 	{
 		error("Could not allocate memory for ESP connection.\n");
-		return(false);
+		return(NULL);
 	}
 	listening_connection->conn->proto.tcp = (esp_tcp *)db_zalloc(sizeof(esp_tcp), "esp_tcp tcp_listen");
 	if (!listening_connection->conn->proto.tcp)
 	{
 		error("Could not allocate memory for TCP connection.\n");
-		return(false);
+		return(NULL);
 	}
-	listening_connection->callbacks = (struct tcp_callback_funcs *)db_zalloc(sizeof(struct tcp_callback_funcs), "callbacks tcp_listen");
+	listening_connection->callbacks = (struct net_callback_funcs *)db_zalloc(sizeof(struct net_callback_funcs), "callbacks tcp_listen");
 	if (!listening_connection->callbacks)
 	{
 		error("Could not allocate memory for TCP for call back pointers.\n");
-		return(false);
+		return(NULL);
 	}
+	
+	listening_connection->type = NET_CT_TCP;
     
 	conn = listening_connection->conn;
 	callbacks = listening_connection->callbacks;
 	
 	//Setup TCP connection configuration.
+	listening_connection->timeout = TCP_TIMEOUT;
+	listening_connection->inactivity = 0;
 	//TCP connection.
+	listening_connection->type = NET_CT_TCP;
 	conn->type = ESPCONN_TCP;
 	//No state.
 	conn->state = ESPCONN_NONE;
@@ -565,20 +443,31 @@ bool tcp_listen(unsigned int port,
 	debug(" Accept call return %d.\n", ret);
 	if (ret == ESPCONN_OK)
 	{
-		debug(" Setting connection time out to 60 secs...");
-		//Set time out for all connections.
-		ret = espconn_regist_time(conn, 60, 0);
+		debug(" Setting connection time out to infinity.");
+		/* Set time out for all connections to infinity.
+		 * Time outs are handled by #status_check in user_main.c.
+		 * This is to have the ability to gracefully close WebSocket
+		 * connections, using the correct sequence.
+		 * If the SDK is allowed to handle time outs, it'll just call
+		 * the reconnect (disconnect?) callback, when the connection has
+		 * been closed, leaving no means to tell the WebSocket client
+		 * that the connection has been closed.
+		 */
+		ret = espconn_regist_time(conn, 0, 0);
 		debug(" Timeout call return %d.\n", ret);
 	}
 	if (ret != ESPCONN_OK)
 	{
+		error("Could not bind to port.\n");
 		//Free unused memory.
 		db_free(listening_connection);
-		return(false);
+		return(NULL);
 	}
 
-	add_listening_connection(listening_connection);
-    return(true);
+	net_add_connection(&tcp_listening_connections, listening_connection);
+	n_tcp_listening_connections++;
+	
+    return(listening_connection);
 }
 
 /**
@@ -591,13 +480,15 @@ bool init_tcp(void)
     debug("TCP init.\n");
     if (tcp_connections != NULL)
     {
-        error("TCP init already done.\n");
+        error("TCP initialisation already done.\n");
         return(false);
     }
         
     //No open connections.
-    n_tcp_connections = 0;
-    tcp_connections = NULL;
+	n_tcp_connections = 0;
+	tcp_connections = NULL;
+	n_tcp_listening_connections = 0;
+	tcp_listening_connections = NULL;
     
 	return(true);
 }
@@ -611,12 +502,12 @@ bool init_tcp(void)
 bool tcp_stop(unsigned int port)
 {
 	int ret;
-	struct tcp_connection *listening_connection;
-	struct tcp_connection *connections = tcp_listening_connections;
+	struct net_connection *listening_connection;
+	struct net_connection *connections = tcp_listening_connections;
 	
 	debug("Stop listening for TCP on port %d.\n", port);
 	
-	listening_connection = find_listening_connection(80);
+	listening_connection = net_find_connection_by_port(tcp_listening_connections, 80);
 	
 	if (!listening_connection)
 	{
@@ -626,9 +517,7 @@ bool tcp_stop(unsigned int port)
 	
 	debug("Closing TCP listening connection %p.\n", listening_connection);
 	ret = espconn_delete(listening_connection->conn);
-#ifdef DEBUG
-	print_status(ret);
-#endif
+	debug(" SDK returned %d.\n", ret);
 	if (connections != NULL)
 	{
 		//Remove connection from, the list of active connections.
@@ -649,7 +538,7 @@ bool tcp_stop(unsigned int port)
  * 
  * @return Pointer to a struct #tcp_connection.
  */
-struct tcp_connection *tcp_get_connections(void)
+struct net_connection *tcp_get_connections(void)
 {
 	return(tcp_connections);
 }
@@ -659,7 +548,7 @@ struct tcp_connection *tcp_get_connections(void)
  * 
  * @param connection Connection to disconnect.
  */
-void tcp_disconnect(struct tcp_connection *connection)
+void tcp_disconnect(struct net_connection *connection)
 {
 	int ret;
 	
@@ -667,9 +556,7 @@ void tcp_disconnect(struct tcp_connection *connection)
     debug(" espconn pointer %p.\n", connection->conn);
 	connection->closing = true;
 	ret = espconn_disconnect(connection->conn);
-#ifdef DEBUG
-	print_status(ret);
-#endif
+	debug(" SDK returned %d.\n", ret);
 }
 
 /** 
@@ -679,9 +566,10 @@ void tcp_disconnect(struct tcp_connection *connection)
  * clean up after itself.
  * @param connection Pointer to the data to free.
  */
-void tcp_free(struct tcp_connection *connection)
+//TODO: Merge with UDP code into net_connection_free.
+void tcp_free(struct net_connection *connection)
 {
-	struct tcp_connection *connections = tcp_connections;
+	struct net_connection *connections = tcp_connections;
 	
     debug("Freeing up connection (%p).\n", connection);
     /* As far as I can tell the espconn library takes care of freeing up the
@@ -718,62 +606,11 @@ void tcp_free(struct tcp_connection *connection)
 }
 
 #ifdef DEBUG
-/**
- * @brief Print the status of all connections in the list.
- */
 void tcp_print_connection_status(void)
 {
-	struct tcp_connection *connection = tcp_connections;
-	unsigned int connections = 0;
-	
-	if (!connection)
-	{
-		debug("No TCP connections.\n");
-	}
-	else
-	{
-		while (connection)
-		{
-			connections++;
-			if (connection->conn)
-			{
-				if (connection->conn->state <= ESPCONN_CLOSE)
-				{
-					debug("TCP connection %p (%p) state \"%s\".\n",
-						  connection, connection->conn,
-						  state_names[connection->conn->state]);
-					debug(" Remote address " IPSTR ":%d.\n", 
-						  IP2STR(connection->remote_ip),
-						  connection->remote_port);
-				}
-				else
-				{
-					debug("TCP connection %p (%p) state unknown (%d).\n",
-						  connection, connection->conn,
-						  connection->conn->state);
-					debug(" Remote address " IPSTR ":%d.\n", 
-						  IP2STR(connection->remote_ip),
-						  connection->remote_port);
-
-				}
-				if (connection->conn->state < ESPCONN_CLOSE)
-				{
-					debug(" SDK remote address " IPSTR ":%d.\n", 
-						  IP2STR(connection->conn->proto.tcp->remote_ip),
-						  connection->conn->proto.tcp->remote_port);
-				}
-			}
-			else
-			{
-				debug("TCP connection %p, no SDK connections.\n",
-					  connection);
-				debug(" Remote address " IPSTR ":%d.\n", 
-					  IP2STR(connection->remote_ip),
-					  connection->remote_port);
-			}
-			connection = connection->next;
-		}
-		debug("%d TCP connection(s).\n", connections);
-	}
-}
+	debug("Active TCP connection(s):\n");
+	net_print_connection_status(tcp_connections);
+	debug("Listening TCP connection(s):\n");
+	net_print_connection_status(tcp_listening_connections);
+}	
 #endif

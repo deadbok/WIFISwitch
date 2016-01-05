@@ -5,7 +5,8 @@
  * @brief Websocket (RFC6455) connection handling.
  * 
  * In true ESP8266 fashion, a sent callback must happen between
- * sending data.
+ * sending data. Code does will probably fail if sending more than
+ * the SDK send buffer can handle. 
  * 
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -37,6 +38,11 @@
 
 struct ws_handler ws_handlers[WS_MAX_HANDLERS];
 unsigned char ws_n_handlers = 0;
+
+/**
+ * @brief Structure with WebSocket connection control functions.
+ */
+static struct net_ctrlfuncs ws_ctrlfuncs = { ws_close };
 
 void init_ws(void)
 {
@@ -131,7 +137,7 @@ int ws_find_handler(char *protocol)
  *     0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
  *    +-+-+-+-+-------+-+-------------+-------------------------------+
  *    |F|R|R|R| opcode|M| Payload len |    Extended payload length    |
- *    |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
+ Close*    |I|S|S|S|  (4)  |A|     (7)     |             (16/64)           |
  *    |N|V|V|V|       |S|             |   (if payload len==126/127)   |
  *    | |1|2|3|       |K|             |                               |
  *    +-+-+-+-+-------+-+-------------+ - - - - - - - - - - - - - - - +
@@ -205,7 +211,7 @@ static void ws_unmask(char *data, struct ws_frame *frame)
 	}	
 }	
 
-static void ws_handle_control(struct ws_frame *frame, struct tcp_connection *connection)
+static void ws_handle_control(struct ws_frame *frame, struct net_connection *connection)
 {
 	struct ws_handler *handler = connection->user;
 	debug(" Control frame.\n");
@@ -253,7 +259,7 @@ static void ws_handle_control(struct ws_frame *frame, struct tcp_connection *con
  * 
  * @param connection Pointer to the connection that received the data.
  */
-static void ws_recv_cb(struct tcp_connection *connection)
+static void ws_recv_cb(struct net_connection *connection)
 {
 	struct ws_handler *handler = connection->user;
 	struct ws_frame frame;
@@ -261,6 +267,8 @@ static void ws_recv_cb(struct tcp_connection *connection)
 	
 	debug("WebSocket data received, %d bytes.\n", connection->callback_data.length);
 	db_hexdump(connection->callback_data.data, connection->callback_data.length);
+	connection->type = NET_CT_WS;
+	connection->ctrlfuncs = &ws_ctrlfuncs;
 	payload_offset = ws_parse_frame(connection->callback_data.data, &frame);
 	if (!frame.mask)
 	{
@@ -283,9 +291,10 @@ static void ws_recv_cb(struct tcp_connection *connection)
 	{
 		ws_handle_control(&frame, connection);
 	}
+	db_free(frame.data);
 }
 
-void ws_send_text(char *msg, struct tcp_connection *connection)
+void ws_send_text(char *msg, struct net_connection *connection)
 {
 	struct ws_frame frame;
 	
@@ -302,7 +311,7 @@ void ws_send_text(char *msg, struct tcp_connection *connection)
 	}
 }
 	
-void ws_send(struct ws_frame frame, struct tcp_connection *connection)
+void ws_send(struct ws_frame frame, struct net_connection *connection)
 {
 	size_t raw_frame_size = WS_MAX_HEADER_SIZE + frame.payload_len;
 	uint8_t *raw_frame;
@@ -331,11 +340,52 @@ void ws_send(struct ws_frame frame, struct tcp_connection *connection)
 		*raw_frame_pos++ = (uint8_t)frame.payload_len;
 	}
 	//No Mask
-	os_memcpy(raw_frame_pos, frame.data, frame.payload_len);
-	raw_frame_pos += frame.payload_len;
+	if (frame.payload_len > 0)
+	{
+		os_memcpy(raw_frame_pos, frame.data, frame.payload_len);
+		raw_frame_pos += frame.payload_len;
+	}
 	db_hexdump((char *)raw_frame, raw_frame_pos - raw_frame);
 	net_send((char *)raw_frame, raw_frame_pos - raw_frame, connection->conn);
 	db_free(raw_frame);
+}
+
+/**
+ * @brief Send close control frame to WebSocket client.
+ */
+static void ws_send_close(struct ws_frame *frame, struct net_connection *connection)
+{
+	frame->fin = true;
+	frame->rsv = 0;
+	frame->opcode = WS_OPCODE_CLOSE;
+	frame->mask = false;
+	
+	ws_send(*frame, connection);
+
+}
+
+void ws_close(struct net_connection *connection)
+{
+	struct ws_frame frame;
+	struct ws_handler *handler = connection->user;
+	
+	debug("Closing WebSocket connection %p.\n", connection);
+	
+	debug(" No data answering close.\n");
+	frame.payload_len = 0;
+	frame.data = "";
+	
+	ws_send_close(&frame, connection);
+	
+	if (handler)
+	{
+		if (handler->close)
+		{
+			debug(" Calling protocol close handler %p.\n", handler->close);
+			handler->close(NULL, connection);
+		}
+	}
+	tcp_disconnect(connection);
 }
 
 /**
@@ -343,18 +393,19 @@ void ws_send(struct ws_frame frame, struct tcp_connection *connection)
  *
  * @param Connection used to sent the data.
  */
-static void ws_sent_cb(struct tcp_connection *connection)
+static void ws_sent_cb(struct net_connection *connection)
 {
 	debug("WebSocket sent (%p).\n", connection);
+	connection->type = NET_CT_WS;
 }
 
-void ws_register_sent_cb(struct tcp_connection *connection)
+void ws_register_sent_cb(struct net_connection *connection)
 {
 	connection->callbacks->sent_callback = ws_sent_cb;
 	debug(" WebSocket sent callback %p set.\n", connection->callbacks->sent_callback);
 }
 
-void ws_register_recv_cb(struct tcp_connection *connection)
+void ws_register_recv_cb(struct net_connection *connection)
 {
 	connection->callbacks->recv_callback = ws_recv_cb;
 	debug(" WebSocket receive callback %p set.\n", connection->callbacks->recv_callback);

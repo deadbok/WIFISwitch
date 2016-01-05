@@ -23,16 +23,18 @@
  */ 
 #ifndef HTTP_TCP_H
 #define HTTP_TCP_H
+
+#include "net/net.h"
 #include "tools/ring.h"
 
 extern struct ring_buffer request_buffer;
 extern int http_response_mutex;
 
-extern void http_tcp_connect_cb(struct tcp_connection *connection);
-extern void http_tcp_reconnect_cb(struct tcp_connection *connection);
-extern void http_tcp_disconnect_cb(struct tcp_connection *connection);
-extern void http_tcp_write_finish_cb(struct tcp_connection *connection);
-extern void http_tcp_recv_cb(struct tcp_connection *connection);
-extern void http_tcp_sent_cb(struct tcp_connection *connection);
+extern void http_tcp_connect_cb(struct net_connection *connection);
+extern void http_tcp_reconnect_cb(struct net_connection *connection);
+extern void http_tcp_disconnect_cb(struct net_connection *connection);
+extern void http_tcp_write_finish_cb(struct net_connection *connection);
+extern void http_tcp_recv_cb(struct net_connection *connection);
+extern void http_tcp_sent_cb(struct net_connection *connection);
 
 #endif //HTTP_TCP_H

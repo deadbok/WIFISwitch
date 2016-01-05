@@ -53,7 +53,7 @@ int http_response_mutex = 0;
  * 
  * @param connection Pointer to the connection that has connected.
  */
-void http_tcp_connect_cb(struct tcp_connection *connection)
+void http_tcp_connect_cb(struct net_connection *connection)
 {
     struct http_request *request;
     
@@ -67,6 +67,7 @@ void http_tcp_connect_cb(struct tcp_connection *connection)
     connection->user = request;
     request->connection = connection;
     request->response.status_code = 200;
+	connection->type = NET_CT_HTTP;
 }
 
 /**
@@ -74,7 +75,7 @@ void http_tcp_connect_cb(struct tcp_connection *connection)
  * 
  * @param connection Pointer to the connection that has had an error.
  */
-void http_tcp_reconnect_cb(struct tcp_connection *connection)
+void http_tcp_reconnect_cb(struct net_connection *connection)
 {  
     debug("HTTP reconnect (%p).\n", connection);
 }
@@ -87,7 +88,7 @@ void http_tcp_reconnect_cb(struct tcp_connection *connection)
  * 
  * @param connection Pointer to the connection that has disconnected. 
  */
-void http_tcp_disconnect_cb(struct tcp_connection *connection)
+void http_tcp_disconnect_cb(struct net_connection *connection)
 {
     debug("HTTP disconnect (%p).\n", connection);
 }
@@ -97,7 +98,7 @@ void http_tcp_disconnect_cb(struct tcp_connection *connection)
  * 
  * @param connection Pointer to the connection that is finished.
  */
-void http_tcp_write_finish_cb(struct tcp_connection *connection)
+void http_tcp_write_finish_cb(struct net_connection *connection)
 {
 	debug("Done writing (%p).\n", connection);
 }
@@ -109,7 +110,7 @@ void http_tcp_write_finish_cb(struct tcp_connection *connection)
  * 
  * @param connection Pointer to the connection that received the data.
  */
-void http_tcp_recv_cb(struct tcp_connection *connection)
+void http_tcp_recv_cb(struct net_connection *connection)
 {
 	void *buffer_ptr;
 	signed int ret;
@@ -146,7 +147,7 @@ void http_tcp_recv_cb(struct tcp_connection *connection)
 		{
 			debug(" Adding request to buffer.\n");
 			buffer_ptr = ring_push_back(&request_buffer);
-			*((struct tcp_connection **)buffer_ptr) = connection;
+			*((struct net_connection **)buffer_ptr) = connection;
 			return;
 		}
 		else
@@ -164,7 +165,7 @@ void http_tcp_recv_cb(struct tcp_connection *connection)
     debug(" Request %p done.\n", request);
 }
 
-void http_tcp_sent_cb(struct tcp_connection *connection)
+void http_tcp_sent_cb(struct net_connection *connection)
 {
 	struct http_request *request = connection->user;
 	signed int ret = 0;
@@ -198,7 +199,7 @@ void http_tcp_sent_cb(struct tcp_connection *connection)
 			connection_ptr = ring_pop_front(&request_buffer);
 			if (connection_ptr)
 			{
-				request = (*((struct tcp_connection **)connection_ptr))->user;
+				request = (*((struct net_connection **)connection_ptr))->user;
 				ret = http_handle_response(request);
 				debug(" Handler return value: %d.\n", ret);
 				db_free(connection_ptr);

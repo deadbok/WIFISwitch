@@ -52,7 +52,7 @@
  * @param code Status code to use in the status line.
  * @return Size of data that has been sent.
  */
-unsigned char http_send_status_line(struct tcp_connection *connection, unsigned short status_code)
+unsigned char http_send_status_line(struct net_connection *connection, unsigned short status_code)
 {
 	size_t size;
 	char *response;
@@ -125,7 +125,7 @@ unsigned char http_send_status_line(struct tcp_connection *connection, unsigned 
  * @param value The value of the header.
  * @return Size of data sent.
  */
-unsigned short http_send_header(struct tcp_connection *connection, char *name, char *value)
+unsigned short http_send_header(struct net_connection *connection, char *name, char *value)
 {
 	char header[512];
 	char *temp_val = "";
@@ -225,7 +225,7 @@ signed int http_send_default_headers(
  * @param size Size (in bytes) of the data to send.
  * @return Number of bytes buffered.
  */
-size_t http_send(struct tcp_connection *connection, char *data, size_t size)
+size_t http_send(struct net_connection *connection, char *data, size_t size)
 {
     struct http_request *request;
     size_t buffer_free;

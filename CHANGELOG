@@ -1,4 +1,32 @@
-2015-21-22 Martin Grønholdt
+2015-01-05 Martin Grønholdt
+
+* fs/root_src/css/custom.css: Added connection status rules
+* fs/root_src/index.html: Added connection status.
+* user/handlers/http/websocket/websocket.c: Use net_connection.
+* user/handlers/websocket/wifiswitch.c: Close handler.
+* user/include/handlers/websocket/wifiswitch.h: Added time out define and close.
+* user/include/net/dns.h: C99.
+* user/include/net/net.h: Add general connection type net_connection.
+* user/include/net/tcp.h: Use to net_connection and add time out.
+* user/include/net/udp.h: Use to net_connection.
+* user/include/net/websocket.h: Use to net_connection.
+* user/include/slighttp/http-request.h:  Use to net_connection.
+* user/include/slighttp/http-tcp.h: Use net_connection.
+* user/include/slighttp/http.h: Use net_connection.
+* user/include/user_config.h: Add WebSocket wifiswitch protocol timeout.
+* user/net/capport.c: Use net_connections.
+* user/net/net.c: Replace protocol specific connections structs and functions with general ones.
+* user/net/tcp.c: Use net code and add time out code.
+* user/net/udp.c: Use net code.
+* user/net/websocket.c: Net code, close.
+* user/net/wifi.c: Tell if AP is not present.
+* user/slighttp/http-request.c: Use net code.
+* user/slighttp/http-response.c: Use net code.
+* user/slighttp/http.c: Use net code.
+* user/user_main.c: Handle network connection time out.
+
+
+2015-12-22 Martin Grønholdt
 
 * user/handlers/http/websocket/websocket.c (http_ws_handler): Free up memory.
 * user/include/slighttp/http-request.h: Oops, , not :.

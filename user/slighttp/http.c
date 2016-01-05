@@ -66,27 +66,26 @@
  * Server status: true when listening, and false when stopped.
  */
 static bool status = false;
-/**
- * @brief Initialise the HTTP server,
- * 
- * @param path Path to search as root of the server in the file system.
- * @param builtin_uris An array of built in handlers for URIs.
- * @param n_builtin_uris Number of URI handlers.
- * @return `true`on success.
- */
+
 bool init_http(unsigned int port)
 {
+	struct net_connection *connection;
+	
 	debug("Initialising HTTP server on port %d.\n", port);
     //Initialise TCP and listen on port 80.
     if (!init_tcp())
     {
 		return(false);
 	}
-	if (!tcp_listen(port, http_tcp_connect_cb, http_tcp_disconnect_cb, 
-				   http_tcp_write_finish_cb, http_tcp_recv_cb, http_tcp_sent_cb))
+	connection = tcp_listen(port, http_tcp_connect_cb,
+							http_tcp_disconnect_cb,
+							http_tcp_write_finish_cb, http_tcp_recv_cb,
+							http_tcp_sent_cb);
+	if (!connection)
 	{
 		return(false);
 	}
+	connection->type = NET_CT_HTTP;
 	//Create buffer for requests.
 	debug("Creating request buffer.\n");
 	init_ring(&request_buffer, sizeof(struct tcp_connection *), HTTP_REQUEST_BUFFER_SIZE);

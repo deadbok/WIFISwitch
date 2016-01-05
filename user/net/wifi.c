@@ -83,12 +83,12 @@ static bool ICACHE_FLASH_ATTR wifi_disconnect(void)
 /**
  * @brief Switch to Access Point mode.
  * 
- * Swithches the ESP8266 to STATIONAP mode, where both AP, and station mode is active.
+ * Switches the ESP8266 to STATIONAP mode, where both AP, and station mode is active.
  *
  * @param ssid Pointer to the SSID for the AP.
  * @param passwd Pointer to the password for the AP.
  * @param channel Channel for the AP.
- * @return true on success, false on failurre.
+ * @return true on success, false on failure.
  */
 static bool create_softap(char *ssid, char *passwd, unsigned char channel)
 {
@@ -211,6 +211,10 @@ static void wifi_handle_event_cb(System_Event_t *event)
 		case     EVENT_STAMODE_DISCONNECTED:
 			debug("Disconnected from AP.\n");
 			debug("Reason: %d.\n", event->event_info.disconnected.reason);
+			if (event->event_info.disconnected.reason == REASON_NO_AP_FOUND)
+			{
+				error("Configured access point could not be found.\n");
+			}
 			//Ignore failed client attempts in config mode.
 			if (wifi_connected < WIFI_MODE_AP)
 			{

@@ -27,7 +27,7 @@
 
 #include "http.h"
 
-extern bool http_parse_request(struct tcp_connection *connection, unsigned short length);
+extern bool http_parse_request(struct net_connection *connection, unsigned short length);
 extern void http_free_request_headers(struct http_request *request);
 extern void http_free_request(struct http_request *request);
 

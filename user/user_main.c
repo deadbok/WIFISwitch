@@ -148,13 +148,36 @@ static void button_switch(os_param_t gpio)
 }
 
 /**
- * @brief Called by the timer to check the status.
+ * @brief Called by the timer to check the status and connection time out.
+ * 
+ * Print memory and connection infos when in debug mode. Handle time out
+ * of TCP connections.
  */
 static void status_check(void)
 {
+	struct net_connection *connections;
+	
 	db_mem_list();
 	udp_print_connection_status();
 	tcp_print_connection_status();
+	
+	//Time out handling of TCP connections.
+	connections = tcp_get_connections();
+	while (connections)
+	{
+		connections->inactivity += CHECK_TIME;
+		debug(" Connection %p milliseconds without activity %d.\n", connections, connections->inactivity);
+		if ((connections->timeout > 0) && (connections->timeout < connections->inactivity))
+		{
+			debug(" Connection time out.\n");
+			if (connections->ctrlfuncs->close)
+			{
+				debug(" Closing using control function at %p.\n", connections->ctrlfuncs->close);
+				connections->ctrlfuncs->close(connections);
+			}
+		}
+		connections = connections->next;
+	}
 }
 
 /**
@@ -222,6 +245,7 @@ static void connected(os_signal_t mode)
 static void disconnected(os_signal_t signal)
 {
 	db_printf("Network connection lost, restarting...\n");
+	system_restart();
 }
  
  /**

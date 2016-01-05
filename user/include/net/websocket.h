@@ -104,7 +104,7 @@ struct ws_frame
 /**
  * @brief Callback function definition for received frames.
  */
-typedef signed long int (*ws_callback)(struct ws_frame *frame, struct tcp_connection *connection);
+typedef signed long int (*ws_callback)(struct ws_frame *frame, struct net_connection *connection);
 /**
  * @brief Type of an ID used to identify a registered WebSocket protocol handler.
  */
@@ -181,26 +181,30 @@ extern int ws_find_handler(char *protocol);
  * 
  * @param connection Connection to use.
  */
-extern void ws_register_sent_cb(struct tcp_connection *connection);
+extern void ws_register_sent_cb(struct net_connection *connection);
 /**
  * @brief Register WebSocket receive callback to a connection.
  * 
  * @param connection Connection to use.
  */
-extern void ws_register_recv_cb(struct tcp_connection *connection);
+extern void ws_register_recv_cb(struct net_connection *connection);
 /**
  * @brief Send a WebSocket frame.
  * 
  * @param frame WebSocket frame to send.
  * @param connection Connection to use.
  */
-extern void ws_send(struct ws_frame frame, struct tcp_connection *connection);
+extern void ws_send(struct ws_frame frame, struct net_connection *connection);
 /**
  * @brief Send a WebSocket text frame.
  * 
  * @param msg Text to send.
  * @param connection Connection to use.
  */
-extern void ws_send_text(char *msg, struct tcp_connection *connection);
+extern void ws_send_text(char *msg, struct net_connection *connection);
+/**
+ * @brief Close the WebSocket connection gracefully.
+ */
+void ws_close(struct net_connection *connection);
 
 #endif

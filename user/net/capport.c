@@ -53,7 +53,7 @@ static unsigned int swap16(unsigned short value)
  *
  * @param connection Connection that received the data.
  */
-static void dns_recv(struct udp_connection *connection)
+static void dns_recv(struct net_connection *connection)
 {
 	char domain[255];
 	unsigned char response[512];
@@ -64,6 +64,7 @@ static void dns_recv(struct udp_connection *connection)
 	struct dns_header *header;
 
 	debug(" DNS UDP received on %p.\n", connection);
+	connection->type = NET_CT_DNS;
 
 	query = connection->callback_data.data[offset] && 0x01;
 	if (!query)
@@ -176,9 +177,10 @@ static void dns_recv(struct udp_connection *connection)
  *
  * @param connection Connection that sent the data.
  */
-static void dns_sent(struct udp_connection *connection)
+static void dns_sent(struct net_connection *connection)
 {
 	debug(" DNS UDP sent on %p.\n", connection);
+	connection->type = NET_CT_DNS;
 }
 
 /**

@@ -39,7 +39,7 @@
 
 static ws_handler_id_t ws_wifiswitch_hid;
 
-struct ws_handler ws_wifiswitch_handler = { WS_PR_WIFISWITCH, NULL, ws_wifiswitch_received, NULL, NULL, NULL, NULL};
+struct ws_handler ws_wifiswitch_handler = { WS_PR_WIFISWITCH, NULL, ws_wifiswitch_received, NULL, ws_wifiswitch_close, NULL, NULL};
 
 bool ws_register_wifiswitch(void)
 {
@@ -166,7 +166,7 @@ static void ws_wifiswitch_gpio_parse(char *request, jsmn_parser *parser, jsmntok
 	}
 }
 
-signed long int ws_wifiswitch_received(struct ws_frame *frame, struct tcp_connection *connection)
+signed long int ws_wifiswitch_received(struct ws_frame *frame, struct net_connection *connection)
 {
 	uint32_t value;
 	char *response = NULL;
@@ -176,6 +176,8 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct tcp_connec
 	int n_tokens;
 	
 	debug("Wifiswitch WebSocket data received.\n");
+	//Set timeout.
+	connection->timeout = WS_WIFISWITCH_TIMEOUT;
 	db_hexdump(frame->data, frame->payload_len);
 	if (frame->opcode != WS_OPCODE_TEXT)
 	{
@@ -262,6 +264,15 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct tcp_connec
 		ws_send_text(response, connection);
 		db_free(response);
 	}
+	
+	return(ret);
+}
+
+signed long int ws_wifiswitch_close(struct ws_frame *frame, struct net_connection *connection)
+{
+	signed long int ret = 0;
+	
+	debug("Wifiswitch WebSocket close received.\n");
 	
 	return(ret);
 }
