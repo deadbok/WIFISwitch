@@ -143,6 +143,7 @@ static void button_switch(os_param_t gpio)
 		gpio_state = !GPIO_INPUT_GET(5);
 		debug(" New state: %d.\n", gpio_state);
 		GPIO_OUTPUT_SET(5, gpio_state);
+		ws_wifiswitch_send_gpio_status();
 	}
 	button_ack(gpio);
 }

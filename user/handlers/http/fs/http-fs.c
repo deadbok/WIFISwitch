@@ -36,6 +36,7 @@
 #include "slighttp/http-mime.h"
 #include "handlers/http/fs/http-fs.h"
 #include "slighttp/http-handler.h"
+#include "slighttp/http-request.h"
 #include "slighttp/http-response.h"
 
 /**

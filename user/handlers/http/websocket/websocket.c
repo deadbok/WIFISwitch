@@ -146,7 +146,6 @@ static void http_ws_sent_cb(struct net_connection *connection)
 {
 	struct ws_connection *ws_conn = NULL;
 	int handler_id;
-	int ret;
 	
 	debug("WebSocket handshake sent (%p).\n", connection);
 	

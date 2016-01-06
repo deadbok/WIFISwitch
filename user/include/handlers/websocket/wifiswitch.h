@@ -42,7 +42,7 @@
 /**
  * @brief Connection time out in milliseconds.
  */
-#define WS_WIFISWITCH_TIMEOUT 60000
+#define WS_WIFISWITCH_TIMEOUT 600000
 #endif
 
 #ifndef WS_WIFISWITCH_GPIO_ENABLED
@@ -63,5 +63,10 @@ extern struct ws_handler ws_wifiswitch_handler;
 extern bool ws_register_wifiswitch(void);
 extern signed long int ws_wifiswitch_received(struct ws_frame *frame, struct net_connection *connection);
 extern signed long int ws_wifiswitch_close(struct ws_frame *frame, struct net_connection *connection);
+
+/**
+ * @brief Send GPIO status to all clients.
+ */
+extern void ws_wifiswitch_send_gpio_status(void);
 
 #endif //WIFISWITCH_H

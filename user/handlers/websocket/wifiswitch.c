@@ -239,7 +239,6 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct net_connec
 								debug(" Full GPIO request.\n");
 								ws_wifiswitch_gpio_parse(frame->data, &parser, tokens, n_tokens);
 							}
-							debug(" Creating GPIO response.\n");
 							response = ws_wifiswitch_gpio_response();
 
 							break;
@@ -266,6 +265,37 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct net_connec
 	}
 	
 	return(ret);
+}
+
+void ws_wifiswitch_send_gpio_status(void)
+{
+	struct net_connection *connection = tcp_get_connections();
+	struct ws_connection *ws_conn;
+	char *response = NULL;
+	
+	debug("Sending GPIO status to WebSocker clients.\n");
+	response = ws_wifiswitch_gpio_response();
+	while (connection)
+	{
+		//Find WebSocket connections.
+		if (connection->type == NET_CT_WS)
+		{
+			ws_conn = connection->user;
+			if (ws_conn)
+			{
+				if (ws_conn->handler)
+				{
+					if (strncmp(ws_conn->handler->protocol, WS_PR_WIFISWITCH, strlen(WS_PR_WIFISWITCH)) == 0);
+					{
+						debug(" Sending to %p.\n", connection);
+						ws_send_text(response, connection);
+					}
+				}
+			}
+		}			
+		connection = connection->next;
+	}
+	db_free(response);
 }
 
 signed long int ws_wifiswitch_close(struct ws_frame *frame, struct net_connection *connection)
