@@ -71,7 +71,7 @@
 /**
  * @brief WebSocket connection time out in milliseconds.
  */
-#define WS_WIFISWITCH_TIMEOUT 30000
+#define WS_WIFISWITCH_TIMEOUT 240000
 
 /************************ Physical pin functions. ************************/
 /**

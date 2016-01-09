@@ -1,3 +1,13 @@
+2015-01-09 Martin Grønholdt
+
+* README.md: More ramblings.
+* fs/root_src/about.html: Dynamic WS host.
+* user/handlers/websocket/wifiswitch.c: fw message handling.
+* user/include/handlers/websocket/wifiswitch.h: Comments.
+* user/include/user_config.h: Even more sane WebSocket time out.
+* user/user_main.c: Adjusted output.
+
+
 2015-01-06 Martin Grønholdt
 
 * user/handlers/http/fs/http-fs.c: Add missing header.

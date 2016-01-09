@@ -58,8 +58,14 @@
  */
 #define WS_WIFISWITCH_GPIO_PINS 16
 
+/**
+ * @brief Handler registration structure.
+ */
 extern struct ws_handler ws_wifiswitch_handler;
 
+/**
+ * @brief Register handler with WebSocket protocol.
+ */
 extern bool ws_register_wifiswitch(void);
 extern signed long int ws_wifiswitch_received(struct ws_frame *frame, struct net_connection *connection);
 extern signed long int ws_wifiswitch_close(struct ws_frame *frame, struct net_connection *connection);

@@ -32,11 +32,15 @@
 #include "tools/strxtra.h"
 #include "tools/jsmn.h"
 #include "tools/json-gen.h"
+#include "net/wifi.h"
 #include "net/websocket.h"
 #include "handlers/websocket/wifiswitch.h"
 
 #define WS_PR_WIFISWITCH "wifiswitch"
 
+/**
+ * @brief The handler id the protocol is registered with.
+ */
 static ws_handler_id_t ws_wifiswitch_hid;
 
 struct ws_handler ws_wifiswitch_handler = { WS_PR_WIFISWITCH, NULL, ws_wifiswitch_received, NULL, ws_wifiswitch_close, NULL, NULL};
@@ -50,6 +54,42 @@ bool ws_register_wifiswitch(void)
 		return(false);
 	}
 	return(true);
+}
+
+/**
+ * @brief Create response to a fw type request.
+ * 
+ * @return Pointer to JSON response.
+ */
+static char *ws_wifiswitch_fw_response(void)
+{
+	char *json_response = NULL;
+	char *pair;
+	char *mode;
+	
+	debug("Creating JSON gpio response.\n");
+	
+	//Create type object.
+	pair = json_create_pair("type", "fw", true);
+	json_response = json_add_to_object(json_response, pair);
+	db_free(pair);
+	if (cfg->network_mode == WIFI_MODE_CLIENT)
+	{
+		mode = "\"station\"";
+	}
+	else
+	{
+		mode = "\"ap\"";
+	}
+	pair = json_create_pair("mode", mode, false);
+	debug(" Add \"%s\".\n", pair);
+	json_response = json_add_to_object(json_response, pair);
+	db_free(pair);
+	pair = json_create_pair("ver", "\"" VERSION "\"", false);
+	debug(" Add \"%s\".\n", pair);
+	json_response = json_add_to_object(json_response, pair);
+	db_free(pair);	
+	return(json_response);
 }
 
 /**
@@ -117,8 +157,67 @@ static char *ws_wifiswitch_gpio_response(void)
 			
 		}
 	}
-	
 	return(json_response);
+}
+
+/**
+ * @brief Parse a firmware request.
+ * 
+ * @param request Raw request string.
+ * @param parser Pointer to a jsmn JSON parser.
+ * @param token Pointer to jsmn
+ */
+static void ws_wifiswitch_fw_parse(char *request, jsmn_parser *parser, jsmntok_t *tokens, int n_tokens)
+{
+	int i;
+	uint16_t value;
+	char *token;
+	char *token_end;
+
+	debug("Parsing wifiswitch gpio request.\n");	
+	//Assumes the top level token is an object.
+	for (i = 1; i < n_tokens; i++)
+	{
+		debug(" JSON token %d.\n", i);
+		token = request + tokens[i].start;
+		if (tokens[i].type == JSMN_STRING)
+		{
+			token_end = token;
+			debug(" JSON token is a string \"%s\".\n", token);
+			/* The first 2 bytes of type are unique by using them as an
+			 * 16 bit uint, we save a string comparison.
+			 * The only R/W property is "mode"
+			 */
+			if ((request[tokens[i].start] << 8 | request[tokens[i].start + 1]) == 0x6d6f)
+			{
+				debug(" Mode token.\n");
+				//Next token is supposed to be the value.
+				i++;
+				//Convert first to characters to int.
+				value = request[tokens[i].start] << 8 |
+						request[tokens[i].start + 1];
+				switch (value)
+				{
+					//station
+					case 0x7374:
+						debug(" Mode: station.\n");
+						cfg->network_mode = WIFI_MODE_CLIENT;
+						break;
+					//ap
+					case 0x6170:
+						debug(" Mode: AP.\n");
+						cfg->network_mode = WIFI_MODE_AP;
+						break;
+					default:
+						warn("Wrong mode value in firmware message.\n");
+				}
+			}
+			else
+			{
+				debug(" Unexpected token.\n");
+			}
+		}
+	}
 }
 
 static void ws_wifiswitch_gpio_parse(char *request, jsmn_parser *parser, jsmntok_t *tokens, int n_tokens)
@@ -134,6 +233,7 @@ static void ws_wifiswitch_gpio_parse(char *request, jsmn_parser *parser, jsmntok
 	{
 		debug(" JSON token %d.\n", i);
 		token = request + tokens[i].start;
+		//Assumes GPIO state messages.
 		if (tokens[i].type == JSMN_STRING)
 		{
 			token_end = token;
@@ -212,7 +312,7 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct net_connec
 				if (tokens[i].type == JSMN_STRING)
 				{
 					debug(" JSON string comes next.\n");			
-					/* The first 2 bytes of type is unique by using them as an
+					/* The first 2 bytes of type are unique by using them as an
 					 * 16 bit uint, we save a string comparison.
 					 */
 		 			value = frame->data[tokens[i].start] << 8 |
@@ -221,6 +321,12 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct net_connec
 					{
 						case 0x6677:
 							debug(" fw request.\n");
+							if (n_tokens > 3)
+							{
+								debug(" Full fw message.\n");
+								ws_wifiswitch_gpio_parse(frame->data, &parser, tokens, n_tokens);
+							}
+							response = ws_wifiswitch_fw_response();
 							break;
 						case 0x6e65:
 							debug(" network request.\n");
@@ -240,7 +346,6 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct net_connec
 								ws_wifiswitch_gpio_parse(frame->data, &parser, tokens, n_tokens);
 							}
 							response = ws_wifiswitch_gpio_response();
-
 							break;
 						default:
 							warn("Unknown wifiswitch request (0x%.2x).\n", value);
@@ -273,7 +378,7 @@ void ws_wifiswitch_send_gpio_status(void)
 	struct ws_connection *ws_conn;
 	char *response = NULL;
 	
-	debug("Sending GPIO status to WebSocker clients.\n");
+	debug("Sending GPIO status to WebSocket clients.\n");
 	response = ws_wifiswitch_gpio_response();
 	while (connection)
 	{

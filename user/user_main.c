@@ -332,5 +332,5 @@ void user_init(void)
 	//Initialise file system.
     fs_init();
 
-    db_printf("\nLeaving user_init...\n");
+    db_printf("Leaving user_init...\n");
 }
