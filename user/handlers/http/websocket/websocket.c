@@ -1,6 +1,6 @@
 
 /**
- * @file websocket.c
+ * @file handlers/http/websocket/websocket.c
  *
  * @brief Websocket HTTP handshake handler (RFC6455).
  * 
@@ -158,7 +158,9 @@ static void http_ws_sent_cb(struct net_connection *connection)
 		return;
 	}
 	
-	//TODO: Free other HTTP stuff we no longer need.
+	/*
+	 * @todo Free other HTTP stuff we no longer need.
+	 */
 	http_free_request_headers(connection->user);
 	//http_free_request(connection->user);
 	
@@ -196,7 +198,9 @@ signed int http_ws_handler(struct http_request *request)
 	
 	if (request->response.state == HTTP_STATE_NONE)
 	{
-		//TODO: Need the check for presence of and validate all headers.
+		/*
+		 * @todo Need the check for presence of and validate all headers.
+		 */
 		debug(" Evaluating headers.\n");
 		while (header)
 		{
@@ -273,7 +277,9 @@ signed int http_ws_handler(struct http_request *request)
 								accept_value);
 		db_free(accept_value);
 		//Protocol.
-		//TODO: Get from registered handlers.
+		/**
+		 * @brief Get from registered handlers.
+		 */
 		for (i = 0; (ws_handlers[i].protocol && (i < WS_MAX_HANDLERS)); i++)
 		{
 			ret += http_send_header(request->connection, "Sec-WebSocket-Protocol",

@@ -1,3 +1,23 @@
+2015-01-12 Martin Grønholdt
+
+* fs/root_src/404.html: Update layout to match other pages.
+* fs/root_src/connect/ap.html: Dynamic WS host.
+* fs/root_src/connect/index.html: Dynamic WS host and station msg handler.
+* fs/root_src/connect/net.html: Dynamic WS host and network name code fixes.
+* fs/root_src/css/custom.css: Smaller footer text.
+* user/handlers/http/websocket/websocket.c: Doxygen.
+* user/handlers/websocket/wifiswitch.c: "station" response.
+* user/handlers/websocket/wifiswitch.c (ws_wifiwsitch_add_data): Added to stop repeating code.
+* user/include/user_config.h: Add file name to warnings and errors.
+* user/user_main.c (connected): Only start captive portal in AP mode. 
+*  user/user_main.c (wait_config): Added to wait some seconds for config button press.
+
+
+2015-01-11 Martin Grønholdt
+
+* Learned that David Bowie died yesterday.
+
+
 2015-01-09 Martin Grønholdt
 
 * README.md: More ramblings.

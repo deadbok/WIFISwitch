@@ -205,6 +205,12 @@ static void connected(os_signal_t mode)
 		error(" Could not register wifiswitch webSocket protocol.\n");
 	}
 	
+	if (cfg->network_mode == WIFI_MODE_AP)
+	{
+		//Start captive portal in AP mode.
+		init_captive_portal("wifiswitch");
+	}
+	
 	if (!config_mode)
 	{
 		//Start web server with default pages.
@@ -223,8 +229,6 @@ static void connected(os_signal_t mode)
 	}
 	else
 	{
-		//Start captive portal
-		init_captive_portal("wifiswitch");
 		//Start in network configuration mode.
 		init_http(80);
 		http_fs_init("/connect/");
@@ -277,12 +281,29 @@ static void start_connection(void)
 }
 
 /**
+ * @brief Start waiting for configuration mode select.
+ * 
+ * This is called after init, and waits #CHECK_TIME for somebody to
+ * press the button to enter configuration mode.
+ */
+static void wait_config(void)
+{
+	db_printf("Waiting %d second(s)...\n", CHECK_TIME / 1000);
+	//Disarm timer.
+	os_timer_disarm(&status_timer);
+	//Setup timer, pass call back as parameter.
+	os_timer_setfn(&status_timer, (os_timer_func_t *)start_connection, NULL);
+	//Arm the timer, run every #CHECK_TIME  ms.
+	os_timer_arm(&status_timer, CHECK_TIME, 1);
+}
+
+/**
  * @brief Main entry point and init code.
  */
 void user_init(void)
 {
     //Register function to run when done.
-    system_init_done_cb(start_connection);
+    system_init_done_cb(wait_config);
     //Turn off auto connect.
     wifi_station_set_auto_connect(false);
     //Turn off auto reconnect.
@@ -295,12 +316,8 @@ void user_init(void)
 #ifndef SDK_DEBUG
 	system_set_os_print(false);
 #endif
-
-    //os_delay_us(1000);
-
     //Print banner
     db_printf("\n%s version %s (%s).\n", PROJECT_NAME, VERSION, GIT_VERSION);
-    //system_print_meminfo();
     db_printf("SDK version %s.\n", system_get_sdk_version());
     db_printf("Free heap %u\n", system_get_free_heap_size());
     debug("ROM firmware portion ends at %p.\n", &_irom0_text_end);
@@ -309,6 +326,7 @@ void user_init(void)
 
     //Initialise the GPIO subsystem.
     gpio_init();
+    debug("GPIO states 0x%x.\n", GPIO_REG_READ(GPIO_OUT_ADDRESS));
     
     //Initialise task system.
     task_init();
@@ -326,11 +344,9 @@ void user_init(void)
 
     //Set GPIO5 to output.
     gpio_output_set(0, GPIO_ID_PIN(5), GPIO_ID_PIN(5), 0);
-    
-    debug(" GPIO states 0x%x.\n", GPIO_REG_READ(GPIO_OUT_ADDRESS));
 
 	//Initialise file system.
     fs_init();
 
-    db_printf("Leaving user_init...\n");
+    debug("Leaving user_init...\n");
 }

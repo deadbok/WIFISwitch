@@ -335,13 +335,6 @@ static bool wifi_connect_default(void)
 	return(true);
 }
 
-/**
- * @brief Check if we're connected to a WIFI.
- *
- * Both station mode with an IP address and AP mode count as connected.
- * 
- * @return `true`on connection.
- */
 bool wifi_check_connection(void)
 {
 	unsigned char ret = 0;

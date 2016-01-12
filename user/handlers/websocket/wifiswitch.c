@@ -45,6 +45,11 @@ static ws_handler_id_t ws_wifiswitch_hid;
 
 struct ws_handler ws_wifiswitch_handler = { WS_PR_WIFISWITCH, NULL, ws_wifiswitch_received, NULL, ws_wifiswitch_close, NULL, NULL};
 
+/**
+ * @brief Connection waiting for a list of ssids.
+ */
+static struct net_connection *response_connection = NULL;
+
 bool ws_register_wifiswitch(void)
 {
 	debug("Registering wifiswitch WebSocket protocol handler.\n");
@@ -57,22 +62,49 @@ bool ws_register_wifiswitch(void)
 }
 
 /**
+ * @brief Add data to a message.
+ *
+ * @param msg Message to add to, created if NULL.
+ * @param name Name of the value to add.
+ * @param value Value.
+ * @param quotes Add double quotes to the value.
+ * @return The new message.
+ */
+static char *ws_wifiwsitch_add_data(char *msg, char *name, char *value, bool quotes)
+{
+	char *pair;
+	
+	debug("Adding WebSocket wifiswitch value %s	= %s to %s.\n", name, value, msg); 
+	pair = json_create_pair(name, value, quotes);
+	msg = json_add_to_object(msg, pair);
+	db_free(pair);	
+	
+	return(msg);
+}
+
+/**
  * @brief Create response to a fw type request.
+ * 
+ * type: "fw".
+ * -----------
+ *
+ * |  Name | Description | Values | Access |
+ * | :---: | :---------- | :----: | :----: |
+ * | mode | Network mode | "station" or "ap" | R/W |
+ * | ver | Firmware version | "x.y.z" |  RO |
  * 
  * @return Pointer to JSON response.
  */
 static char *ws_wifiswitch_fw_response(void)
 {
 	char *json_response = NULL;
-	char *pair;
+
 	char *mode;
 	
 	debug("Creating JSON gpio response.\n");
 	
 	//Create type object.
-	pair = json_create_pair("type", "fw", true);
-	json_response = json_add_to_object(json_response, pair);
-	db_free(pair);
+	json_response = ws_wifiwsitch_add_data(json_response, "type", "fw", true);
 	if (cfg->network_mode == WIFI_MODE_CLIENT)
 	{
 		mode = "\"station\"";
@@ -81,14 +113,195 @@ static char *ws_wifiswitch_fw_response(void)
 	{
 		mode = "\"ap\"";
 	}
-	pair = json_create_pair("mode", mode, false);
-	debug(" Add \"%s\".\n", pair);
-	json_response = json_add_to_object(json_response, pair);
-	db_free(pair);
-	pair = json_create_pair("ver", "\"" VERSION "\"", false);
-	debug(" Add \"%s\".\n", pair);
-	json_response = json_add_to_object(json_response, pair);
-	db_free(pair);	
+	json_response = ws_wifiwsitch_add_data(json_response, "mode", mode, false);
+	json_response = ws_wifiwsitch_add_data(json_response, "ver", "\"" VERSION "\"", false);	
+	return(json_response);
+}
+
+/**
+ * @brief Create response to a networks type request.
+ * 
+ * type: "networks".
+ * ----------------
+ * 
+ * |  Name | Description | Values | Access |
+ * | :---: | :---------- | :----: | :----: |
+ * | ssids | Accessible networks | Array of ssids | R |
+ * 
+ * @param arg Pointer to a ESP8266 scaninfo struct, with an AP list.
+ * @param status ESP8266 enum STATUS, telling how the scan went.
+ */
+static void ws_wifiswitch_networks_response(void *arg, STATUS status)
+{
+	struct bss_info *current_ap_info;
+	struct bss_info *scn_info;
+	size_t ssid_size;
+	size_t size;
+	char *pair;
+	char *ssid_array = NULL;
+	char *json_ssid;
+	char *json_ssid_pos = NULL;
+	char *json_response = NULL;
+	
+	debug("Creating networks message.\n");
+	if (status == OK)
+	{
+		debug(" Scanning went OK (%p).\n", arg);
+		
+		//Create initial part of JSON response.
+		json_response = ws_wifiwsitch_add_data(json_response, "type", "networks", true);
+		
+		scn_info = (struct bss_info *)arg;
+		debug(" Processing AP list (%p, %p).\n", scn_info, scn_info->next.stqe_next);
+		debug(" AP names:\n");
+		//Skip first according to docs.
+		for (current_ap_info = scn_info->next.stqe_next;
+			 current_ap_info != NULL;
+			 current_ap_info = current_ap_info->next.stqe_next)
+		{
+			debug("  %s.\n", current_ap_info->ssid);
+			//SSID cannot be longer than 32 char.
+			ssid_size = strlen((char *)(current_ap_info->ssid));
+			if (ssid_size > 32)
+			{
+				warn("SSID to long.\n");
+				//\" + \" + \0, limit size.
+				size = 35;
+			}
+			else
+			{
+				//\" + \" + \0
+				size = ssid_size + 3;
+			}
+			json_ssid = db_malloc(size, "scan_done_sb json_ssid");
+			json_ssid_pos = json_ssid;
+			*json_ssid_pos++ = '\"';
+			if (ssid_size > 32)
+			{
+				os_memcpy(json_ssid_pos, current_ap_info->ssid, 32);
+				json_ssid_pos += 32;
+			}
+			else
+			{
+				os_memcpy(json_ssid_pos, current_ap_info->ssid, ssid_size);
+				json_ssid_pos += ssid_size;
+			}
+			os_memcpy(json_ssid_pos, "\"\0", 2);
+			ssid_array = json_add_to_array(ssid_array, json_ssid);
+			db_free(json_ssid);
+		}
+		if (ssid_array)
+		{
+			pair = json_create_pair("ssids", ssid_array, false);
+		}
+		else
+		{
+			pair = json_create_pair("ssids", "", true);
+		}
+		json_response = json_add_to_object(json_response, pair);
+		db_free(pair);	
+		ws_send_text(json_response, response_connection);
+		response_connection = NULL;
+		db_free(json_response);
+	}
+	else
+	{
+		error("Scanning AP's.\n");
+	}
+}
+
+/**
+ * @brief Start scanning for WIFI networks.
+ * 
+ * @return NULL.
+ */
+static char *ws_wifiswitch_networks_scan(void)
+{
+	debug("Start network names scan.\n");
+	
+	debug(" Starting scan.\n");
+	if (wifi_station_scan(NULL, &ws_wifiswitch_networks_response))
+	{
+		debug(" Scanning for AP's.\n");
+	}
+	else
+	{
+		error(" Could not scan AP's.\n");
+	}	
+	return(NULL);
+}
+
+/**
+ * @brief Create response to a station type request.
+ * 
+ * type: "station".
+ * ----------------
+ * 
+ * |  Name | Description | Values | Access |
+ * | :---: | :---------- | :----: | :----: |
+ * | ssid | Network name | "name" | R/W |
+ * | passwd | Network password | "password" | W |
+ * | hostname | Switch hostname | hostname | R/W |
+ * | ip | IP address | ip | RO |
+ */
+static char *ws_wifiswitch_station_response(void)
+{
+    struct station_config st_config;
+    struct ip_info st_ip_info;
+	char *json_response = NULL;
+	size_t size;
+	char *value;
+	char *pair;
+	
+	debug("Creating JSON station response.\n");
+	
+	//Create type object.
+	json_response = ws_wifiwsitch_add_data(json_response, "type", "station", true);
+
+    //Get station SSID from flash.
+    if (!wifi_station_get_config_default(&st_config))
+    {
+        error("Cannot get default station configuration.\n");
+        return(NULL);
+	}
+	size = os_strlen((char *)st_config.ssid); 
+	if (size > 32)
+	{
+		value = db_malloc(33, "ws_wifiswitch_station_response value");
+		os_memcpy(value, st_config.ssid, 32);
+		value[32] = '\0';
+	}
+	else
+	{
+		//Wastes one byte if \0 character is already in ssid.
+		value = db_malloc(size + 1, "ws_wifiswitch_station_response value");
+		os_memcpy(value, st_config.ssid, size);
+		value[size] = '\0';
+	}
+	json_response = ws_wifiwsitch_add_data(json_response, "ssid", value, true);
+	db_free(value);
+	
+	value = NULL;
+	//Hostname.
+	value = wifi_station_get_hostname();
+	if (!value)
+	{
+		warn("Could net get hostname.\n");
+		return(NULL);
+	}	
+	json_response = ws_wifiwsitch_add_data(json_response, "hostname", value, true);
+	
+	//IP.
+	if (!wifi_get_ip_info(STATION_IF, &st_ip_info))
+	{
+		warn("Could net IP info.\n");
+		return(NULL);
+	}
+	value = db_zalloc(13, "ws_wifiswitch_station_response value");
+	os_sprintf(value, IPSTR, IP2STR(&st_ip_info.ip));
+	json_response = ws_wifiwsitch_add_data(json_response, "ip", value, true);
+	db_free(value);	
+	
 	return(json_response);
 }
 
@@ -107,9 +320,7 @@ static char *ws_wifiswitch_gpio_response(void)
 	debug("Creating JSON gpio response.\n");
 	
 	//Create type object.
-	pair = json_create_pair("type", "gpio", true);
-	json_response = json_add_to_object(json_response, pair);
-	db_free(pair); 
+	json_response = ws_wifiwsitch_add_data(json_response, "type", "gpio", true);
 	//Run through all GPIO's.
 	for (unsigned int i = 0; i < WS_WIFISWITCH_GPIO_PINS; i++)
 	{
@@ -125,11 +336,8 @@ static char *ws_wifiswitch_gpio_response(void)
 			json_gpio_en = json_add_to_array(json_gpio_en, json_value);
 		}
 	}
-	pair = json_create_pair("gpios", json_gpio_en, false);
-	debug(" Add \"%s\".\n", pair);
-	json_response = json_add_to_object(json_response, pair);
+	json_response = ws_wifiwsitch_add_data(json_response, "gpios", json_gpio_en, false);
 	db_free(json_gpio_en);
-	db_free(pair);
 	//Run through all GPIO's, again. Ended up deciding it was the nicest way.
 	for (unsigned int i = 0; i < WS_WIFISWITCH_GPIO_PINS; i++)
 	{
@@ -172,9 +380,8 @@ static void ws_wifiswitch_fw_parse(char *request, jsmn_parser *parser, jsmntok_t
 	int i;
 	uint16_t value;
 	char *token;
-	char *token_end;
 
-	debug("Parsing wifiswitch gpio request.\n");	
+	debug("Parsing wifiswitch fw request.\n");	
 	//Assumes the top level token is an object.
 	for (i = 1; i < n_tokens; i++)
 	{
@@ -182,13 +389,14 @@ static void ws_wifiswitch_fw_parse(char *request, jsmn_parser *parser, jsmntok_t
 		token = request + tokens[i].start;
 		if (tokens[i].type == JSMN_STRING)
 		{
-			token_end = token;
-			debug(" JSON token is a string \"%s\".\n", token);
+			debug(" JSON token is a string (%s).\n", token);
 			/* The first 2 bytes of type are unique by using them as an
 			 * 16 bit uint, we save a string comparison.
 			 * The only R/W property is "mode"
 			 */
-			if ((request[tokens[i].start] << 8 | request[tokens[i].start + 1]) == 0x6d6f)
+			value = (request[tokens[i].start] << 8 | request[tokens[i].start + 1]);
+			debug("First bytes 0x%.2x.\n", value);
+			if ( value== 0x6d6f)
 			{
 				debug(" Mode token.\n");
 				//Next token is supposed to be the value.
@@ -202,20 +410,22 @@ static void ws_wifiswitch_fw_parse(char *request, jsmn_parser *parser, jsmntok_t
 					case 0x7374:
 						debug(" Mode: station.\n");
 						cfg->network_mode = WIFI_MODE_CLIENT;
+						write_cfg_flash(*cfg);
 						break;
 					//ap
 					case 0x6170:
 						debug(" Mode: AP.\n");
 						cfg->network_mode = WIFI_MODE_AP;
+						write_cfg_flash(*cfg);	
 						break;
 					default:
 						warn("Wrong mode value in firmware message.\n");
 				}
 			}
-			else
-			{
-				debug(" Unexpected token.\n");
-			}
+		}
+		else
+		{
+			debug(" Unexpected token.\n");
 		}
 	}
 }
@@ -324,15 +534,27 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct net_connec
 							if (n_tokens > 3)
 							{
 								debug(" Full fw message.\n");
-								ws_wifiswitch_gpio_parse(frame->data, &parser, tokens, n_tokens);
+								ws_wifiswitch_fw_parse(frame->data, &parser, tokens, n_tokens);
 							}
 							response = ws_wifiswitch_fw_response();
 							break;
 						case 0x6e65:
 							debug(" network request.\n");
+							if (response_connection)
+							{
+								warn("Scan waiting.\n");
+								return(0);
+							}
+							response_connection = connection;
+							ws_wifiswitch_networks_scan();
 							break;
 						case 0x7374:
 							debug(" station request.\n");
+							if (n_tokens > 3)
+							{
+								debug(" Full station message.\n");
+							}
+							response = ws_wifiswitch_station_response();
 							break;
 						case 0x6170:
 							debug(" ap request.\n");
@@ -390,6 +612,7 @@ void ws_wifiswitch_send_gpio_status(void)
 			{
 				if (ws_conn->handler)
 				{
+					//Check protocol.
 					if (strncmp(ws_conn->handler->protocol, WS_PR_WIFISWITCH, strlen(WS_PR_WIFISWITCH)) == 0);
 					{
 						debug(" Sending to %p.\n", connection);

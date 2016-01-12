@@ -1,5 +1,5 @@
 /** 
- * @file websocket.h
+ * @file net/websocket.h
  *
  * @brief Websocket connection handling.
  * 

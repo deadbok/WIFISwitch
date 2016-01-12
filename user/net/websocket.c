@@ -1,6 +1,6 @@
 
 /**
- * @file websocket.c
+ * @file net/websocket.c
  *
  * @brief Websocket (RFC6455) connection handling.
  * 

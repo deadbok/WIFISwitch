@@ -48,7 +48,7 @@ static void task_dispatch(os_event_t *event)
 		return;
 	}
 
-	debug(" %d task handlers.\n", n_tasks);
+	debug(" %d task handler(s).\n", n_tasks);
 	while (tasks)
 	{
 		debug(" Trying handler %d.\n", i);
@@ -117,7 +117,7 @@ int task_add(signal_handler_t handler)
 	debug(" New reference count %d.\n", task->ref_count);
 	//Increase number of tasks.
 	n_tasks++;
-	debug("%d tasks handlers.\n", n_tasks);
+	debug("%d tasks handler(s).\n", n_tasks);
 	//Return pointer as ID.
 	return(task->signal);
 }

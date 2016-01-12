@@ -167,11 +167,11 @@
 /**
  * @brief Print an error message.
  */
-#define error(...)     db_printf("ERROR: " __VA_ARGS__ )
+#define error(...)     db_printf("ERROR(" __FILE__ "): " __VA_ARGS__ )
 
 //Macro for debugging. Prints the message if warnings are enabled.
 #ifdef WARNINGS
-#define warn(...)     db_printf("WARN: " __VA_ARGS__)
+#define warn(...)     db_printf("WARNING (" __FILE__ "): " __VA_ARGS__)
 #else
 #define warn(...)
 #endif

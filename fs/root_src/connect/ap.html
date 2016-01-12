@@ -39,7 +39,16 @@
 	</footer>
 	<script src="js/menu.js" type="text/javascript"></script>
 	<script type="text/javascript">
-        var socket = new WebSocket("ws://localhost:8080", "wifiswitch");
+		//Create WebSocket address from http uri.
+		var loc = window.location
+		var ws_uri;
+		if (loc.protocol === "https:") {
+			ws_uri = "wss:";
+		} else {
+			ws_uri = "ws:";
+		}
+		ws_uri += "//" + loc.host + "/ws/";
+        var socket = new WebSocket(ws_uri, "wifiswitch");
         var statusMsg = document.getElementById("status");
         
         statusMsg.innerHTML = "Connecting...</strong>";
