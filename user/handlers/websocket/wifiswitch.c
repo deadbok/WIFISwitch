@@ -232,6 +232,52 @@ static char *ws_wifiswitch_networks_scan(void)
 }
 
 /**
+ * @brief Add hostname to message.
+ * 
+ * @param msg Message to add to or NULL to create a new one.
+ * @return Pointer to new message.
+ */
+static char *ws_wifiswitch_add_hostname(char *msg)
+{
+	char *value = NULL;
+	
+	value = wifi_station_get_hostname();
+	if (!value)
+	{
+		warn("Could net get hostname.\n");
+		return(NULL);
+	}	
+	msg = ws_wifiwsitch_add_data(msg, "hostname", value, true);
+	
+	return(msg);
+}
+
+/**
+ * @brief Add IP address to message.
+ * 
+ * @param msg Message to add to or NULL to create new.
+ * @param if_idx AP/station interface, SOFTAP_IF/STATION_IF.
+ * @return New message.
+ */
+static char *ws_wifiswitch_add_ip(char *msg, uint8_t if_idx) 
+{
+	char *value;
+	struct ip_info ip;
+	
+	if (!wifi_get_ip_info(if_idx, &ip))
+	{
+		warn("Could get IP info.\n");
+		return(NULL);
+	}
+	value = db_zalloc(13, "ws_wifiswitch_add_ip value");
+	os_sprintf(value, IPSTR, IP2STR(&ip.ip));
+	msg = ws_wifiwsitch_add_data(msg, "ip", value, true);
+	db_free(value);	
+	
+	return(msg);
+}
+
+/**
  * @brief Create response to a station type request.
  * 
  * type: "station".
@@ -247,11 +293,9 @@ static char *ws_wifiswitch_networks_scan(void)
 static char *ws_wifiswitch_station_response(void)
 {
     struct station_config st_config;
-    struct ip_info st_ip_info;
 	char *json_response = NULL;
 	size_t size;
 	char *value;
-	char *pair;
 	
 	debug("Creating JSON station response.\n");
 	
@@ -281,26 +325,85 @@ static char *ws_wifiswitch_station_response(void)
 	json_response = ws_wifiwsitch_add_data(json_response, "ssid", value, true);
 	db_free(value);
 	
-	value = NULL;
-	//Hostname.
-	value = wifi_station_get_hostname();
-	if (!value)
+	json_response = ws_wifiswitch_add_hostname(json_response);
+	if (!json_response)
 	{
 		warn("Could net get hostname.\n");
 		return(NULL);
-	}	
-	json_response = ws_wifiwsitch_add_data(json_response, "hostname", value, true);
+	}
 	
 	//IP.
-	if (!wifi_get_ip_info(STATION_IF, &st_ip_info))
+	json_response = ws_wifiswitch_add_ip(json_response, STATION_IF);
+	
+	return(json_response);
+}
+
+/**
+ * @brief Create response to a ap type request.
+ * 
+ * type: "ap".
+ * -----------
+ *
+ * |  Name | Description | Values | Access |
+ * | :---: | :---------- | :----: | :----: |
+ * | ssid | Network name | "name" | R/W |
+ * | passwd | Network password | "password" | W |
+ * | channel | Network channel | channel | R/W |
+ * | hostname | Switch hostname | hostname | R/W |
+ * | ip | IP address | ip | RO | 
+ */
+static char *ws_wifiswitch_ap_response(void)
+{
+    struct softap_config ap_config;
+	char *json_response = NULL;
+	size_t size;
+	char *value;
+	
+	debug("Creating JSON ap response.\n");
+	
+	//Create type object.
+	json_response = ws_wifiwsitch_add_data(json_response, "type", "ap", true);
+
+    //Get ap SSID from flash.
+    if (!wifi_softap_get_config_default(&ap_config))
+    {
+        error("Cannot get default ap configuration.\n");
+        return(NULL);
+	}
+	size = os_strlen((char *)ap_config.ssid); 
+	if (size > 32)
 	{
-		warn("Could net IP info.\n");
+		value = db_malloc(33, "ws_wifiswitch_ap_response value");
+		os_memcpy(value, ap_config.ssid, 32);
+		value[32] = '\0';
+	}
+	else
+	{
+		//Wastes one byte if \0 character is already in ssid.
+		value = db_malloc(size + 1, "ws_wifiswitch_ap_response value");
+		os_memcpy(value, ap_config.ssid, size);
+		value[size] = '\0';
+	}
+	json_response = ws_wifiwsitch_add_data(json_response, "ssid", value, true);
+	db_free(value);
+	
+	//Channel.
+	//Two digits and zero byte.
+	value = db_malloc(3, "ws_wifiswitch_ap_response value");
+	itoa(ap_config.channel, value, 10);
+	json_response = ws_wifiwsitch_add_data(json_response, "channel", value, true);
+	db_free(value);
+	
+	//Hostname.
+	json_response = ws_wifiswitch_add_hostname(json_response);
+	if (!json_response)
+	{
+		warn("Could net get hostname.\n");
 		return(NULL);
 	}
-	value = db_zalloc(13, "ws_wifiswitch_station_response value");
-	os_sprintf(value, IPSTR, IP2STR(&st_ip_info.ip));
-	json_response = ws_wifiwsitch_add_data(json_response, "ip", value, true);
-	db_free(value);	
+	
+	//IP.
+	json_response = ws_wifiswitch_add_ip(json_response, SOFTAP_IF);	
 	
 	return(json_response);
 }
@@ -558,6 +661,11 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct net_connec
 							break;
 						case 0x6170:
 							debug(" ap request.\n");
+							if (n_tokens > 3)
+							{
+								debug(" Full ap message.\n");
+							}
+							response = ws_wifiswitch_ap_response();
 							break;
 						case 0x6770:
 							debug(" gpio message.\n");

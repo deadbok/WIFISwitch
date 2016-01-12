@@ -190,6 +190,8 @@ static void status_check(void)
  */
 static void connected(os_signal_t mode)
 {
+	char *hostname = NULL;
+	
 	//Map the button to a GPIO and relay switch.
     button_map(SWITCH_KEY_NAME, SWITCH_KEY_FUNC, SWITCH_KEY_NUM, button_switch);
 	//Start status task.
@@ -207,8 +209,14 @@ static void connected(os_signal_t mode)
 	
 	if (cfg->network_mode == WIFI_MODE_AP)
 	{
+		hostname = wifi_station_get_hostname();
+		if (!hostname)
+		{
+			error("Could not get host name.\n");
+			return;
+		}
 		//Start captive portal in AP mode.
-		init_captive_portal("wifiswitch");
+		init_captive_portal(hostname);
 	}
 	
 	if (!config_mode)
