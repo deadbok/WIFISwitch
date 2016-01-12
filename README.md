@@ -38,7 +38,7 @@ following documents to help keep things on track.
 
  * [DBF File System](docs/dbffs.md)
  * [Map of flash memory](docs/flashmap.md)
- * [Flow of a HTTP message in SligHTTP](docs/httpflow.md)
+ * [Flow of a HTTP message in SligHTTP](docs/HTTP_Flow.md)
  * [Roadmap](docs/roadmap.md)
  * [WebSocket implementation](docs/websocket.md)
  * [WebSocket protocol](docs/ws_proto.md)

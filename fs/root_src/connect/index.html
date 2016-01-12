@@ -97,7 +97,6 @@
 				document.getElementById("fw_ver").innerHTML = msg.ver;
 				statusMsg.className = "message success";
 				statusMsg.innerHTML = "<strong>Updated.</strong>";
-				
 			}
 			if (msg.type === "ap") {
 				var ip = document.getElementById("ip_addr");
@@ -125,6 +124,19 @@
 				statusMsg.className = "message success";
 				statusMsg.innerHTML = "<strong>Updated.</strong>";
 			}				
+			if (msg.type === "station") {
+				var ip = document.getElementById("ip_addr");
+				ip.innerHTML = msg.ip;
+				
+				var ssid = document.getElementById("network");
+				ssid.innerHTML = msg.ssid;
+
+				var hostname = document.getElementById("hostname");
+				hostname.innerHTML = msg.hostname;
+				
+				statusMsg.className = "message success";
+				statusMsg.innerHTML = "<strong>Updated.</strong>";
+			}
         };
 
         // Display any errors that occur
