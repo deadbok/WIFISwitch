@@ -14,21 +14,23 @@ Structure.
 
 The file system is an array of headers, and starts with a file system
 signature (0xDBFF5000) 4 bytes long.
+
 	
-	---------------------
-	|    FS signature   |
-	---------------------
-	|       Header      |
-	|...................-
-	| File data or link |
-	|                   |
-	~~~~~~~~~~~~~~~~~~~~~
-	~~~~~~~~~~~~~~~~~~~~~
-	|       Header      |
-	|...................-
-	| File data or link |
-	|                   |
-	---------------------
+    ---------------------
+    |    FS signature   |
+    ---------------------
+    |       Header      |
+    |...................-
+    | File data or link |
+    |                   |
+    ~~~~~~~~~~~~~~~~~~~~~
+    ~~~~~~~~~~~~~~~~~~~~~
+    |       Header      |
+    |...................-
+    | File data or link |
+    |                   |
+    ---------------------
+
 
 ### Headers. ###
 

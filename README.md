@@ -16,9 +16,9 @@ uses standard HTTP and WebSocket communication protocols.
 * Standalone operation.
 * Built in web server.
 * WebSocket communication.
-* Enters AP mode and serves a WIFI configuration page, when there is no
+* Enters AP mode when there is no
   AP connection at start up.
-* Captive portal in configuration mode.
+* Captive portal in AP mode.
 * Multifunctional one button interface. :-D
 
 Warning.
@@ -28,6 +28,21 @@ Warning.
 not be a real IoT device, though spying has yet to be implemented.
 Seriously though, **do not put this thing on the internet in its current
 state.**
+
+More documentation (implementation details).
+--------------------------------------------
+
+There is somewhat complete source code documentation using
+[doxygen](http://doxygen.org), but it does not really clarify how things
+are tied together. During the course of development I have written the
+following documents to help keep things on track.
+
+ * [DBF File System](docs/dbffs.md)
+ * [Map of flash memory](docs/flashmap.md)
+ * [Flow of a HTTP message in SligHTTP](docs/httpflow.md)
+ * [Roadmap](docs/roadmap.md)
+ * [WebSocket implementation](docs/websocket.md)
+ * [WebSocket protocol](docs/ws_proto.md)
 
 Credits.
 ========
