@@ -23,6 +23,7 @@
  */ 
 #include "osapi.h"
 #include "slighttp/http-mime.h"
+#include "debug.h"
 
 /**
  * @brief Mapping file extensions to MIME-types.

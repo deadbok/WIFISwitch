@@ -30,21 +30,18 @@
 #include "gpio.h"
 #include "user_interface.h"
 #include "driver/button.h"
+#include "debug.h"
 
 struct button_info buttons[BUTTONS_MAX];
 
 static void button_intr_handler(uint32_t mask, void *arg)
 {
 	unsigned int start_time;
-	uint32_t gpio_status;
 	unsigned char i;
 	uint16_t pin_mask;
 	
 	debug("Button interrupt handler.\n");
 	debug(" GPIO interrupt mask 0x%x.\n", mask);
-	
-	//gpio_status = GPIO_REG_READ(GPIO_STATUS_ADDRESS);
-	//debug(" Status 0x%x.\n", gpio_status);
 	
 	//Get system time in ms.
 	start_time = system_get_time();
@@ -73,7 +70,7 @@ static void button_intr_handler(uint32_t mask, void *arg)
 					buttons[i].time = start_time - buttons[i].time;
 					debug(" Release after %dus.\n", buttons[i].time);
 					//Raise button signal.
-					task_raise_signal(buttons[i].signal, i);
+					task_raise_signal(buttons[i].signal, (void *)i, false);
 					//Interrupt on negative GPIO edge (button press).
 					buttons[i].edge = GPIO_PIN_INTR_NEGEDGE;
 				}

@@ -1,4 +1,5 @@
-/**
+
+#include "debug.h"/**
  * @file gpio.c
  *
  * @brief REST interface for GPIO control.

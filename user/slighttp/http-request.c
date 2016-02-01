@@ -35,6 +35,7 @@
 #include "slighttp/http-handler.h"
 #include "slighttp/http.h"
 #include "slighttp/http-request.h"
+#include "debug.h"
 
 /**
  * @brief Get request type (method) and put it in the the request structure.

@@ -38,6 +38,7 @@
 #include "slighttp/http-handler.h"
 #include "slighttp/http-request.h"
 #include "slighttp/http-response.h"
+#include "debug.h"
 
 /**
  * @brief Root to use when searching the fs.

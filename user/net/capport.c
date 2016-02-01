@@ -34,6 +34,7 @@
 #include "user_config.h"
 #include "net/udp.h"
 #include "net/dns.h"
+#include "debug.h"
 
 static char *capture_domain = NULL;
 

@@ -31,8 +31,10 @@
 #include "tools/strxtra.h"
 #include "slighttp/http.h"
 #include "slighttp/http-mime.h"
+#include "slighttp/http-request.h"
 #include "slighttp/http-response.h"
 #include "handlers/http/deny/http-deny.h"
+#include "debug.h"
 
 /**
  * @brief Generate the response for a HEAD request from a file.

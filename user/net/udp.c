@@ -39,6 +39,7 @@
 #include "driver/uart.h"
 #include "net/net.h"
 #include "net/udp.h"
+#include "debug.h"
 
                   
 /**
@@ -106,7 +107,7 @@ static void udp_sent_cb(void *arg)
     
     debug("UDP sent (%p).\n", conn);
     
-    net_find_connection_by_port(udp_connections, conn->proto.udp->local_port);
+    connection = net_find_connection_by_port(udp_connections, conn->proto.udp->local_port);
 
 	if (connection)
 	{
@@ -265,7 +266,7 @@ bool udp_stop(unsigned int port)
 	
 	debug("Stop listening for UDP on port %d.\n", port);
 	
-	connection = net_find_listening_connection_by_port(udp_connections, port);
+	connection = net_find_connection_by_port(udp_connections, port);
 	
 	if (!connection)
 	{
@@ -319,28 +320,10 @@ bool db_udp_send(struct net_connection *connection, char *data, size_t size)
 	{
 		//net_sending = true;
 		//connection->sending = true;
-		return(net_send((unsigned char*)data, size, connection->conn));
+		return(net_send(data, size, connection->conn));
 	}
 	warn(" Connection is empty.\n");
 	return(false);
-}
-
-/**
- * @brief Disconnect the UDP connection.
- * 
- * *``udp_disconnect`` clashes with lwip in SDK.
- * 
- * @param connection Connection to disconnect.
- */
-void db_udp_disconnect(struct net_connection *connection)
-{
-	int ret;
-	
-    debug("Disconnect (%p).\n", connection);
-    debug(" espconn pointer %p.\n", connection->conn);
-	connection->closing = true;
-	ret = espconn_disconnect(connection->conn);
-	debug(" Return status %d.\n", ret);
 }
 
 /** 
@@ -350,7 +333,9 @@ void db_udp_disconnect(struct net_connection *connection)
  * clean up after itself.
  * @param connection Pointer to the data to free.
  */
- //TODO: Merge with TCP code into net_connection_free.
+ /**
+  * @todo Merge with TCP code into net_connection_free.
+  */
 void udp_free(struct net_connection *connection)
 {
 	struct net_connection *connections = udp_connections;

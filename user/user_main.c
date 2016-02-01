@@ -23,41 +23,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-/**
- * @mainpage WIFISwitch source docs.
- *
- * Introduction.
- * =============
- *
- * Source level documentation for a network controlled mains switch, using the
- * ESP8266 WIFI interface and micro controller.
- *
- *
- * Architecture.
- * =============
- *
- * The ESP8266 SDK is a strange beast, it seems a mix of procedural and event
- * driven. The WIFI functions do not use call backs (fixed in a later SDK
- * version), while the TCP functions do.
- *
- * After trying to force a procedural scheme on it all, and chasing the same
- * shortcoming into a corner, I finally realised that, I was working against
- * the SDK.
- * The SDK seems to run in the same single task, as the user code. This has
- * the implication, that if you eat up all cycles, nothing gets done in the
- * SDK. If you do this for to long, the watch dog timer will kick in, and
- * reset the chip. You have to leave your functions, for the SDK to take over
- * processing. In my case, I would parse a HTTP request, and assemble the
- * response in one large go, then leave the control to the CPU. This sorta
- * worked. But what happens if the response is larger than the SDK TCP buffer,
- * or a new request is received before the sending is done, and it all ends
- * up with one more response to send. Stuff will get lost, and things will not
- * behave as expected.
- *
- * The SDK states that you can not send another TCP packet, before the call back
- * has signalled that the current one is done. All function sending TCP must
- * therefore be able to split the send data, over consecutive calls. 
- */
 #include <ets_sys.h>
 #include <osapi.h>
 #include <gpio.h>
@@ -65,13 +30,14 @@
 #include <user_interface.h>
 #include "user_config.h"
 #include "task.h"
-#include "driver/uart.h"
-#include "driver/button.h"
+#include "debug.h"
 #include "fs/fs.h"
-#include "net/wifi.h"
 #include "net/udp.h"
 #include "net/tcp.h"
+#include "net/wifi.h"
 #include "net/capport.h"
+#include "driver/uart.h"
+#include "driver/button.h"
 #include "slighttp/http.h"
 #include "driver/button.h"
 #include "slighttp/http-handler.h"
@@ -135,7 +101,7 @@ static void button_switch(os_param_t gpio)
 	{
 		debug(" Long press. ");
 		db_printf("Resetting on request from hardware button.\n");
-		task_raise_signal(signal_reset, 0);
+		task_raise_signal(signal_reset, NULL, false);
 	}
 	else
 	{
@@ -190,8 +156,6 @@ static void status_check(void)
  */
 static void connected(os_signal_t mode)
 {
-	char *hostname = NULL;
-	
 	//Map the button to a GPIO and relay switch.
     button_map(SWITCH_KEY_NAME, SWITCH_KEY_FUNC, SWITCH_KEY_NUM, button_switch);
 	//Start status task.
@@ -200,6 +164,8 @@ static void connected(os_signal_t mode)
 	//Setup timer, pass call back as parameter.
 	os_timer_setfn(&status_timer, (os_timer_func_t *)status_check, NULL);
 	
+	//Setup general network stuff.
+	init_net();
 	//Setup WebSocket handler.
 	init_ws();
 	if (!ws_register_wifiswitch())
@@ -207,16 +173,15 @@ static void connected(os_signal_t mode)
 		error(" Could not register wifiswitch webSocket protocol.\n");
 	}
 	
-	if (cfg->network_mode == WIFI_MODE_AP)
+	if (cfg->network_mode != mode)
 	{
-		hostname = wifi_station_get_hostname();
-		if (!hostname)
-		{
-			error("Could not get host name.\n");
-			return;
-		}
+		warn("Ended up in the wrong network mode, starting configuration interface.\n");
+		config_mode = true;
+	}
+	if (mode == WIFI_MODE_AP)
+	{
 		//Start captive portal in AP mode.
-		init_captive_portal(hostname);
+		init_captive_portal((char *)cfg->hostname);
 	}
 	
 	if (!config_mode)
@@ -239,10 +204,10 @@ static void connected(os_signal_t mode)
 	{
 		//Start in network configuration mode.
 		init_http(80);
-		http_fs_init("/connect/");
 		db_printf("Adding WebSocket handler.\n");
 		http_add_handler("/ws*", &http_ws_handler);
 		db_printf("Adding file system handler.\n");
+		http_fs_init("/connect/");
 		http_add_handler("/*", &http_fs_handler);
 		db_printf("Adding file system error status handler.\n");
 		http_add_handler("/*", &http_fs_error_handler);
@@ -257,18 +222,19 @@ static void connected(os_signal_t mode)
  * @brief Disconnect handler.
  * 
  * Simply reset the chip.
+
  * @todo Stop HTTP server instead.
  */
 static void disconnected(os_signal_t signal)
 {
-	db_printf("Network connection lost, restarting...\n");
-	system_restart();
+	db_printf("Network connection lost.\n");
+	task_raise_signal(signal_reset, NULL, false);
 }
  
  /**
  * @brief Handler to do a system reset,
  */
-static void reset(os_param_t dummy)
+static void reset(os_signal_t signal)
 {
 	db_printf("Restarting...\n");
 	system_restart();
@@ -282,10 +248,12 @@ static void reset(os_param_t dummy)
 static void start_connection(void)
 {
     db_printf("Running...\n");
+    //Disarm timer.
+	os_timer_disarm(&status_timer);
     //Register reset handler.
     signal_reset = task_add(reset);
     //Connect to a configured WiFi or create an AP.
-    wifi_init("wifiswitch", connected, disconnected);
+    wifi_init((char *)cfg->hostname, connected, disconnected);
 }
 
 /**

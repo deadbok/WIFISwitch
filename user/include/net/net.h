@@ -35,6 +35,7 @@
 #include <ip_addr.h>
 #include <espconn.h>
 #include "tools/dl_list.h"
+#include "net/net-task.h"
 
 /**
  * @brief Ring buffer for connections waiting to send data.
@@ -67,6 +68,18 @@ extern const char *net_ct_names[];
  */
 extern const char *state_names[];
 
+/**
+ * @brief Signal for disconnecting a network connection.
+ * 
+ * Use in network callback functions instead of #net_disconnect.
+ */
+extern os_signal_t signal_net_disconnect;
+
+/**
+ * @brief Signal for sending data over a connection.
+ */
+extern os_signal_t signal_net_send;
+
 //Forward declaration.
 struct net_connection;
 
@@ -76,7 +89,8 @@ struct net_connection;
  * This is a function pointer to a function, that controls some aspect
  * of the connection, like closing it.
  */
-/* TODO: Maybe have a data parameter, like being able to send a reason
+/**
+ * @todo Maybe have a data parameter, like being able to send a reason
  * a websocket connection.
  */
 typedef void (*net_ctrlfunc)(struct net_connection *);
@@ -229,6 +243,10 @@ struct net_connection
 };
 
 /**
+ * @brief Initialise networking functions.
+ */
+extern void init_net(void);
+/**
  * @brief Send or buffer some data.
  * 
  * @param data Pointer to data to send.
@@ -250,6 +268,15 @@ void net_sent_callback(void);
  * @return `True` if sending, `false` otherwise.
  */
 bool net_is_sending(void);
+/**
+ * @brief Disconnect a network connection.
+ * 
+ * @param connection Connection to disconnect.
+ * 
+ * **Do not call this in a network callback. Use #signal_net_disconnect
+ * to signal a disconnect instead.**
+ */
+void net_disconnect(struct net_connection *connection);
 /**
  * @brief Find a connection.
  * 

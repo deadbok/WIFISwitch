@@ -35,6 +35,7 @@
 #include "net/wifi.h"
 #include "net/websocket.h"
 #include "handlers/websocket/wifiswitch.h"
+#include "debug.h"
 
 #define WS_PR_WIFISWITCH "wifiswitch"
 
@@ -308,20 +309,12 @@ static char *ws_wifiswitch_station_response(void)
         error("Cannot get default station configuration.\n");
         return(NULL);
 	}
-	size = os_strlen((char *)st_config.ssid); 
-	if (size > 32)
-	{
-		value = db_malloc(33, "ws_wifiswitch_station_response value");
-		os_memcpy(value, st_config.ssid, 32);
-		value[32] = '\0';
-	}
-	else
-	{
-		//Wastes one byte if \0 character is already in ssid.
-		value = db_malloc(size + 1, "ws_wifiswitch_station_response value");
-		os_memcpy(value, st_config.ssid, size);
-		value[size] = '\0';
-	}
+	size = strnlen((char *)st_config.ssid, 32); 
+	//Wastes one byte if \0 character is already in ssid.
+	value = db_malloc(size + 1, "ws_wifiswitch_station_response value");
+	os_memcpy(value, st_config.ssid, size);
+	value[size] = '\0';
+
 	json_response = ws_wifiwsitch_add_data(json_response, "ssid", value, true);
 	db_free(value);
 	
@@ -370,20 +363,11 @@ static char *ws_wifiswitch_ap_response(void)
         error("Cannot get default ap configuration.\n");
         return(NULL);
 	}
-	size = os_strlen((char *)ap_config.ssid); 
-	if (size > 32)
-	{
-		value = db_malloc(33, "ws_wifiswitch_ap_response value");
-		os_memcpy(value, ap_config.ssid, 32);
-		value[32] = '\0';
-	}
-	else
-	{
-		//Wastes one byte if \0 character is already in ssid.
-		value = db_malloc(size + 1, "ws_wifiswitch_ap_response value");
-		os_memcpy(value, ap_config.ssid, size);
-		value[size] = '\0';
-	}
+	size = strnlen((char *)ap_config.ssid, 32); 
+	//Wastes one byte if \0 character is already in ssid.
+	value = db_malloc(size + 1, "ws_wifiswitch_ap_response value");
+	os_memcpy(value, ap_config.ssid, size);
+	value[size] = '\0';
 	json_response = ws_wifiwsitch_add_data(json_response, "ssid", value, true);
 	db_free(value);
 	
@@ -533,6 +517,108 @@ static void ws_wifiswitch_fw_parse(char *request, jsmn_parser *parser, jsmntok_t
 	}
 }
 
+/**
+ * @brief Parse a station request.
+ * 
+ * @param request Raw request string.
+ * @param parser Pointer to a jsmn JSON parser.
+ * @param token Pointer to jsmn
+ */
+static void ws_wifiswitch_station_parse(char *request, jsmn_parser *parser, jsmntok_t *tokens, int n_tokens)
+{
+	struct station_config st_config;
+	uint16_t value;
+	char *token;
+	size_t size;
+	bool ret;
+	int i;
+
+	debug("Parsing wifiswitch station request.\n");	
+	//Get a pointer the configuration data.
+	ret = wifi_station_get_config_default(&st_config);
+	if (!ret)
+	{
+		error("Cannot get station configuration.");
+		return;
+	}
+	//Assumes the top level token is an object.
+	for (i = 1; i < n_tokens; i++)
+	{
+		debug("JSON token %d.\n", i);
+		token = request + tokens[i].start;
+		if (tokens[i].type == JSMN_STRING)
+		{
+			debug("JSON token is a string (%s).\n", token);
+			/* The first 2 bytes of type are unique by using them as an
+			 * 16 bit uint, we save a string comparison.
+			 */
+			value = (request[tokens[i].start] << 8 | request[tokens[i].start + 1]);
+			debug("First bytes 0x%.2x.\n", value);
+			if ( value== 0x7373)
+			{
+				debug(" SSID token.\n");
+				//Next token is supposed to be the SSID.
+				i++;
+				
+				size = tokens[i].end - tokens[i].start;
+				if (size > 32)
+				{
+					size = 32;
+				}
+				os_memcpy(st_config.ssid, request + tokens[i].start, size);
+			}
+			if ( value== 0x7061)
+			{
+				debug(" password token.\n");
+				//Next token is supposed to be the password.
+				i++;
+				
+				size = tokens[i].end - tokens[i].start;
+				if (size > 64)
+				{
+					size = 64;
+				}
+				os_memcpy(st_config.password, request + tokens[i].start, size);
+			}
+			if ( value== 0x686f)
+			{
+				debug(" hostname token.\n");
+				//Next token is supposed to be the hostname.
+				i++;
+				
+				size = tokens[i].end - tokens[i].start;
+				if (size > 32)
+				{
+					size = 32;
+				}
+				os_memset(cfg->hostname, 0, 33);
+				os_memcpy(cfg->hostname, request + tokens[i].start, size);
+				debug(" Setting hostname: %s-.\n", cfg->hostname);
+				write_cfg_flash(*cfg);
+
+				ret = wifi_station_set_hostname((char *)cfg->hostname);
+				if (!ret)
+				{
+					error("Failed to set host name.");
+					return;
+				}
+			}
+		}
+		else
+		{
+			debug(" Unexpected token.\n");
+		}
+	}
+	
+	//Set connections config.
+	ret = wifi_station_set_config(&st_config);
+	if (!ret)
+	{
+		error("Failed to set station configuration.");
+		return;
+	}
+}
+
 static void ws_wifiswitch_gpio_parse(char *request, jsmn_parser *parser, jsmntok_t *tokens, int n_tokens)
 {
 	int i;
@@ -656,6 +742,7 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct net_connec
 							if (n_tokens > 3)
 							{
 								debug(" Full station message.\n");
+								ws_wifiswitch_station_parse(frame->data, &parser, tokens, n_tokens);
 							}
 							response = ws_wifiswitch_station_response();
 							break;
@@ -680,6 +767,14 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct net_connec
 						default:
 							warn("Unknown wifiswitch request (0x%.2x).\n", value);
 					}
+					if (response)
+					{
+						ret = os_strlen(response);
+						ws_send_text(response, connection);
+						db_free(response);
+					}
+	
+					return(ret);
 				}
 				else
 				{
@@ -692,14 +787,8 @@ signed long int ws_wifiswitch_received(struct ws_frame *frame, struct net_connec
 			}
 		}
 	}
-	if (response)
-	{
-		ret = os_strlen(response);
-		ws_send_text(response, connection);
-		db_free(response);
-	}
-	
-	return(ret);
+
+	return(WS_ERROR);
 }
 
 void ws_wifiswitch_send_gpio_status(void)

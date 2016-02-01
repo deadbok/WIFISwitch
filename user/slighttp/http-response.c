@@ -35,6 +35,7 @@
 #include "slighttp/http-response.h"
 #include "slighttp/http-tcp.h"
 #include "slighttp/http-handler.h"
+#include "debug.h"
 
 /**
  * @brief Pointer to a pointer to the connection.
@@ -192,7 +193,9 @@ signed int http_send_default_headers(
 	{
 		for (i = 0; i < HTTP_N_MIME_TYPES; i++)
 		{
-			//TODO: Maybe use os_strcmp to avoid mixing up htm and html.
+			/**
+			 * @todo Maybe use os_strcmp to avoid mixing up htm and html.
+			 */
 			if (os_strcmp(http_mime_types[i].ext, mime) == 0)
 			{
 				break;

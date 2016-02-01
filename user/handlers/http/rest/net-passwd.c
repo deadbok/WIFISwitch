@@ -36,6 +36,7 @@
 #include "slighttp/http-mime.h"
 #include "slighttp/http-response.h"
 #include "slighttp/http-handler.h"
+#include "debug.h"
 
 /**
  * @brief Respond to a PUT request.

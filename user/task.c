@@ -2,6 +2,8 @@
  * @file task.c
  *
  * @brief Task related functions.
+ * 
+ * See [Task handler system](tasks.md).
  *
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -25,6 +27,7 @@
 #include <stdint.h>
 #include "user_interface.h"
 #include "user_config.h"
+#include "debug.h"
 #include "task.h"
 
 static struct task_handler *task_handlers = NULL;
@@ -36,32 +39,72 @@ static unsigned int n_tasks = 0;
  */
 static os_event_t task_queue[TASK_MAX_QUEUE];
 
-static void task_dispatch(os_event_t *event)
+/**
+ * @brief Get task handler by signal.
+ * 
+ * @param signal The signal for which to find the handler.
+ * @return Pointer to the #task_handler struct.
+ */
+static struct task_handler *task_get_handler(os_signal_t signal)
 {
 	struct task_handler *tasks = task_handlers;
-	unsigned short i = 1;
 	
-	debug("Dispatching signal 0x%x.\n", event->sig);
+	debug("Finding task handler for signal %d.\n", signal);
 	if (!tasks)
 	{
 		debug(" No tasks.\n");
-		return;
+		return(NULL);
 	}
-
-	debug(" %d task handler(s).\n", n_tasks);
 	while (tasks)
 	{
-		debug(" Trying handler %d.\n", i);
-		if (tasks->signal == event->sig)
+		if (tasks->signal == signal)
 		{
-			debug("Calling signal handler %p.\n", tasks->handler);
-			tasks->handler(event->par);
-			return;
+			debug(" Found %p.\n", tasks);
+			return(tasks);
 		}
-		i++;
 		tasks = tasks->next;
 	}
-	warn("No task handler found for signal 0x%x.\n", event->sig);
+	debug(" Not found.\n");
+	return(NULL);
+}
+	
+/**
+ * @brief General task dispatcher called by the SDK.
+ * 
+ * Finds the right handler and sends the first waiting parameters.
+ */
+static void task_dispatch(os_event_t *event)
+{
+	struct task_handler *task = NULL;
+	struct task_msg *msg = NULL;
+	
+	debug("Dispatching signal 0x%x.\n", event->sig);
+	debug(" %d task handler(s).\n", n_tasks);
+	task = task_get_handler(event->sig);
+	if (task)
+	{
+		//Grab the first waiting message.
+		if (task->msgs)
+		{
+			msg = task->msgs;
+			debug(" Calling signal handler %p.\n", task->handler);
+			task->handler((os_param_t) msg->parameters);
+			if (msg->free_parm)
+			{
+				debug(" Freeing parameter data at %p.\n",
+					  msg->parameters);
+				db_free(msg->parameters);
+			}
+		}
+		else
+		{
+			warn("No messages waiting for the task.");
+		}
+	}
+	else
+	{
+		warn("No task handler found for signal 0x%x.\n", event->sig);
+	}
 }
 
 void task_init(void)
@@ -89,6 +132,7 @@ int task_add(signal_handler_t handler)
 		{
 			task = current_task;
 			debug(" Task exists.\n");
+			//Get out of the loop.
 			break;
 		}
 		current_task = current_task->next;
@@ -97,7 +141,7 @@ int task_add(signal_handler_t handler)
 	{
 		//No task found.
 		debug(" New task.\n");
-		//Get mem for entry.
+		//Get mem for entry, and zero to make sure we have NULL pointers.
 		task = db_zalloc(sizeof(struct task_handler), "task_add task");
 		task->signal = (os_signal_t)handler;
 		task->handler = handler;
@@ -158,7 +202,33 @@ struct task_handler *task_remove(os_signal_t signal)
 	return(NULL);
 }
 
-void task_raise_signal(os_signal_t signal, os_param_t parameter)
+void task_raise_signal(os_signal_t signal, void *parameters, bool free)
 {
-	system_os_post(TASK_PRIORITY, signal, parameter);
+	struct task_handler *task = NULL;
+	struct task_msg *msgs = NULL;
+	struct task_msg *new_msg = NULL;
+	
+	debug("Signalling %d with parameters at %p.\n", signal, parameters);
+	task = task_get_handler(signal);
+	if (!task)
+	{
+		error(" No task, quitting.\n");
+		return;
+	}
+	else
+	{
+		new_msg = db_zalloc(sizeof(struct task_msg), "task_raise_signal new_msg");
+		new_msg->free_parm = free;
+		new_msg->parameters = parameters;
+		if (task->msgs)
+		{
+			msgs = task->msgs;
+			DL_LIST_ADD_END(new_msg, msgs);
+		}
+		else
+		{
+			task->msgs = new_msg;
+		}
+	}
+	system_os_post(TASK_PRIORITY, signal, 0);
 }

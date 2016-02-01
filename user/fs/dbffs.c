@@ -12,6 +12,7 @@
 #include "user_config.h"
 #include "fs/int_flash.h"
 #include "fs/dbffs.h"
+#include "debug.h"
 
 /**
  * @brief Load type and offset to next header.

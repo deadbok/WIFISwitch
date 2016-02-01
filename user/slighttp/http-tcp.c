@@ -33,6 +33,7 @@
 #include "slighttp/http-response.h"
 #include "slighttp/http.h"
 #include "slighttp/http-tcp.h"
+#include "debug.h"
 
 /**
  * @brief Ring buffer for incomming request, that are waiting for a response.

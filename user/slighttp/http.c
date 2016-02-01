@@ -59,6 +59,7 @@
 #include "slighttp/http-handler.h"
 #include "slighttp/http.h"
 #include "tools/ring.h"
+#include "debug.h"
 
 /**
  * @brief Server status.

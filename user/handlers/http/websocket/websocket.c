@@ -38,6 +38,7 @@
 #include "slighttp/http-request.h"
 #include "slighttp/http-response.h"
 #include "handlers/http/websocket/websocket.h"
+#include "debug.h"
 
 #define HTTP_WS_GUID "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
@@ -158,7 +159,7 @@ static void http_ws_sent_cb(struct net_connection *connection)
 		return;
 	}
 	
-	/*
+	/**
 	 * @todo Free other HTTP stuff we no longer need.
 	 */
 	http_free_request_headers(connection->user);
@@ -198,7 +199,7 @@ signed int http_ws_handler(struct http_request *request)
 	
 	if (request->response.state == HTTP_STATE_NONE)
 	{
-		/*
+		/**
 		 * @todo Need the check for presence of and validate all headers.
 		 */
 		debug(" Evaluating headers.\n");

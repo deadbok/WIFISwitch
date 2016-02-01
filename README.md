@@ -37,10 +37,12 @@ There is somewhat complete source code documentation using
 are tied together. During the course of development I have written the
 following documents to help keep things on track.
 
+ * [Serial debug console](docs/debug.md)
  * [DBF File System](docs/dbffs.md)
  * [Map of flash memory](docs/flashmap.md)
  * [Flow of a HTTP message in SligHTTP](docs/httpflow.md)
  * [Roadmap](docs/roadmap.md)
+ * [Task handler system](docs/tasks.md)
  * [WebSocket implementation](docs/websocket.md)
  * [WebSocket protocol](docs/ws_proto.md)
 

@@ -24,6 +24,7 @@
 #include "user_interface.h"
 #include "user_config.h"
 #include "tools/ring.h"
+#include "debug.h"
 
 void init_ring(struct ring_buffer *rb, size_t size, size_t capacity)
 {

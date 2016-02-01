@@ -41,7 +41,6 @@ extern struct net_connection *tcp_listen(unsigned int port, net_callback connect
                                 net_callback recv_cb, 
                                 net_callback sent_cb);
 extern bool tcp_send(struct net_connection *connection, char *data, size_t size);
-extern void tcp_disconnect(struct net_connection *connection);
 extern bool init_tcp(void);
 extern bool tcp_stop(unsigned int port);
 extern struct net_connection *tcp_get_connections(void);

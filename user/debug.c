@@ -22,11 +22,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
+#include <ctype.h>
+#include <c_types.h>
+#include <osapi.h>
+#include <mem.h>
 #include "user_config.h"
+#include "debug.h"
 
 #ifdef DEBUG
-#include <ctype.h>
-
 /**
  * @brief Dump some mem as hex in a nice way.
  * 
@@ -86,10 +89,6 @@ void db_hexdump(void *mem, unsigned int len)
 #endif //DEBUG
 
 #ifdef DEBUG_MEM
-#include "user_interface.h"
-#include "c_types.h"
-#include "osapi.h"
-#include "mem.h"
 
 /**
  * @brief Information for an allocated memory block.

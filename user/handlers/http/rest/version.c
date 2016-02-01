@@ -35,6 +35,7 @@
 #include "slighttp/http-mime.h"
 #include "slighttp/http-handler.h"
 #include "slighttp/http-response.h"
+#include "debug.h"
 
 /**
  * @brief Create the response.

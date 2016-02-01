@@ -39,6 +39,7 @@
 #include "driver/uart.h"
 #include "net/net.h"
 #include "net/tcp.h"
+#include "debug.h"
                
 /**
  * @brief Number of active connections.
@@ -59,7 +60,7 @@ static struct net_connection *tcp_listening_connections = NULL;
 /**
  * @brief Structure with TCP connection control functions.
  */
-static struct net_ctrlfuncs tcp_ctrlfuncs = { tcp_disconnect };
+static struct net_ctrlfuncs tcp_ctrlfuncs = { net_disconnect };
 
 //Forward declaration of callback functions.
 static void tcp_connect_cb(void *arg);
@@ -543,22 +544,6 @@ struct net_connection *tcp_get_connections(void)
 	return(tcp_connections);
 }
 
-/**
- * @brief Disconnect the TCP connection.
- * 
- * @param connection Connection to disconnect.
- */
-void tcp_disconnect(struct net_connection *connection)
-{
-	int ret;
-	
-    debug("Disconnect (%p).\n", connection);
-    debug(" espconn pointer %p.\n", connection->conn);
-	connection->closing = true;
-	ret = espconn_disconnect(connection->conn);
-	debug(" SDK returned %d.\n", ret);
-}
-
 /** 
  * @brief Free up data structures used by a connection.
  * 
@@ -566,7 +551,9 @@ void tcp_disconnect(struct net_connection *connection)
  * clean up after itself.
  * @param connection Pointer to the data to free.
  */
-//TODO: Merge with UDP code into net_connection_free.
+/**
+ * @todo Merge with UDP code into net_connection_free.
+ */
 void tcp_free(struct net_connection *connection)
 {
 	struct net_connection *connections = tcp_connections;

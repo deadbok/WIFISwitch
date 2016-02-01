@@ -39,7 +39,7 @@
  */
 #define WS_MAX_HANDLERS 10
 /**
- * @brief Maximum size of the WebSocket  frame header.
+ * @brief Maximum size of the WebSocket frame header.
  */
 #define WS_MAX_HEADER_SIZE 14
 
@@ -172,6 +172,13 @@ struct ws_connection
 	 * be disconnected.*
 	 */
 	bool closing;
+	/**
+	 * @brief Send buffer pointer.
+	 * 
+	 * Set this to point to the data being send if the you want
+	 * the sent callback to free it when sent.
+	 */
+	char *send_buffer;
 };
 	
 

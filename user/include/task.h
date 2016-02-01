@@ -2,7 +2,9 @@
  * @file task.h
  *
  * @brief Task related functions.
- *
+ * 
+ * @ref tasks.md
+ * 
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  *
@@ -20,12 +22,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
- * MA 02110-1301, USA.
+ * MA 02110-1301, USA. 
  */
 #ifndef TASK_H
 #define TASK_H
 
-#include "os_type.h"
+#include <os_type.h>
+#include "task.h"
 #include "tools/dl_list.h"
 
 #define TASK_MAX_QUEUE 20
@@ -36,6 +39,29 @@
  * @brief Type definition of the signal handler callback function pointer.
  */
 typedef void (*signal_handler_t)(os_param_t par);
+
+/**
+ * @brief Message (parameters) for a task invocation.
+ */
+struct task_msg
+{
+	/**
+	 * @brief If `TRUE` the memory pointed to by #parameters is freed
+	 *        when the task is done.
+	 */
+	bool free_parm;
+	/**
+	 * @brief Pointer to the parameters for the task.
+	 * 
+	 * There is no type, it is up to the task to correctly interpret the
+	 * parameters.
+	 */
+	void *parameters;
+	/**
+     * @brief Pointers for the prev and next entry in the list.
+     */
+    DL_LIST_CREATE(struct task_msg);
+};
 
 /**
  * @brief Task handler entry.
@@ -54,6 +80,10 @@ struct task_handler
 	 * @brief Reference count.
 	 */
 	unsigned short ref_count;
+	/**
+	 * @brief List of messages (parameters) waiting to be handled.
+	 */
+	struct task_msg *msgs;
 	/**
      * @brief Pointers for the prev and next entry in the list.
      */
@@ -76,7 +106,10 @@ extern int task_add(signal_handler_t handler);
 /**
  * @brief Remove a registered task handler.
  * 
+ * The #task_handler struct is not deallocated.
+ * 
  * @param signal Signal of the handler to remove.
+ * @return Pointer to the #task_handler struct that was removed.
  */
 extern struct task_handler *task_remove(os_signal_t signal);
 
@@ -84,8 +117,8 @@ extern struct task_handler *task_remove(os_signal_t signal);
  * @brief Raise a signal to handle.
  * 
  * @param signal Signal to raise.
- * @param parameter Parameter for handler.
+ * @param parameters Pointer to parameters for the handler.
  */
-void task_raise_signal(os_signal_t signal, os_param_t parameter);
+extern void task_raise_signal(os_signal_t signal, void *parameters, bool free);
 	
 #endif //TASK_H

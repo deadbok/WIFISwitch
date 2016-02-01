@@ -1,4 +1,4 @@
-2015-01-12 Martin Grønholdt
+2016-01-12 Martin Grønholdt
 
 * fs/root_src/404.html: Update layout to match other pages.
 * fs/root_src/connect/ap.html: Dynamic WS host.
@@ -21,12 +21,12 @@
 				   (wait_config): Added to wait some seconds for config button press.
 
 
-2015-01-11 Martin Grønholdt
+2016-01-11 Martin Grønholdt
 
 * Learned that David Bowie died yesterday.
 
 
-2015-01-09 Martin Grønholdt
+2016-01-09 Martin Grønholdt
 
 * README.md: More ramblings.
 * fs/root_src/about.html: Dynamic WS host.
@@ -36,7 +36,7 @@
 * user/user_main.c: Adjusted output.
 
 
-2015-01-06 Martin Grønholdt
+2016-01-06 Martin Grønholdt
 
 * user/handlers/http/fs/http-fs.c: Add missing header.
 * user/handlers/http/websocket/websocket.c (http_ws_sent_cb): Remove uneeded var.
@@ -44,7 +44,7 @@
 * user/include/handlers/websocket/wifiswitch.h: Longer timeout now that close seems to work.
 * user/user_main.c (button_switch): Send GPIO status using WebSocket.
 
-2015-01-05 Martin Grønholdt
+2016-01-05 Martin Grønholdt
 
 * fs/root_src/css/custom.css: Added connection status rules
 * fs/root_src/index.html: Added connection status.

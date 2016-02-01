@@ -22,6 +22,7 @@
  */
 #include "user_interface.h"
 #include "config/config.h"
+#include "debug.h"
 
 struct config *read_cfg_flash(void)
 {
@@ -59,7 +60,9 @@ struct config *read_cfg_flash(void)
 		warn("Wrong, but working, configuration data version %d.%d expected %d.%d.\n",
 		      cfg->bver, cfg->cver, CONFIG_MAJOR_VERSION,
 		      CONFIG_MINOR_VERSION);
-	}	
+	}
+	//Fix the hostname address.
+	//(char *)cfg->hostname = (cfg->network_mode + 1);
 	return(cfg);
 }
 

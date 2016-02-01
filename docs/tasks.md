@@ -78,9 +78,9 @@ Task mux.
 To accommodate more tasks than the ones provided by the SDK, the task
 handler will use the ``sig`` parameters to delegate the call, to the
 designated handler, much like UNIX signals.
-Internally when registering a task handler, a signal value is returned.
+Internally when registering a task handler, a signal ID is returned.
 This integer is used to find the handler in a linked list of registered
-handlers.
+handlers, when signalling the task later on.
 
 Message queue.
 --------------
@@ -94,14 +94,4 @@ portable**.
 When a task is signalled, the parameter pointer that comes along, is 
 saved in a linked list in the designated handlers structure.
 
-Interface.
-----------
-
-``extern struct task_handler *task_remove(os_signal_t signal);``
-
-
-``extern int task_add(signal_handler_t handler);``
-
-
-``void task_raise_signal(os_signal_t signal, os_param_t parameter);``
 

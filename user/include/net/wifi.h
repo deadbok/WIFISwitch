@@ -44,8 +44,8 @@ typedef signal_handler_t wifi_handler_t;
 #define WIFI_MODE_AP 2
 
 /**
- * @brief Intitialise WIFI connection, by waiting for auto
- * connection to succed, manually connecting to the default
+ * @brief Initialise WIFI connection, by waiting for auto
+ * connection to succeed, manually connecting to the default
  * configured AP, or creating an AP named ESP+$mac.
  * 
  * @param hostname The desired host name used by the DHCP client.

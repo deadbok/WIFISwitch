@@ -24,6 +24,7 @@
  */
 #include "user_config.h"
 #include "tools/base64.h"
+#include "debug.h"
 
 static const char base64_enc_map[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 							         "abcdefghijklmnopqrstuvwxyz"

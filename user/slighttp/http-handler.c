@@ -27,6 +27,7 @@
 #include "slighttp/http-response.h"
 #include "slighttp/http-handler.h"
 #include "slighttp/http-mime.h"
+#include "debug.h"
 
 /**
  * @brief Struct to keep info on a registered handler.

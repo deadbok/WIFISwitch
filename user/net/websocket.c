@@ -31,9 +31,11 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <inttypes.h>
-#include "user_config.h"
+#include "task.h"
 #include "net/net.h"
+#include "user_config.h"
 #include "net/websocket.h"
+#include "debug.h"
 
 
 struct ws_handler ws_handlers[WS_MAX_HANDLERS];
@@ -236,7 +238,11 @@ static void ws_handle_control(struct ws_frame *frame, struct net_connection *con
 					ws_conn->handler->close(frame, connection);
 					ws_free(connection);
 					//Disconnect TCP.
-					tcp_disconnect(connection);
+					//tcp_disconnect(connection);
+					/* The size of the pointer is hardware specific,
+					 * making this code non portable.
+					 */
+					task_raise_signal(signal_net_disconnect, connection, false);
 				}
 				else
 				{
@@ -331,6 +337,7 @@ void ws_send_text(char *msg, struct net_connection *connection)
 {
 	struct ws_frame frame;
 	
+	debug("Sending WebSocket text frame using %p.\n", connection);
 	if (msg)
 	{
 		frame.fin = true;
@@ -347,6 +354,8 @@ void ws_send_text(char *msg, struct net_connection *connection)
 void ws_send(struct ws_frame frame, struct net_connection *connection)
 {
 	size_t raw_frame_size = WS_MAX_HEADER_SIZE + frame.payload_len;
+	struct ws_connection *ws_conn = connection->user;
+	net_send_t *net_send_data;
 	uint8_t *raw_frame;
 	uint8_t *raw_frame_pos;
 	
@@ -379,8 +388,16 @@ void ws_send(struct ws_frame frame, struct net_connection *connection)
 		raw_frame_pos += frame.payload_len;
 	}
 	db_hexdump((char *)raw_frame, raw_frame_pos - raw_frame);
-	net_send((char *)raw_frame, raw_frame_pos - raw_frame, connection->conn);
-	db_free(raw_frame);
+	//Set send_buffer to have the sent callback deallocate the raw frame when sent.
+	ws_conn->send_buffer = (char *)raw_frame;
+	net_send_data = db_malloc(sizeof(net_send_t), "ws_send net_send_data");
+	net_send_data->data = (char *)raw_frame;
+	net_send_data->len = raw_frame_pos - raw_frame;
+	net_send_data->connection = connection;
+	task_raise_signal(signal_net_send, net_send_data, true);
+	
+	//net_send((char *)raw_frame, raw_frame_pos - raw_frame, connection->conn);
+	//db_free(raw_frame);
 }
 
 /**
@@ -388,6 +405,7 @@ void ws_send(struct ws_frame frame, struct net_connection *connection)
  */
 static void ws_send_close(struct ws_frame *frame, struct net_connection *connection)
 {
+	debug("WebSocket sending close with data: %s.\n", frame->data); 
 	frame->fin = true;
 	frame->rsv = 0;
 	frame->opcode = WS_OPCODE_CLOSE;
@@ -440,6 +458,12 @@ static void ws_sent_cb(struct net_connection *connection)
 		return;
 	}
 	
+	if (ws_conn->send_buffer)
+	{
+		debug(" Freeing sent data %p.\n", ws_conn->send_buffer);
+		db_free(ws_conn->send_buffer);
+		ws_conn->send_buffer = NULL;
+	}
 	if (ws_conn->handler)
 	{
 		if (ws_conn->handler->sent)
@@ -449,7 +473,12 @@ static void ws_sent_cb(struct net_connection *connection)
 		if (ws_conn->closing)
 		{
 			ws_free(connection);
-			tcp_disconnect(connection);
+			//Disconnect TCP.
+			//tcp_disconnect(connection);
+			/* The size of the pointer is hardware specific,
+			 * making this code non portable.
+			 */
+			task_raise_signal(signal_net_disconnect, connection, false);
 		}
 	}
 }

@@ -29,6 +29,7 @@
 #include "user_config.h"
 #include "tools/missing_dec.h"
 #include "fs/int_flash.h"
+#include "debug.h"
 
 //#size of 0x10000.bin
 //sz = 285312

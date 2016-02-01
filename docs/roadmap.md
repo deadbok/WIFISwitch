@@ -1,5 +1,5 @@
-TODO
-=====
+Roadmap.
+========
 
 |File | Scope | Item |
 |:--- | :---: | :--- |
@@ -9,5 +9,6 @@ TODO
 |*na* | Network, slighttp | Add WebSockets. |
 |*na* | Network, slighttp | There is probably to much buffering. net layer has a send buffer. task is buffered when sending. SligHTTP does some buffering as well. |
 |*na* | All | Check out the SDK/Crosstools-NG integration patches from https://github.com/cesanta/esp-open-sdk. (Malloc from SDK and such) |
+|*na* | All | User task handler when sensible. |
 
 (*) Probably not possible on 512Kb flash.

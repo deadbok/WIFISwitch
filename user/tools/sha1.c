@@ -30,6 +30,7 @@
 #include <inttypes.h>
 #include "user_config.h"
 #include "tools/sha1.h"
+#include "debug.h"
 
 /**
  * @brief SHA1 circular left shift macro.

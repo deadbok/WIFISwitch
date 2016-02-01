@@ -142,7 +142,7 @@ $(BUILD_DIR)/%.o: %.S
 	$(CC) $(INCDIR) $(SDK_INCDIR) $(ESP_CFLAGS) -c $< -o $@
 
 # Run these without checking if they're up to date.
-.PHONY: all flash flashblank clean distclean debug debugflash docs flashfs flashconfign info
+.PHONY: all flash flashblank clean distclean debug debugflash docs flashfs flashconfig info
 
 # Main build rule.
 all: info $(BUILD_DIRS) $(OBJ) $(FW_FILE_1) $(FW_FILE_2) $(FW_FILE_FS) $(FW_FILE_CONFIG)
@@ -215,7 +215,7 @@ $(FW_FILE_CONFIG): $(GEN_CONFIG) $(FW_FILE_FS)
 	$(ECHO)
 	$(ECHO) --- CREATING FIRMWARE CONFIG --- 
 	$(ECHO)
-	$(GEN_CONFIG) $(FW_FILE_CONFIG) $(FS_FILE_ADDR) $(NETWORK_MODE)
+	$(GEN_CONFIG) $(FW_FILE_CONFIG) $(FS_FILE_ADDR) $(NETWORK_MODE) $(HOSTNAME)
 
 # Flash configuration data.
 flashconfig: $(FW_FILE_CONFIG)
@@ -241,8 +241,15 @@ flashblank:
 	$(ECHO) --- FLASHING BLANK SDK CONFIGURATION --- 
 	$(ECHO)
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash 0x7E000 bin/blank.bin
+
+# Flash preset configuration values for the SDK.
+flashsdkconfig: bin/config.bin
+	$(ECHO)
+	$(ECHO) --- FLASHING PRESET SDK CONFIGURATION --- 
+	$(ECHO)
+	$(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash 0x7D000 bin/config.bin
 	
-#### Do not keep it greeasy. ####
+#### Do not keep it greasy. ####
 # An end to the tears, and the in between years, and the troubles I've seen. 
 clean:
 	$(RM) -R $(FW_BASE) $(BUILD_DIR)

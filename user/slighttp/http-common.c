@@ -32,6 +32,7 @@
 #include "net/tcp.h"
 #include "slighttp/http.h"
 #include "slighttp/http-common.h"
+#include "debug.h"
 
 void http_print_clf_status(struct http_request *request)
 {

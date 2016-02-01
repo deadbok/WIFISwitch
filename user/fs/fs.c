@@ -27,6 +27,7 @@
 #include "fs/int_flash.h"
 #include "fs/dbffs.h"
 #include "fs/fs.h"
+#include "debug.h"
 
 /**
 * @brief Structure to keep file information on open files.

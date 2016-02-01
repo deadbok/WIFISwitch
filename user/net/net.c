@@ -21,16 +21,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-#include "user_config.h"
-#include  "driver/uart.h"
-#include "tools/ring.h"
 #include "net/net.h"
+#include "tools/ring.h"
+#include "user_config.h"
+#include "driver/uart.h"
+#include "net/net-task.h"
+#include "debug.h"
 
-bool net_sending = false;
 const char *state_names[] = {"ESPCONN_NONE", "ESPCONN_WAIT", "ESPCONN_LISTEN",\
                              "ESPCONN_CONNECT", "ESPCONN_WRITE", "ESPCONN_READ",\
                              "ESPCONN_CLOSE"};
 const char *net_ct_names[] = {"None", "TCP", "HTTP", "WebSocket", "UDP", "DNS"};
+
+/**
+ * @brief Pointer to the buffer being send or NULL.
+ */
+static char *net_sending = NULL;
 
 /**
  * @brief Info for an item waiting to be send.
@@ -56,6 +62,11 @@ struct net_send_queue_item
  */
 static struct ring_buffer *net_send_queue;
 
+void init_net(void)
+{
+	net_register_tasks();
+}
+
 /**
  * @brief Send something over WIFI using the SDK API.
  */
@@ -78,7 +89,7 @@ static bool net_sdk_send(struct espconn *connection, char *data, size_t size)
 #ifdef DEBUG
 	uart0_tx_buffer((unsigned char *)data, size);
 #endif //DEBUG
-	net_sending = true;
+	net_sending = data;
 	ret = espconn_send(connection, (unsigned char*)data, size);
 	debug(" Send status %d: ", ret);
 	if (!ret)
@@ -89,12 +100,23 @@ static bool net_sdk_send(struct espconn *connection, char *data, size_t size)
 	return(false);
 }
 
+/**
+ * @todo Think about passing a net_connection struct instead of espconn struct.
+ */
 size_t net_send(char *data, size_t len, struct espconn *connection)
 {
 	char *buffer = NULL;
 	struct net_send_queue_item *queue_item = NULL;
 	
+	/**
+	 * @todo Maybe move the buffer pointer to the connection struct,
+	 * 	     And add the connection struct to the ring buffer.
+	 */
 	debug("Sending %d bytes using %p.\n", len, connection);
+	
+	/**
+	 * @todo Check validity of parameters.
+	 */
 	if (!net_send_queue)
 	{
 		debug("Creating send buffer.\n");
@@ -108,6 +130,9 @@ size_t net_send(char *data, size_t len, struct espconn *connection)
 		
 		buffer = db_malloc(len, "net_send buffer");
 		os_memcpy(buffer, data, len);
+		/**
+		 * @todo Check return value of ring_push_back.
+		 */
 		queue_item = ring_push_back(net_send_queue);
 		
 		queue_item->data = buffer;
@@ -130,7 +155,8 @@ void net_sent_callback(void)
 	struct net_send_queue_item *queue_item = NULL;
 	
 	debug("Processing buffered send requests.\n");
-	net_sending = false;
+	//db_free(net_sending);
+	net_sending = NULL;
 	if (!net_send_queue)
 	{
 		//Nothing to do.
@@ -150,11 +176,44 @@ void net_sent_callback(void)
 	}
 }
 
+/**
+ * @brief Disconnect the TCP connection.
+ * 
+ * @param connection Connection to disconnect.
+ * 
+ * From SDK docs:
+ *		 **Do not call this API in any espconn callback. If needed,
+ * 		 please use system_os_task and system_os_post to trigger
+ * 		 espconn_disconnect.**
+ */
+void net_disconnect(struct net_connection *connection)
+{
+	int ret;
+	
+    debug("Disconnect (%p).\n", connection);
+    debug(" espconn pointer %p.\n", connection->conn);
+	connection->closing = true;
+	/**
+	 * @todo From SDK docs:
+	 *		 Do not call this API in any espconn callback. If needed,
+	 * 		 please use system_os_task and system_os_post to trigger
+	 * 		 espconn_disconnect.
+	 */
+
+	ret = espconn_disconnect(connection->conn);
+	if (ret)
+	{
+		warn("Could not disconnect %p.\n", connection);
+	}
+	debug(" SDK returned %d.\n", ret);
+}
+
+
 /* This is my quirky way of making the variable RO.
  */
 bool net_is_sending(void)
 {
-	return(net_sending);
+	return((bool)net_sending);
 }
 
 /**
@@ -268,33 +327,40 @@ void net_print_connection_status(struct net_connection *connections)
 	struct net_connection *connection = connections;
 	unsigned int n_connections = 0;
 	
-	debug("Listing connections from %p.\n", connections);	
+	if (connections)
+	{
+		debug("Listing connections from %p.\n", connections);	
+	}
 	while (connection)
 	{
 		n_connections++;
 		if (connection->conn)
 		{
-			if (connection->conn->state <= ESPCONN_CLOSE)
+			if (connection->type < N_NET_CT)
 			{
-				debug("%s connection %p (%p) state \"%s\".\n",
-					  net_ct_names[connection->type],
-					  connection, connection->conn,
-					  state_names[connection->conn->state]);
-				debug(" Remote address " IPSTR ":%d.\n", 
-					  IP2STR(connection->remote_ip),
-					  connection->remote_port);
+				debug("%s connection", net_ct_names[connection->type]);
 			}
 			else
 			{
-				debug("%s connection %p (%p) state unknown (%d).\n",
-					  net_ct_names[connection->type],
+				debug("Unknown connection");
+			}
+			if (connection->conn->state <= ESPCONN_CLOSE)
+			{
+				debug(" %p (%p) state \"%s\".\n",
+					  connection, connection->conn,
+					  state_names[connection->conn->state]);
+			}
+			else
+			{
+				debug(" %p (%p) state unknown (%d).\n",
 					  connection, connection->conn,
 					  connection->conn->state);
-				debug(" Remote address " IPSTR ":%d.\n", 
-					  IP2STR(connection->remote_ip),
-					  connection->remote_port);
-
 			}
+			
+			debug(" Remote address " IPSTR ":%d.\n", 
+				  IP2STR(connection->remote_ip),
+				  connection->remote_port);
+
 			if (connection->conn->state < ESPCONN_CLOSE)
 			{
 				debug(" SDK remote address " IPSTR ":%d.\n", 
@@ -304,8 +370,15 @@ void net_print_connection_status(struct net_connection *connections)
 		}
 		else
 		{
-			debug("%s connection %p, no SDK connections.\n",
-				  net_ct_names[connection->type],
+			if (connection->type < N_NET_CT)
+			{
+				debug("%s connection", net_ct_names[connection->type]);
+			}
+			else
+			{
+				debug("Unknown connection");
+			}
+			debug(" %p, no SDK connections.\n",
 				  connection);
 			debug(" Remote address " IPSTR ":%d.\n", 
 				  IP2STR(connection->remote_ip),
@@ -313,6 +386,9 @@ void net_print_connection_status(struct net_connection *connections)
 		}
 		connection = connection->next;
 	}
-	debug("%d connection(s).\n", n_connections);
+	if (connections)
+	{	
+		debug("%d connection(s).\n", n_connections);
+	}
 }
 #endif

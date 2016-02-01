@@ -38,7 +38,6 @@ extern bool udp_listen(unsigned int port,
                                 net_callback recv_cb, 
                                 net_callback sent_cb);
 extern bool db_udp_send(struct net_connection *connection, char *data, size_t size);
-extern void db_udp_disconnect(struct net_connection *connection);
 extern bool init_udp(void);
 extern bool udp_stop(unsigned int port);
 extern struct net_connection *udp_get_connections(void);

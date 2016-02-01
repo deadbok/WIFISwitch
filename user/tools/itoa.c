@@ -9,6 +9,7 @@
  */
 #include "user_config.h" 
 #include "c_types.h"
+#include "debug.h"
 
 char *itoa(long value, char *result, const unsigned char base)
 {

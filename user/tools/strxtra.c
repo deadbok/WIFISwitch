@@ -35,6 +35,7 @@
 #include <limits.h>
 #include "c_types.h"
 #include "osapi.h"
+#include "debug.h"
 
 char *strchrs(char *str, char *chrs)
 {

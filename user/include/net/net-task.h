@@ -1,10 +1,9 @@
-/**
- * @file rest.c
+/** @file net-task.h
  *
- * @brief General REST functions.
- * 
+ * @brief Task interface to network related functions.
+ *
  * @copyright
- * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
+ * Copyright 2016 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
  * @license
  * This program is free software; you can redistribute it and/or modify
@@ -22,19 +21,38 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-#include "c_types.h"
-#include "eagle_soc.h"
-#include "osapi.h"
-#include "user_interface.h"
-#include "user_config.h"
-#include "debug.h"
+#ifndef NET_TASK_H
+#define NET_TASK_H
+
+#include "task.h"
 
 /**
- * @brief Initialize REST interfaces.
- * 
- * This is supposed to be called before the web server is started.
+ * @brief Definition of a type to pass parameters to the send task.
  */
-bool rest_init(void)
+typedef struct net_send_param net_send_t;
+
+/**
+ * @brief Struct with data needed for the send task.
+ */
+struct net_send_param
 {
-	return(true);
-}
+	/**
+	 * @brief Data to send.
+	 */
+	char *data;
+	/**
+	 * @brief Length of data to be send.
+	 */
+	size_t len;
+	/**
+	 * @brief Connection to use when sending.
+	 */
+	struct net_connection *connection;
+};
+
+/**
+ * @brief Register network tasks.
+ */
+void net_register_tasks(void);
+
+#endif //NET_TASK_H

@@ -8,6 +8,7 @@
  */
 #include "user_config.h" 
 #include "c_types.h"
+#include "debug.h"
 
 char *ftoa(float value, char *result, unsigned char fractional_digits)
 {

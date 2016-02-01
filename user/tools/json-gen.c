@@ -28,6 +28,7 @@
 #include "osapi.h"
 #include "user_interface.h"
 #include "user_config.h"
+#include "debug.h"
 
 char *json_create_pair(char *string, char *value, bool quotes)
 {
