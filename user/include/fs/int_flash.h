@@ -1,7 +1,7 @@
 /**
  * @file int_flash.h
  *
- * @brief Routines for accessing the internal flash.
+ * @brief Routines for accessing the flash.
  *
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
@@ -30,6 +30,11 @@
  *  @brief Highest address of the file system.
  */
 #define MAX_FS_ADDR 0x2E000
+
+/**
+ * @brief Flash sector size.
+ */
+#define FLASH_SECTOR_SIZE 4096
 
 /**
  * @brief Offset in the flash where the file system starts.
@@ -74,6 +79,6 @@ extern void flash_dump_mem(unsigned int src_addr, size_t size);
  * @param size Bytes to read.
  * @return True if everything wen well, false otherwise.
  */
-extern bool aflash_read(const void *data, unsigned int read_addr, size_t size);
+extern bool flash_aread(const void *data, unsigned int read_addr, size_t size);
 
 #endif

@@ -20,8 +20,117 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-#include "user_interface.h"
+#include "FreeRTOS.h"
+#include "espressif/esp_common.h"
+#include "esp/uart.h"
+#include "main.h"
+#include "debug.h"
 #include "config/config.h"
+#include "fs/int_flash.h"
+
+/**
+ * @brief Offset to determine if we are using copy 1 or 2.
+ */
+static uint32_t config_offset = 0;
+/**
+ * @brief Checksum for config data.
+ */
+static uint32_t config_sum;
+
+/**
+ * @brief Flash read wrapper for debug and error handling.
+ */
+static bool read_flash(uint32_t foff, void *data, uint16_t len)
+{
+	uint8_t ret;
+	
+	debug("Reading from flash at: 0x%x (%d byte(s)).\n", foff, len);
+	 
+	ret = sdk_spi_flash_read(foff, data, len);
+	if (ret)
+	{
+		error("Error reading flash: %d.\n", ret);
+		return(false);
+	}
+	return(true);
+}
+
+/**
+ * @brief Flash write wrapper for debug and error handling.
+ */
+static bool write_flash(uint32_t foff, void *data, uint16_t len)
+{
+	uint8_t ret;
+	
+	debug("Write from flash at: 0x%x (%d byte(s)).\n", foff, len);
+	 
+	ret = sdk_spi_flash_read(foff, data, len);
+	if (ret)
+	{
+		error("Error writing flash: %d.\n", ret);
+		return(false);
+	}
+	return(true);
+}
+
+/**
+ * @brief Load configuration data from flash.
+ * 
+ * Reimplementation of a function available in a later SDK.
+ * 
+ * @param fsec Sector offset in flash.
+ * @param foff Offset in sector.
+ * @param param Pointer to data buffer.
+ * @param len Length of data to read.
+ */
+static bool sdk_system_param_load(uint16_t fsec, uint16_t foff, void *param, uint16_t len)
+{
+	uint16_t i;
+	uint32_t sum = 0;
+	
+	debug("Reading configuration from flash.\n");
+	if (foff & 0x03)
+	{
+		error("Unaligned address.\n");
+		return(false);
+	}
+	if (len & 0x03)
+	{
+		error("Unaligned length.\n");
+		return(false);
+	}	
+
+	//Read copy offset and sum from the third sector.
+	if (!read_flash((fsec + 2) * FLASH_SECTOR_SIZE, &config_offset, sizeof(uint32_t)))
+	{
+		return(false);
+	}
+	debug("Configuration offset: %d.\n", config_offset);
+
+	if (!read_flash((fsec + 2) * FLASH_SECTOR_SIZE + sizeof(uint32_t), &config_sum, sizeof(uint32_t)))
+	{
+		return(false);
+	}
+	
+	//Read config data.
+	if (!read_flash((fsec * FLASH_SECTOR_SIZE) + foff + config_offset, (uint32_t *)param, len))
+	{
+		return(false);
+	}
+	
+	//Calculate sum
+	for (i = 0; i < len; i++)
+	{
+		sum += ((uint8_t *)(param))[i];
+	}
+	if (sum != config_sum)
+	{
+		error("Configuration data is corrupted.\n");
+		return(false);
+	}
+	
+	return(true);
+}
 
 struct config *read_cfg_flash(void)
 {
@@ -35,7 +144,7 @@ struct config *read_cfg_flash(void)
 		error("Could not allocate memory for configuration.\n");
 		return(NULL);
 	}
-	if (!system_param_load(CONFIG_FLASH_ADDR, 0, cfg, sizeof(struct config)))
+	if (!sdk_system_param_load(CONFIG_FLASH_ADDR, 0, cfg, sizeof(struct config)))
 	{
 		error("Could not load configuration.\n");
 		db_free(cfg);
@@ -59,8 +168,66 @@ struct config *read_cfg_flash(void)
 		warn("Wrong, but working, configuration data version %d.%d expected %d.%d.\n",
 		      cfg->bver, cfg->cver, CONFIG_MAJOR_VERSION,
 		      CONFIG_MINOR_VERSION);
-	}	
+	}
+	//Fix the hostname address.
+	//(char *)cfg->hostname = (cfg->network_mode + 1);
 	return(cfg);
+}
+
+/**
+ * @brief Save configuration data to flash.
+ * 
+ * Reimplementation of a function available in a later SDK.
+ * 
+ * @param fsec Sector offset in flash.
+ * @param param Pointer to data buffer.
+ * @param len Length of data to write.
+ */
+static bool sdk_system_param_save_with_protect(uint16_t fsec, void *param, uint16_t len)
+{
+	uint16_t i;
+	
+	debug("Writing configuration to flash.\n");
+	if (len & 0x03)
+	{
+		error("Unaligned length.\n");
+		return(false);
+	}	
+
+	//Calculate sum
+	for (i = 0; i < len; i++)
+	{
+		config_sum += ((uint8_t *)(param))[i];
+	}
+	
+	if (config_offset)
+	{
+		config_offset = 0;
+	}
+	else
+	{
+		config_offset = 4096;
+	}
+	debug(" Offset 0x%x.\n", config_offset);
+	
+	//Write copy offset and sum to the third sector.
+	if (!write_flash((fsec + 2) * FLASH_SECTOR_SIZE, &config_offset, sizeof(uint32_t)))
+	{
+		return(false);
+	}
+	
+	if (!write_flash((fsec + 2) * FLASH_SECTOR_SIZE + sizeof(uint32_t), &config_sum, sizeof(uint32_t)))
+	{
+		return(false);
+	}
+	
+	//Write config data.
+	if (!write_flash(fsec * FLASH_SECTOR_SIZE + config_offset, (uint32_t *)param, len))
+	{
+		return(false);
+	}
+	
+	return(true);
 }
 
 bool write_cfg_flash(struct config cfg)
@@ -71,5 +238,5 @@ bool write_cfg_flash(struct config cfg)
 	cfg.signature = ESP_CONFIG_SIG;
 	cfg.bver = CONFIG_MAJOR_VERSION;
 	cfg.cver = CONFIG_MINOR_VERSION;
-	return(system_param_save_with_protect(CONFIG_FLASH_ADDR, &cfg, sizeof(struct config)));
+	return(sdk_system_param_save_with_protect(CONFIG_FLASH_ADDR, &cfg, sizeof(struct config)));
 }

@@ -38,7 +38,7 @@
 /**
  * @brief Program version.
  */
-#define VERSION "0.0.1"
+#define VERSION "0.1.2"
 
 bool verbose = false;
 
@@ -101,7 +101,7 @@ static long long arg_parse_value(char *str, unsigned int entry)
 		die("Could not convert configuration parameter.");
 	}
     
-    info("%s: %zd bytes \"%lld\" (%s).\n", config_entries[entry].info, config_entries[entry].size, ret, str);
+    info("%s: %zd byte(s) \"%lld\" (%s).\n", config_entries[entry].info, config_entries[entry].size, ret, str);
 	return(ret);
 }
 
@@ -115,8 +115,28 @@ static long long arg_parse_value(char *str, unsigned int entry)
 static char *arg_parse_string(char *str, unsigned int entry)
 {
 	//I know, I know, but it looks prettier as a function.
-	info("%s: %zd bytes \"%s\".\n", config_entries[entry].info, config_entries[entry].size, str);
+	info("%s: %zd byte(s) \"%s\".\n", config_entries[entry].info, config_entries[entry].size, str);
 	return(str);
+}
+
+/**
+ * @brief Calculate checksum by adding all bytes.
+ * 
+ * @param data Pointer to data.
+ * @param len Lenght of data.
+ * @return Checksum.
+ */
+static uint32_t calc_chksum(uint8_t *data, uint32_t len)
+{
+	uint32_t i;
+	uint32_t ret = 0;
+	
+	//Calculate sum
+	for (i = 0; i < len; i++)
+	{
+		ret += data[i];
+	}
+	return(ret);
 }
 
 /**
@@ -126,6 +146,7 @@ int main(int argc, char *argv[])
 {
 	FILE *fp;
 	int arg = 1;
+	uint32_t val;
 	struct config cfg;
 	unsigned char sector;
 	size_t config_size, i;
@@ -166,7 +187,11 @@ int main(int argc, char *argv[])
 	cfg.cver = CONFIG_MINOR_VERSION;
 	entry++;
 	cfg.fs_addr = arg_parse_value(argv[arg++], entry);
-		
+	entry++;
+	cfg.network_mode = arg_parse_value(argv[arg++], entry);
+	entry++;
+	strncpy((char *)cfg.hostname, arg_parse_string(argv[arg++], entry), 33);
+			
 	printf("Writing configuration image to file %s.\n", image_filename);
 	errno = 0;
 	fp = fopen(image_filename, "w");
@@ -214,6 +239,24 @@ int main(int argc, char *argv[])
 		}
 		config_size += sizeof(cfg.fs_addr);
 		
+		//Write network mode.
+		entry++;
+		errno = 0;
+		if ((fwrite(&cfg.network_mode, sizeof(uint8_t), sizeof(cfg.network_mode), fp) != sizeof(cfg.network_mode)) || (errno > 0))
+		{
+			die("Could not write network mode.");
+		}
+		config_size += sizeof(cfg.network_mode);
+		
+		//Write hostname.
+		entry++;
+		errno = 0;
+		if ((fwrite(cfg.hostname, sizeof(uint8_t), 33, fp) != 33) || (errno > 0))
+		{
+			die("Could not write hostname.");
+		}
+		config_size += 33;
+		
 		//Write the rest of the sector.
 		for (i = config_size; i < 4096; i++)
 		{
@@ -225,6 +268,29 @@ int main(int argc, char *argv[])
 			}
 		}
 	}
+	//Write copy offset and sum to the third sector.
+	//First copy.
+	val = 0;
+	if ((fwrite(&val, sizeof(uint8_t), 4, fp) != 4) || (errno > 0))
+	{
+		die("Could not write copy.");
+	}
+	val = calc_chksum((uint8_t *)(&cfg), config_size); 
+	if ((fwrite(&val, sizeof(uint8_t), 4, fp) != 4) || (errno > 0))
+	{
+		die("Could not write checksum.");
+	}
+	//Write the rest of the sector.
+	for (i = 8; i < 4096; i++)
+	{
+		errno = 0;
+		fputc(0, fp);
+		if (errno >0)
+		{
+			die("Error writing padding.\n");
+		}
+	}
+
 	errno = 0;
 	fclose(fp);
 	if (errno > 0)

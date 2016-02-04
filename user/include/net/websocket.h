@@ -172,6 +172,13 @@ struct ws_connection
 	 * be disconnected.*
 	 */
 	bool closing;
+	/**
+	 * @brief Send buffer pointer.
+	 * 
+	 * Set this to point to the data being send if the you want
+	 * the sent callback to free it when sent.
+	 */
+	char *send_buffer;
 };
 	
 

@@ -1,3 +1,61 @@
+2016-02-04  deadbok  <oblivion@HAL-T60>
+
+ * .gitignore: Added esp-open-rtos build directories.
+			 : Ignore *.old files.
+ * README.md: Cloudy.
+			: Give more thanks.
+ * Makefile: esp-open-rtos style makefile.
+ * mk/config.mk: Added hostname.
+ * mk/linux.mk: Ported to esp-open-rtos make system.
+ * tools/esp-config-tools/src/gen_config.c: Version 0.1.2.
+										  : Added calc_chksum to checksum the config data.
+										  (main): Added hostname to config. 
+										  (main): Added network mode to config.
+										  (main): Added checksum.
+										  (main): Added espressif style secure shadow copy of config.
+ * user/config/config.c: Ported to esp-open-rtos.
+					   : Added espressif style secure shadow copy of config.
+					   : Added read_flash to read flash gracefully.
+					   : Added write_flash to write flash gracefully.
+					   : Reimplemented SDK function sdk_system_param_load.
+					   : Reimplemented SDK function sdk_system_param_save_with_protect.
+ * user/debug.c: Ported to esp-open-rtos.
+ * user/driver/button.c: Ported to esp-open-rtos.
+ * user/include/driver/button.h: : Ported to esp-open-rtos.
+
+ * user/driver/uart.c: Removed, not needed esp-open-rtos provides this.
+ * user/include/driver/uart.h: Removed, not needed esp-open-rtos provides this.
+ * 
+ * user/fs/int_flash.c: aflash_read renamed flash_aread.
+ * user/include/fs/int_flash.h: aflash_read renamed flash_aread.
+							  : Added FLASH_SECTOR_SIZE.
+ * user/handlers/http/deny/http-deny.c: Include slighttp/http-request.h.
+ * user/handlers/websocket/wifiswitch.c: Added ws_wifiswitch_station_parse.
+									    (ws_wifiswitch_gpio_parse): Added station parsing and fixed zero length message handling. 
+										(ws_wifiswitch_station_response): Optimize using strnlen.
+										(ws_wifiswitch_ap_response): Optimize using strnlen.
+ * user/include/config/config.h: Config version 1.2.
+							   : Added hostname.
+ * user/include/net/websocket.h (struct ws_connection): Added send_buffer.
+ * user/include/task.h: Removed, not needed esp-open-rtos provides this.
+ * user/task.c: Removed, not needed esp-open-rtos provides this.
+ * user/include/user_config.h: Split into fwconf.h and debug.h.
+ * user/net/net.c: Added net_sending with pointer to currently sending connection.
+  				  (net_print_connection_status): Fixed connection type printing.
+ * user/net/udp.c: Minor fixes.
+ * user/net/websocket.c (ws_sent_cb): Use ws_connection.sendbuffer.
+ * user/net/wifi.c: Changes for the task API that is no longer used.
+ * user/user_main.c: Renamed main.c
+ * ld/nonota.ld: Added to use a different flash layout than esp-open-rtos standard.
+ * local.mk: Moved most of mk/config.mk here for esp-open-rtos.
+ * user/driver/gpio-int.c: GPIO interrupt handler code.
+ * user/include/driver/gpio-int.h: GPIO interrupt handler code.
+ * user/include/debug.h: Debug stuff moved from user_config.h.
+ * user/include/fwconf.h: Config stuff moved from user_config.h.
+ * user/include/main.h: Include for main.c.
+ * user/main.c: Started porting to esp-open-rtos.
+ 
+
 2015-01-12 Martin Grønholdt
 
 * fs/root_src/404.html: Update layout to match other pages.

@@ -12,20 +12,6 @@
 #  - 2015-10-09: Added LOG_FILE.
 #              : Added debug rule.
 
-### Toolchain configuration. ###
-# Base directory for the compiler.
-XTENSA_TOOLS_ROOT ?= /home/oblivion/esp8266/esp-open-sdk/xtensa-lx106-elf/bin/
-# Base directory of the ESP8266 SDK package.
-SDK_BASE ?= /home/oblivion/esp8266/esp-open-sdk/sdk
-# Select which tools to use as compiler, librarian and linker
-AS := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-as
-CC := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
-AR := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-ar
-LD := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-gcc
-OBJCOPY := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objcopy
-OBJDUMP := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-objdump
-READELF := $(XTENSA_TOOLS_ROOT)/xtensa-lx106-elf-readelf
-
 ### Build configuration. ###
 # Serial log file name.
 LOG_FILE = debug-$(shell date +%Y-%m-%d-%H-%M-%S).log
@@ -39,19 +25,14 @@ GIT_SHA := $(shell if git diff --quiet HEAD; then git rev-parse --short HEAD | c
            else echo "development"; fi)
 GIT_VERSION ?= $(GIT_BRANCH) - $(GIT_DATE) - $(GIT_SHA)
 # Tell compiler about it.
-ESP_CFLAGS += -DGIT_VERSION='"$(GIT_VERSION)"'
-
-### esptool.py ESP8266 flash tool configuration.
-# Path.
-ESPTOOL	:= python2 $(SDK_BASE)/../esptool/esptool.py
-# Serial port.
-ESPPORT	:= /dev/ttyUSB0
-# Programming baud rate.
-ESPSPEED := 230400
+EXTRA_C_CXX_FLAGS += -DGIT_VERSION='"$(GIT_VERSION)"'
 
 #Set verbose flags on DEBUG.
 ifdef DEBUG
+ V = 1
  VFLAG = -v
+else
+ Q := @
 endif
 
 ### DBFFS configuration. ###
@@ -63,17 +44,17 @@ GEN_CONFIG := ./$(TOOLS_DIR)/gen_config $(VFLAG)
 
 ### Misc tools. ###
 # Copy.
-CP := cp $(VFLAG)
+CP = $(Q) cp $(VFLAG)
 #Create directory.
-MKDIR := mkdir $(VFLAG) -p
+MKDIR = $(Q) mkdir $(VFLAG) -p
 #Delete file.
-RM := rm $(VFLAG) -f
+RM = $(Q) rm $(VFLAG) -f
 #Echo.
 ECHO := @echo
 #Change directory.
-CD := cd
+CD = $(Q) cd
 #Concantate
-CAT := cat
+CAT = $(Q) cat
 #Get size of file.
 filesize = $(shell stat -L --printf="%s" $(1))
 #Serial terminal cmd.

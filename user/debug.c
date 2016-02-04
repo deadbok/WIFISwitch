@@ -22,11 +22,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-#include "user_config.h"
+#include "FreeRTOS.h"
+#include "espressif/esp_common.h"
+#include "esp/uart.h"
+#include "debug.h"
 
 #ifdef DEBUG
 #include <ctype.h>
-
 /**
  * @brief Dump some mem as hex in a nice way.
  * 
@@ -46,17 +48,17 @@ void db_hexdump(void *mem, unsigned int len)
 		/* print offset */
 		if(i % cols == 0)
 		{
-			db_printf("0x%06x: ", i);
+			printf("0x%06x: ", i);
 		}
 
 		/* print hex data */
 		if(i < len)
 		{
-			db_printf("%02x ", 0xFF & ((char*)mem)[i]);
+			printf("%02x ", 0xFF & ((char*)mem)[i]);
 		}
 		else /* end of block, just aligning for ASCII dump */
 		{
-			db_printf("   ");
+			printf("   ");
 		}
 		
 		/* print ASCII dump */
@@ -67,18 +69,18 @@ void db_hexdump(void *mem, unsigned int len)
 				ch = ((char*)mem)[j];
 				if(j >= len) /* end of block, not really printing */
 				{
-					db_printf(" ");
+					printf(" ");
 				}
 				else if(isprint(ch)) /* printable char */
 				{
-					db_printf("%c", (char)(0xFF & ch));        
+					printf("%c", (char)(0xFF & ch));        
 				}
 				else /* other char */
 				{
-					db_printf(".");
+					printf(".");
 				}
 			}
-			db_printf("\n");
+			printf("\n");
 		}
 	}
 }
@@ -86,11 +88,8 @@ void db_hexdump(void *mem, unsigned int len)
 #endif //DEBUG
 
 #ifdef DEBUG_MEM
-#include "user_interface.h"
-#include "c_types.h"
-#include "osapi.h"
-#include "mem.h"
 
+#include <string.h>
 /**
  * @brief Information for an allocated memory block.
  */
@@ -127,28 +126,23 @@ static struct dbg_mem_alloc_info dbg_mem_alloc_infos[DBG_MEM_MAX_INFOS];
  * @param info A string with info on the allocated memory.
  * @return A pointer to the allocated memory.
  */
-void *db_alloc(size_t size, bool zero, char *info)
+void *_db_alloc(size_t size, bool zero, char *info)
 {
 	void *ptr;
 	size_t free;
 
-	db_printf("Allocating %d bytes.\n", size);
-	if (zero)
-	{
-		ptr = os_zalloc(size);
-		free = system_get_free_heap_size();
-		db_printf("Free heap (zalloc): %d.\n", free);
-	}
-	else
-	{
-		ptr = os_malloc(size);
-		free = system_get_free_heap_size();
-		db_printf("Free heap (malloc): %d.\n", free);
-	}
+	printf("Allocating %d bytes.\n", size);
+	ptr = malloc(size);
+	free = sdk_system_get_free_heap_size();
+	printf("Free heap (malloc): %d.\n", free);
 	if (!ptr)
 	{
 		error("Could not allocate memory.\n");
 		return(NULL);
+	}
+	if (zero)
+	{
+		bzero(ptr, size);
 	}
 	
 	//If free heap is unreasonably high, something is probably wrong. 
@@ -165,9 +159,9 @@ void *db_alloc(size_t size, bool zero, char *info)
 	}
 	dbg_mem_n_alloc++;
 	
-	db_printf("Allocated %p size %d info: %s.\n", ptr, size, info);	
+	printf("Allocated %p size %d info: %s.\n", ptr, size, info);	
 
-    db_printf("Allocs: %d.\n", dbg_mem_n_alloc);
+    printf("Allocs: %d.\n", dbg_mem_n_alloc);
     return(ptr);
 }
 
@@ -179,21 +173,21 @@ void *db_alloc(size_t size, bool zero, char *info)
  * @param info A string with info on the allocated memory.
  * @return A pointer to the allocated memory.
  */
-void *db_realloc(void *ptr, size_t size, char *info)
+void *_db_realloc(void *ptr, size_t size, char *info)
 {
 	int i = 0;
 	void *ret;
 	size_t free;
 	
 
-	db_printf("Reallocating %d bytes from %p.\n", size, ptr);
-	ret = os_realloc(ptr, size);
+	printf("Reallocating %d bytes from %p.\n", size, ptr);
+	ret = realloc(ptr, size);
 	if (!ret)
 	{
 		error("Could not reallocate memory.\n");
 		return(NULL);
 	}
-	free = system_get_free_heap_size();
+	free = sdk_system_get_free_heap_size();
 	
 	/* If free heap is unreasonably high, something is probably wrong.
 	 * I have seen this happen after freeing a pointer twice.
@@ -220,9 +214,9 @@ void *db_realloc(void *ptr, size_t size, char *info)
 	dbg_mem_alloc_infos[i].info = info;
 	dbg_mem_alloc_infos[i].ptr = ret;
 	
-	db_printf("Reallocated %p size %d from %p, info: %s.\n", ret, size, ptr, info);	
+	printf("Reallocated %p size %d from %p, info: %s.\n", ret, size, ptr, info);	
 
-    db_printf("Allocs: %d.\n", dbg_mem_n_alloc);
+    printf("Allocs: %d.\n", dbg_mem_n_alloc);
     return(ret);
 }
 
@@ -231,13 +225,13 @@ void *db_realloc(void *ptr, size_t size, char *info)
  * 
  * @param ptr Pointer to the memory to deallocate.
  */
-void db_dealloc(void *ptr)
+void _db_dealloc(void *ptr)
 {
 	unsigned short i = 0;
 
-	db_printf("Freeing %p.\n", ptr);
+	printf("Freeing %p.\n", ptr);
 #ifdef DEBUG_MEM_LIST
-	db_printf("Listing memory allocations:\n");
+	printf("Listing memory allocations:\n");
 #endif
 	while(i < dbg_mem_n_alloc)
 	{
@@ -245,18 +239,18 @@ void db_dealloc(void *ptr)
 		{
 			if (dbg_mem_alloc_infos[i].ptr == ptr)
 			{
-				db_printf(" [%p] size %d info: %s.\n",
+				printf(" [%p] size %d info: %s.\n",
 						  dbg_mem_alloc_infos[i].ptr,
 						  dbg_mem_alloc_infos[i].size,
 						  dbg_mem_alloc_infos[i].info);
 
 				//Move the last entry here.
-				os_memcpy(dbg_mem_alloc_infos + i, dbg_mem_alloc_infos + dbg_mem_n_alloc - 1, sizeof(struct dbg_mem_alloc_info));
+				memcpy(dbg_mem_alloc_infos + i, dbg_mem_alloc_infos + dbg_mem_n_alloc - 1, sizeof(struct dbg_mem_alloc_info));
 			}
 #ifdef DEBUG_MEM_LIST
 			else
 			{
-				db_printf("  %p size %d info: %s.\n",
+				printf("  %p size %d info: %s.\n",
 						  dbg_mem_alloc_infos[i].ptr,
 						  dbg_mem_alloc_infos[i].size,
 						  dbg_mem_alloc_infos[i].info);
@@ -265,10 +259,10 @@ void db_dealloc(void *ptr)
 		}
 		i++;
 	}
-	os_free(ptr);
+	free(ptr);
 	dbg_mem_n_alloc--;
-	db_printf("Free heap (free): %d.\n", system_get_free_heap_size());
-    db_printf("Allocs: %d.\n", dbg_mem_n_alloc);
+	printf("Free heap (free): %d.\n", sdk_system_get_free_heap_size());
+    printf("Allocs: %d.\n", dbg_mem_n_alloc);
 }
 
 /**
@@ -278,11 +272,11 @@ void db_mem_list(void)
 {
 	unsigned short i = 0;
 
-	db_printf("Free heap (free): %d.\n", system_get_free_heap_size());
-	db_printf("Allocs: %d.\n", dbg_mem_n_alloc);
+	printf("Free heap (free): %d.\n", sdk_system_get_free_heap_size());
+	printf("Allocs: %d.\n", dbg_mem_n_alloc);
 	while(i < dbg_mem_n_alloc)
 	{
-		db_printf("  %p size %d info: %s.\n",
+		printf("  %p size %d info: %s.\n",
 				  dbg_mem_alloc_infos[i].ptr,
 				  dbg_mem_alloc_infos[i].size,
 				  dbg_mem_alloc_infos[i].info);
@@ -291,3 +285,4 @@ void db_mem_list(void)
 }
 
 #endif //DEBUG_MEM
+

@@ -44,11 +44,11 @@
  * 
  * *Change this if new version does not break backward compatibility.*
  */
-#define CONFIG_MINOR_VERSION 1
+#define CONFIG_MINOR_VERSION 2
 /**
  * @brief Entries in config data including version and signature.
  */
-#define CONFIG_ENTRIES 5
+#define CONFIG_ENTRIES 6
 /**
  * @brief Configuration settings that are stored in flash goes in here.
  * 
@@ -80,11 +80,17 @@ struct config
 	 * @brief Network mode.
 	 */
 	uint8_t network_mode;
+	/**
+	 * @brief Host name.
+	 * 
+	 * 32 characters and a zero byte.
+	 */
+	uint8_t hostname[33];
 #ifdef DB_ESP8266
 	/**
 	 * @brief Padding to align on 4 byte boundary.
 	 */
-	uint8_t padding[3];
+	uint8_t padding[2];
 #endif //DB_ESP8266
 }  __attribute__ ((__packed__));
 
@@ -141,7 +147,8 @@ struct cfg_entry config_entries[CONFIG_ENTRIES] = {
 	{2, 'u', "bver", "Breaking version"},
 	{2, 'u', "cver", "Compatible version"},
 	{4, 'u', "fs_addr", "Address in flash of the file system"},
-	{5, 'u', "network_mode", "Use AP or client mode for network"}
+	{1, 'u', "network_mode", "Use AP or client mode for network"},
+	{33, 'c', "hostname", "The host name of the device"}
 };
 #endif //DB_ESP8266
 

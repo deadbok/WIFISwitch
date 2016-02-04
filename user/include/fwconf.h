@@ -1,6 +1,6 @@
-/** @file user_config.h
+/** @file fwconf.h
  *
- * @brief Hard wired firmware configuration.
+ * @brief Hardwired firmware configuration.
  * 
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -21,28 +21,18 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */ 
-#ifndef USER_CONFIG_H
-#define USER_CONFIG_H
+#ifndef FWCONF_H
+#define FWCONF_H
 
-#include <stdint.h>
-/**
- * @brief SDK GPIO API needs this.
- */
-#define uint32 uint32_t
-
-#include <mem.h>
-#include <gpio.h>
-#include <osapi.h>
-#include <user_interface.h>
-#include "tools/missing_dec.h"
-#include "config/config.h"
+//Project name.
+//#define PROJECT_NAME "wifiswitch"
 
 /************************ Version ************************/
 /**
  * @brief Firmware version.
  */
-#ifndef VERSION
-	#define VERSION "unknown"
+#ifndef PROJECT_VERSION
+	#define PROJECT_VERSION "unknown"
 #endif
 
 #ifndef GIT_VERSION
@@ -110,8 +100,14 @@
  * @brief Baud rate of the serial console.
  */
 #ifndef BAUD_RATE
-	#define BAUD_RATE 230400
+	#define BAUD_RATE 115200
 #endif
+
+/************************ Flash configuration. ************************/
+/**
+ * @brief Signature to tell if the configuration data sound.
+ */
+//#define ESP_CONFIG_SIG 0xCF60BEEF
 
 /**
  * @brief Address in flash of configuration data.
@@ -144,83 +140,10 @@
  * @brief List memory allocations.
  */
 //#define DEBUG_MEM_LIST
-/**
- * @brief Mostly shut up output from the SDK.
- */
-//#define SDK_DEBUG
-
-
-/************************ Config values end ***************************/
 
 /**
- * @brief Customised print function.
- * 
- * If #SDK_DEBUG is TRUE, the regular os_printf function stops doing anything,
- * but ets_prinf still does it's job.
+ * @brief Tell some files to use the ESP8266 part of their code.
  */
-#ifdef SDK_DEBUG
-#define db_printf(...) 	os_printf(__VA_ARGS__)
-#else
-#define db_printf(...) 	ets_printf(__VA_ARGS__)
-#endif
+#define DB_ESP8266 1
 
-/**
- * @brief Print an error message.
- */
-#define error(...)     db_printf("ERROR(" __FILE__ "): " __VA_ARGS__ )
-
-//Macro for debugging. Prints the message if warnings are enabled.
-#ifdef WARNINGS
-#define warn(...)     db_printf("WARNING (" __FILE__ "): " __VA_ARGS__)
-#else
-#define warn(...)
-#endif
-
-//Macro for debugging. Prints the message if debugging is enabled.
-#ifdef DEBUG
-#define debug(...)     db_printf(__VA_ARGS__)
-
-//Hexdump some memory.
-extern void db_hexdump(void *mem, unsigned int len);
-#else
-#define debug(...)
-#define db_hexdump(mem, len)
-#endif
-
-//Debug memory de-/allocation if enabled.
-#ifdef DEBUG_MEM
-/**
- * @brief Maximum number of memory blocks to keep track of in debug mode.
- */
-#define DBG_MEM_MAX_INFOS	200
-#define db_malloc(ARG, INFO)  db_alloc(ARG, false, INFO)
-#define db_zalloc(ARG, INFO)  db_alloc(ARG, true, INFO)
-#define db_realloc(PTR, SIZE, INFO)  db_realloc(PTR, SIZE, INFO)
-#define db_free(ARG)    db_dealloc(ARG)             
-
-extern void *db_alloc(size_t size, bool zero, char *info);
-extern void *db_realloc(void *ptr, size_t size, char *info);
-extern void db_dealloc(void *ptr);
-extern void db_mem_list(void);
-                        
-#else
-#define db_malloc(ARG, INFO) os_malloc(ARG)
-#define db_realloc(PTR, SIZE, INFO) os_realloc(PTR, SIZE)
-#define db_free(ARG) os_free(ARG)
-#define db_zalloc(ARG, INFO) os_zalloc(ARG)
-#define db_mem_list(ARG)
-#endif
-
-/**
- * @brief Firmware configuration, loaded from flash.
- */
-extern struct config *cfg;
-
-/**
- * @brief Signal to de a system reset.
- */
-extern os_signal_t signal_reset;
-
-#define IRAM_ATTR __attribute__((section(".iram.text")))
-
-#endif //USER_CONFIG_H
+#endif //FWCONF_H

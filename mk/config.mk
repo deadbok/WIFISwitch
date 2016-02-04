@@ -28,6 +28,8 @@ FLASH_SIZE ?= 512
 # *  1 Client.
 # *  2 AP.
 NETWORK_MODE = 1
+#Defaqult hostname
+HOSTNAME ?= wifiswitch
 
 ### Project directory configuration. ###
 #Root directory of the firmware source files.

@@ -106,7 +106,7 @@ static void udp_sent_cb(void *arg)
     
     debug("UDP sent (%p).\n", conn);
     
-    net_find_connection_by_port(udp_connections, conn->proto.udp->local_port);
+    connection = net_find_connection_by_port(udp_connections, conn->proto.udp->local_port);
 
 	if (connection)
 	{
@@ -265,7 +265,7 @@ bool udp_stop(unsigned int port)
 	
 	debug("Stop listening for UDP on port %d.\n", port);
 	
-	connection = net_find_listening_connection_by_port(udp_connections, port);
+	connection = net_find_connection_by_port(udp_connections, port);
 	
 	if (!connection)
 	{
@@ -319,7 +319,7 @@ bool db_udp_send(struct net_connection *connection, char *data, size_t size)
 	{
 		//net_sending = true;
 		//connection->sending = true;
-		return(net_send((unsigned char*)data, size, connection->conn));
+		return(net_send(data, size, connection->conn));
 	}
 	warn(" Connection is empty.\n");
 	return(false);

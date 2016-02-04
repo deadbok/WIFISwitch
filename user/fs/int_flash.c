@@ -1,7 +1,7 @@
 /** 
  * @file int_flash.c
  *
- * @brief Interface between flash and memzip.
+ * @brief Interface between flash and dbffs.
  * 
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
@@ -128,7 +128,7 @@ static size_t amemcpy(unsigned char *d, unsigned char *s, size_t len)
 	return(i);
 }
 
-bool aflash_read(const void *data, unsigned int read_addr, size_t size)
+bool flash_aread(const void *data, unsigned int read_addr, size_t size)
 {
     unsigned int addr = 0x40200000 + fs_addr + read_addr;
     size_t ret;

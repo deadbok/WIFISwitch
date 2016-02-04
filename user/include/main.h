@@ -1,8 +1,6 @@
-
-/**
- * @file http-deny.c
+/** @file main.h
  *
- * @brief Deny access to URI's.
+ * @brief Main routine stuff.
  * 
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -22,30 +20,33 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
- */
-#include "c_types.h"
-#include "eagle_soc.h"
-#include "osapi.h"
-#include "user_interface.h"
-#include "user_config.h"
-#include "tools/strxtra.h"
-#include "slighttp/http.h"
-#include "slighttp/http-mime.h"
-#include "slighttp/http-request.h"
-#include "slighttp/http-response.h"
-#include "handlers/http/deny/http-deny.h"
+ */ 
+#ifndef MAIN_H
+#define MAIN_H
+
+#include <stdint.h>
+
+enum task_prios
+{
+	PRIO_IDLE,
+	PRIO_MAIN, 
+	PRIO_BUTTON
+};
+
+enum main_signal
+{
+	MAIN_HALT,
+	MAIN_RESET,
+	MAIN_INIT,
+	MAIN_WIFI,
+	MAIN_NET,
+	MAIN_SERVER,
+	N_MAIN_SIGNALS
+};
 
 /**
- * @brief Generate the response for a HEAD request from a file.
- * 
- * @param request Request that got us here.
- * @return Return unused.
+ * @brief Firmware configuration, loaded from flash.
  */
-signed int http_deny_handler(struct http_request *request)
-{
-	debug("Denying access to %s.\n", request->uri);
-	http_free_request_headers(request);
-	request->response.status_code = 403;
-	return(RESPONSE_DONE_CONTINUE);
-}
+extern struct config *cfg;
 
+#endif //MAIN_H

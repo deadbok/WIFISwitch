@@ -1,7 +1,7 @@
 WIFI controlled mains switch.
 =============================
 
-WIFI controlled mains switch using ESP8266.
+Unclouded WIFI controlled mains switch using ESP8266.
 
 Features.
 ---------
@@ -13,7 +13,7 @@ not what I wanted.
 There is nothing keeping you from centralising management, the wifiswitch
 uses standard HTTP and WebSocket communication protocols.
 
-* Standalone operation.
+* Unclouded operation.
 * Built in web server.
 * WebSocket communication.
 * Enters AP mode and serves a WIFI configuration page, when there is no
@@ -31,6 +31,15 @@ state.**
 
 Credits.
 ========
+
+### Paul Sokolovsky (http://pfalcon-oe.blogspot.dk/) ###
+
+esp-open-sdk, the toolchain I use to build this.
+
+### SuperHouse (http://superhouse.tv) ###
+
+esp-open-rtos, open implementation of the FreeRTOS SDK, that I use as
+the base framework.
 
 ### Peter Scargill (http://tech.scargill.net/) ###
 

@@ -209,18 +209,18 @@ static void wifi_handle_event_cb(System_Event_t *event)
 			break;
 		//Disconnected from AP.
 		case     EVENT_STAMODE_DISCONNECTED:
-			debug("Disconnected from AP.\n");
-			debug("Reason: %d.\n", event->event_info.disconnected.reason);
-			if (event->event_info.disconnected.reason == REASON_NO_AP_FOUND)
+			//Ignore in AP mode.
+			if (wifi_connected != WIFI_MODE_AP)
 			{
-				error("Configured access point could not be found.\n");
-			}
-			//Ignore failed client attempts in config mode.
-			if (wifi_connected < WIFI_MODE_AP)
-			{
-				debug("Disconnected from Wifi AP.\n");
+				debug("Disconnected from AP.\n");
+				debug("Reason: %d.\n", event->event_info.disconnected.reason);
+				debug("Mode: %d, time out %d second(s).\n", wifi_connected, timeout);
+				//Ignore failed client attempts when disconnected and when initially running in the time out.
+				if ((wifi_connected == WIFI_MODE_CLIENT) || (!timeout))
+				{
+					task_raise_signal(disconnected_signal, 0);
+				}
 				wifi_connected = WIFI_MODE_NO_CONNECTION;
-				task_raise_signal(disconnected_signal, 0);
 			}
 			break;
 		//Unused.
@@ -233,11 +233,12 @@ static void wifi_handle_event_cb(System_Event_t *event)
 		case     EVENT_STAMODE_GOT_IP:
 			db_printf("WiFi got address " IPSTR ".\n",
 					  IP2STR(&event->event_info.got_ip.ip));		
+			//Stop the connection time out.
+			os_timer_disarm(&connected_timer);
 			//Reset timeout
 			timeout = CONNECT_DELAY_SEC;
 			wifi_connected = WIFI_MODE_CLIENT;
-			//Stop the connection time out.
-			os_timer_disarm(&connected_timer);
+
 			/* Call the task and tell that we are now connected in
 			 * station mode.
 			 */
@@ -255,7 +256,7 @@ static void wifi_handle_event_cb(System_Event_t *event)
 			break;
 		//Someone is probing our AP.
 		case     EVENT_SOFTAPMODE_PROBEREQRECVED:
-			debug("WiFi " MACSTR " probe from AP.\n", 
+			debug("WiFi probe from AP (MAC: " MACSTR ").\n", 
 			          MAC2STR(event->event_info.ap_probereqrecved.mac));
 			break;
 		default:

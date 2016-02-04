@@ -25,8 +25,6 @@
 #ifndef BUTTON_H
 #define BUTTON_H
 
-#include "task.h"
-
 /**
  * @brief Number of possible buttons.
  */
@@ -39,7 +37,7 @@
 /**
  * @brief Button callback handler type.
  */
-typedef signal_handler_t button_handler_t;
+typedef void (*button_handler_t)(uint32_t gpio);
 
 /**
  * @brief Struct to hold button information.
@@ -55,13 +53,9 @@ struct button_info
 	 */
 	unsigned int time;
 	/**
-	 * @brief Signal used to call the button handler.
+	 * @brief Brief pointer to a handler function.
 	 */
-	os_signal_t signal;
-	/**
-	 * @brief The edge that will trigger the next interrupt.
-	 */
-	GPIO_INT_TYPE edge;
+	button_handler_t handler;
 };
 
 /**
@@ -69,7 +63,18 @@ struct button_info
  */
 extern struct button_info buttons[];
 
-extern void button_map(uint32_t mux, uint32_t func, unsigned char gpio, button_handler_t handler);
+/**
+ * @brief Map a button to a function.
+ * 
+ * @param gpio The GPIO to map.
+ * @param handler Pointer to the handler function.
+ */
+extern void button_map(unsigned char gpio, button_handler_t handler);
+/**
+ * @brief Unmap a button from a function.
+ * 
+ * @param gpio The GPIO to unmap.
+ */
 extern void button_unmap(unsigned char gpio);
 /**
  * @brief Initialise button handling.
@@ -81,4 +86,6 @@ extern void button_init(void);
  * @brief Call this from the button handler to acknowledge that the signal has been handled.
  */
 extern void button_ack(unsigned char gpio);
+
+extern void button_intr_handler();
 #endif //BUTTON_H

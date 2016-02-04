@@ -1,3 +1,9 @@
+# Don't know who creates these.
+.directory
+
+# Old stuff like myself do not belong in the repository.
+*.old
+
 # Object files
 *.o
 *.ko
@@ -33,7 +39,7 @@
 
 # Binaries
 firmware
-build
+build*
 *.bin
 
 # Log files

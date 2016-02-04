@@ -440,6 +440,12 @@ static void ws_sent_cb(struct net_connection *connection)
 		return;
 	}
 	
+	if (ws_conn->send_buffer)
+	{
+		debug(" Freeing sent data %p.\n", ws_conn->send_buffer);
+		db_free(ws_conn->send_buffer);
+		ws_conn->send_buffer = NULL;
+	}
 	if (ws_conn->handler)
 	{
 		if (ws_conn->handler->sent)
