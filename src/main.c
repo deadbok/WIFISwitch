@@ -155,13 +155,20 @@ static void main_task(void *pvParameters)
 						//Initialise button handler.
 						button_init();
 						
-						printf("\nPress the button now to enter configuration mode.\n\n");
+						//Wait for config button.
+						printf("\nPress the button now to enter configuration mode.\n");
+						printf("Waiting %d second(s)...\n\n", CHECK_TIME / 1000);
+						vTaskDelay(CHECK_TIME / portTICK_RATE_MS);
 
 						//Map the button to a GPIO and switch mode.
 						button_map(SWITCH_KEY_NUM, button_switch);
 
 						//Initialise file system.
 						//fs_init();
+						
+						//Create status task.
+						xTaskCreate(status_task, (signed char *)"status", 256, NULL, tskIDLE_PRIORITY, status_handle);
+						debug("Status handle %p.\n", status_handle);
 					}
 					else
 					{
@@ -206,8 +213,6 @@ void user_init(void)
     //Initialise task system.
     debug("Creating tasks...\n");
     main_queue = xQueueCreate(10, sizeof(uint32_t));
-    xTaskCreate(status_task, (signed char *)"status", 256, NULL, tskIDLE_PRIORITY, status_handle);
-    debug("Status handle %p.\n", status_handle);
     xTaskCreate(main_task, (signed char *)"main", 256, main_queue, PRIO_MAIN, main_handle);
     debug("Status handle %p.\n", main_handle);
     

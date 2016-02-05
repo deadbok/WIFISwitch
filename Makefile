@@ -1,6 +1,6 @@
 PROGRAM = wifiswitch
 PROGRAM_DIR := ./
-PROGRAM_SRC_DIR = user user/driver user/config
+PROGRAM_SRC_DIR = src src/driver src/config
 
 FLASH_SIZE = 4
 
@@ -15,7 +15,7 @@ include $(ESP_OPEN_RTOS_PATH)/common.mk
 
 ############# Project specific make rules and overrides. ###############
 
-INC_DIRS := $(PROGRAM_DIR)user/include $(INC_DIRS)
+INC_DIRS := $(PROGRAM_DIR)src/include $(INC_DIRS)
 
 #### Change firmware loc to 0x40000 to make room for fs and config. ####
 # Firmware address in flash.
@@ -42,6 +42,10 @@ $(FW_FILE_CONFIG): $(GEN_CONFIG) $(FW_BASE)
 flashconfig: $(FW_FILE_CONFIG)
 	tools/testsize.sh $(FW_FILE_CONFIG) 12288
 	$(ESPTOOL) --port $(ESPPORT) -b $(ESPBAUD) write_flash $(FW_FILE_CONFIG_ADDR) $(FW_FILE_CONFIG)
+
+$(FW_FILE_1) $(FW_FILE_2): $(PROGRAM_OUT) $(FW_BASE)
+	$(vecho) "FW $@"
+	$(Q) $(ESPTOOL) elf2image $(ESPTOOL_ARGS) $< -o $(FW_BASE)
 	
 #Override general flash rule.
 flash: $(FW_FILE_1) $(FW_FILE_2) $(FW_FILE_CONFIG)

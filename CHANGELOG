@@ -1,6 +1,12 @@
 2016-02-05  deadbok  <oblivion@HAL-T60>
 
  * user: Moved to src.
+ * Makefile: Change source dir.
+ * build.sh: Build in debug mode.
+ * src/driver/button.c: Initialise buttons at the right time.
+ * src/main.c (main_task): Wait 5 seconds for config button.
+ * src/*: Remove all esp.mk files belonging to old build system.
+ * tools/esp-config-tools/src/config.h: Update link.
 
 
 2016-02-04  deadbok  <oblivion@HAL-T60>
@@ -11,7 +17,7 @@
 			: Give more thanks.
  * Makefile: esp-open-rtos style makefile.
  * mk/config.mk: Added hostname.
- * mk/linux.mk: Ported to esp-open-rtos make system.
+ * mk/linux.mk: Ported to esp-open-rtos build system.
  * tools/esp-config-tools/src/gen_config.c: Version 0.1.2.
 										  : Added calc_chksum to checksum the config data.
 										  (main): Added hostname to config. 

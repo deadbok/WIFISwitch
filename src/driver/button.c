@@ -37,7 +37,24 @@
 #include "driver/button.h"
 #include "driver/gpio-int.h"
 
-struct button_info buttons[BUTTONS_MAX];
+struct button_info buttons[BUTTONS_MAX] = {
+	{false, 0, NULL},
+	{false, 0, NULL},
+	{false, 0, NULL},
+	{false, 0, NULL},
+	{false, 0, NULL},
+	{false, 0, NULL},
+	{false, 0, NULL},
+	{false, 0, NULL},
+	{false, 0, NULL},
+	{false, 0, NULL},
+	{false, 0, NULL},
+	{false, 0, NULL},
+	{false, 0, NULL},
+	{false, 0, NULL},
+	{false, 0, NULL},
+	{false, 0, NULL}
+};
 
 /**
  * @brief Queue used to communicate with the button task.
@@ -72,6 +89,7 @@ void IRAM button_intr_handler(void)
 		pin_mask =  1 << i;
 		if (GPIO.STATUS & pin_mask)
 		{
+			debug(" Button: %d.\n", i);
 			if (buttons[i].enabled)
 			{
 				debug(" Activation time %d.\n", buttons[i].time);
@@ -182,15 +200,6 @@ static void button_task(void *pvParameters)
 
 void button_init(void)
 {
-	unsigned char gpio;
-	
-	debug("Initialising button data.\n");
-	for (gpio = 0; gpio < 16; gpio++)
-	{
-		buttons[gpio].enabled = false;
-		buttons[gpio].handler = NULL;
-	}
-	
 	debug("Creating button task.\n");
 	button_queue = xQueueCreate(5, sizeof(uint32_t));
 	xTaskCreate(button_task, (signed char *)"button", 256, button_queue, PRIO_BUTTON, button_handle);
