@@ -1,5 +1,6 @@
-PROGRAM=wifiswitch
-PROGRAM_SRC_DIR=user user/driver user/config
+PROGRAM = wifiswitch
+PROGRAM_DIR := ./
+PROGRAM_SRC_DIR = user user/driver user/config
 
 FLASH_SIZE = 4
 
@@ -14,11 +15,12 @@ include $(ESP_OPEN_RTOS_PATH)/common.mk
 
 ############# Project specific make rules and overrides. ###############
 
-INC_DIRS :=  $(PROGRAM_DIR)user/include $(INC_DIRS)
+INC_DIRS := $(PROGRAM_DIR)user/include $(INC_DIRS)
 
 #### Change firmware loc to 0x40000 to make room for fs and config. ####
 # Firmware address in flash.
 FW_ADDR_2 = 0x40000
+FW_FILE_2 = $(addprefix $(FW_BASE),$(FW_ADDR_2).bin)
 
 #Override
 ifeq ($(OTA),0)

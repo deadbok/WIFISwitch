@@ -35,7 +35,7 @@ LOG_DIR := logs
 # Directory with custom build tools.
 TOOLS_DIR := tools
 # Where to put the final firmware binaries.
-FW_BASE = $(PROGRAM_DIR)firmware
+FW_BASE = $(PROGRAM_DIR)firmware/
 
 ### File system variables. ###
 # File system image is flashed 4KB aligned just after the resident code.
@@ -58,7 +58,7 @@ FS_FILE_ADDR = $(shell printf '0x%X\n' $$(( ($(call filesize,$(FW_FILE_1)) + 0x4
 # Address to flash configuration data.
 FW_FILE_CONFIG_ADDR := 0x3C000
 # File name of the configuration data.
-FW_FILE_CONFIG := $(addprefix $(FW_BASE)/,$(FW_FILE_CONFIG_ADDR).cfg)
+FW_FILE_CONFIG = $(addprefix $(FW_BASE)/,$(FW_FILE_CONFIG_ADDR).cfg)
 
 ### Exports for sub-make. ###
 export DEBUG

@@ -32,7 +32,7 @@ state.**
 Credits.
 ========
 
-### Paul Sokolovsky (http://pfalcon-oe.blogspot.dk/) ###
+### Paul Sokolovsky (http://pfalcon-oe.blogspot.com/) ###
 
 esp-open-sdk, the toolchain I use to build this.
 
