@@ -24,7 +24,9 @@
 #ifndef INT_FLASH_H
 #define INT_FLASH_H
 
+#include <stddef.h>
 #include <stdint.h> //Fixed width integer types.
+#include <stdbool.h>
 
 /**
  *  @brief Highest address of the file system.

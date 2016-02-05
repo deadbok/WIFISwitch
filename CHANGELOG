@@ -2,12 +2,21 @@
 
  * user: Moved to src.
  * Makefile: Change source dir.
+		   : Add file system stuff.
  * build.sh: Build in debug mode.
  * src/driver/button.c: Initialise buttons at the right time.
  * src/main.c (main_task): Wait 5 seconds for config button.
  * src/*: Remove all esp.mk files belonging to old build system.
  * tools/esp-config-tools/src/config.h: Update link.
-
+ * local.mk: Include recursive wildcard macro and file system stuff.
+ * src/fs/dbffs.c: Ported to esp-open-rtos.
+ * src/fs/fs.c: Ported to esp-open-rtos.
+ * src/fs/int_flash.c: Ported to esp-open-rtos.
+ * src/include/fs/int_flash.h: Ported to esp-open-rtos.
+ * src/include/debug.h: Include stddef.h.
+ * src/include/main.h: Include config/config.h.
+ * src/main.c: Enable file system stuff.
+ 
 
 2016-02-04  deadbok  <oblivion@HAL-T60>
 

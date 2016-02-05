@@ -25,6 +25,7 @@
 #define MAIN_H
 
 #include <stdint.h>
+#include "config/config.h"
 
 enum task_prios
 {

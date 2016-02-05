@@ -6,12 +6,15 @@
  * memory so that any header data possible always fits.
  *
  */
+#include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
-#include "osapi.h"
-#include "tools/missing_dec.h"
-#include "user_config.h"
-#include "fs/int_flash.h"
+#include <string.h>
+#include <stdbool.h>
+#include "main.h"
+#include "debug.h"
 #include "fs/dbffs.h"
+#include "fs/int_flash.h"
 
 /**
  * @brief Load type and offset to next header.
@@ -24,7 +27,7 @@ static uint32_t load_signature(unsigned int address)
 	uint32_t ret;
 	
 	debug("Loading start of header at 0x%x.\n", address);
-    if (!aflash_read(&ret, address, 4))
+    if (!flash_aread(&ret, address, 4))
     {
         debug("Could not read DBFFS file header start at 0x%x.\n", address);
         return(0);
@@ -77,13 +80,13 @@ static struct dbffs_generic_hdr *load_generic_header(unsigned int address, void 
 		error("Could not allocate memory for generic header.\n");
 		return(NULL);
 	}
-    if (!aflash_read(ret, address, 9))
+    if (!flash_aread(ret, address, 9))
     {
         debug("Could not read DBFFS generic header start at 0x%x.\n", address);
         goto error;
 	}
 	ret->name = db_malloc(ret->name_len + 1, "load_generic_header ret->name"); 
-	if (!aflash_read(ret->name, address + 9, ret->name_len))
+	if (!flash_aread(ret->name, address + 9, ret->name_len))
     {
         debug("Could not read entry name at 0x%x.\n", address + 9);
         goto error;
@@ -133,7 +136,7 @@ static struct dbffs_file_hdr *load_file_header(unsigned int address, void *heade
 	ret = (struct dbffs_file_hdr *)load_generic_header(address, header);
 	offset += 9;
 	offset += ret->name_len;
-	if (!aflash_read(&ret->size, offset, sizeof(ret->size)))
+	if (!flash_aread(&ret->size, offset, sizeof(ret->size)))
     {
         debug("Could not read data size at 0x%x.\n", offset);
         dbffs_free_file_header(ret);
@@ -191,14 +194,14 @@ static struct dbffs_link_hdr *load_link_header(unsigned int address, void *heade
 	ret = (struct dbffs_link_hdr *)load_generic_header(address, header);
 	offset += 9;
 	offset += ret->name_len;
-	if (!aflash_read(&ret->target_len, offset, sizeof(ret->target_len)))
+	if (!flash_aread(&ret->target_len, offset, sizeof(ret->target_len)))
     {
         debug("Could not read target length at 0x%x.\n", offset);
         goto error;
 	}
 	offset += sizeof(ret->target_len);
 	ret->target = db_malloc(ret->target_len + 1, "load_link_header ret->target"); 
-	if (!aflash_read(ret->target, offset, ret->target_len))
+	if (!flash_aread(ret->target, offset, ret->target_len))
     {
         debug("Could not read target name at 0x%x.\n", offset);
         goto error;
@@ -238,9 +241,9 @@ struct dbffs_file_hdr *dbffs_find_file_header(char *path, void *header)
 		debug(" Name length %d.\n", gen_hdr->name_len);
 		debug(" Name %s.\n", gen_hdr->name);
 		//Check current name against current path entry.
-		if (os_strlen(path) == gen_hdr->name_len)
+		if (strlen(path) == gen_hdr->name_len)
 		{
-			if (os_strncmp(gen_hdr->name, path, gen_hdr->name_len) == 0)
+			if (strncmp(gen_hdr->name, path, gen_hdr->name_len) == 0)
 			{
 				debug(" Entry name %s matches the path.\n",
 					  gen_hdr->name);

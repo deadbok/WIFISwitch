@@ -36,11 +36,10 @@ else
 endif
 
 ### DBFFS configuration. ###
-FS_CREATE := ./$(TOOLS_DIR)/dbffs-image
-DBFFS_CREATE := $(FS_CREATE) $(VFLAG)
+DBFFS_CREATE = ./$(TOOLS_DIR)/dbffs-image $(VFLAG)
 
 ### ESP8266 firmware binary configuration. ###
-GEN_CONFIG := ./$(TOOLS_DIR)/gen_config $(VFLAG)
+GEN_CONFIG = ./$(TOOLS_DIR)/gen_config $(VFLAG)
 
 ### Misc tools. ###
 # Copy.

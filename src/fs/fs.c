@@ -22,8 +22,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-#include "c_types.h"
-#include "user_config.h"
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdbool.h>
+#include "debug.h"
 #include "fs/int_flash.h"
 #include "fs/dbffs.h"
 #include "fs/fs.h"
@@ -65,7 +67,7 @@ static FS_FILE_H n_open_files = 0;
  */
 void fs_init(void)
 {
-	db_printf("ROM size %d KiB.\n", flash_size() >> 10);
+	printf("ROM size %d KiB.\n", flash_size() >> 10);
 	init_dbffs();
 }
 
@@ -211,7 +213,7 @@ size_t fs_read(void *buffer, size_t size, size_t count, FS_FILE_H handle)
         total_size = fs_open_files[handle]->size - fs_open_files[handle]->pos;
     }
 
-    if (!aflash_read(buffer, abs_pos, total_size))
+    if (!flash_aread(buffer, abs_pos, total_size))
     {
         error("Failed reading %d bytes from %d.\n", total_size, handle);
         return(0);
@@ -239,7 +241,7 @@ int fs_getc(FS_FILE_H handle)
     }
     
     //Read the char.
-    if (!aflash_read(&ch, abs_pos, sizeof(char)))
+    if (!flash_aread(&ch, abs_pos, sizeof(char)))
     {
         error("Failed reading %d bytes from %d.\n", sizeof(char), handle);
         return(FS_EOF);
@@ -277,7 +279,7 @@ char *fs_gets(char *str, size_t count, FS_FILE_H handle)
     do
     {
         //Read the char.
-        if (!aflash_read(&ch, abs_pos + i, sizeof(char)))
+        if (!flash_aread(&ch, abs_pos + i, sizeof(char)))
         {
             error("Failed reading %d bytes from %d.\n", sizeof(char), handle);
             return(NULL);
@@ -310,7 +312,6 @@ long fs_tell( FS_FILE_H handle)
     {
         return(FS_EOF);
     }
-    
     return(fs_open_files[handle]->pos);
 }
 
@@ -326,7 +327,6 @@ long fs_size( FS_FILE_H handle)
     {
         return(FS_EOF);
     }
-    
     return(fs_open_files[handle]->size);
 }
 
@@ -379,6 +379,5 @@ int fs_eof(FS_FILE_H handle)
     {
         return(FS_EOF);
     }
-
     return(fs_check_eof(handle));
 }

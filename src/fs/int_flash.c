@@ -20,14 +20,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-//spi_flash.h should include this.
-#include "c_types.h"
-#include "spi_flash.h"
-#include "user_interface.h"
-#include "osapi.h"
-#include "mem.h"
-#include "user_config.h"
-#include "tools/missing_dec.h"
+#include <stdbool.h>
+#include "espressif/esp_common.h"
+#include "debug.h"
 #include "fs/int_flash.h"
 
 //#size of 0x10000.bin
@@ -50,7 +45,7 @@ size_t fs_addr = 0xa000;
 
 size_t flash_size(void)
 { 
-	unsigned int id = spi_flash_get_id(); 
+	unsigned int id = sdk_spi_flash_get_id(); 
 	unsigned char mfg_id = id & 0xff;
 	unsigned char size_id = (id >> 16) & 0xff; 
 	
@@ -69,12 +64,12 @@ void flash_dump(unsigned int src_addr, size_t size)
     
     for (i = 0; i < (size >> 2); i++)
     {
-        spi_flash_read(src_addr + (i << 2), &buf, 4);
+        sdk_spi_flash_read(src_addr + (i << 2), &buf, 4);
         
-        db_printf("%x:", src_addr + ( i << 2));
-        db_printf(FLASHSTR, FLASH2STR((char *)&buf));
+        printf("%x:", src_addr + ( i << 2));
+        printf(FLASHSTR, FLASH2STR((char *)&buf));
         //os_printf("%c%c%c%c", FLASH2STR((char *)&buf));
-        db_printf("\n");
+        printf("\n");
     }
 }
 
@@ -86,10 +81,10 @@ void flash_dump_mem(unsigned int src_addr, size_t size)
     
     for (i = 0; i < (size >> 2); i++)
     {
-        db_printf("%x:", (unsigned int)buf);
+        printf("%x:", (unsigned int)buf);
         data = *((unsigned int *)((unsigned int)buf & -0x03));
-        db_printf(FLASHSTR, FLASH2STR((char *)&data));
-        db_printf("\n");
+        printf(FLASHSTR, FLASH2STR((char *)&data));
+        printf("\n");
         buf++;
     }
 }

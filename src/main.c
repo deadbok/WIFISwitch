@@ -35,6 +35,7 @@
 #include "main.h"
 #include "fwconf.h"
 #include "debug.h"
+#include "fs/fs.h"
 #include "driver/button.h"
 #include "config/config.h"
 
@@ -164,7 +165,7 @@ static void main_task(void *pvParameters)
 						button_map(SWITCH_KEY_NUM, button_switch);
 
 						//Initialise file system.
-						//fs_init();
+						fs_init();
 						
 						//Create status task.
 						xTaskCreate(status_task, (signed char *)"status", 256, NULL, tskIDLE_PRIORITY, status_handle);

@@ -57,6 +57,7 @@ extern void db_hexdump(void *mem, unsigned int len);
 
 //Debug memory de-/allocation if enabled.
 #ifdef DEBUG_MEM
+#include <stddef.h>
 /**
  * @brief Maximum number of memory blocks to keep track of in debug mode.
  */

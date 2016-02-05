@@ -1,6 +1,6 @@
 PROGRAM = wifiswitch
 PROGRAM_DIR := ./
-PROGRAM_SRC_DIR = src src/driver src/config
+PROGRAM_SRC_DIR = src src/driver src/config src/fs
 
 FLASH_SIZE = 4
 
@@ -32,43 +32,68 @@ LINKER_SCRIPTS += $(ROOT)ld/common.ld $(ROOT)ld/rom.ld
 
 #### Create directories. ####
 $(FS_ROOT_DIR) $(LOG_DIR) $(TOOLS_DIR):
-	$(MKDIR) $@
+	$(Q) $(MKDIR) $@
 
+#### Flash file system stuff. ####
+# Generate file system. (pathsubst is to force stuff to happen, when there are no files in the root yet.)
+$(FS_FILES): $(FS_SRC_FILES)
+	$(Q) $(MAKE) -C $(FS_DIR)
+
+# Build the file system image.
+$(FW_FILE_FS): $(FS_FILES) $(DBFFS_CREATE) $(FW_FILE_1)
+	$(Q) $(DBFFS_CREATE) $(FS_ROOT_DIR) $(FW_FILE_FS)
+	$(Q) $(ECHO) File system start offset: $(FS_FILE_ADDR), end offset: $(FS_END), maximum size $(FS_MAX_SIZE) bytes.
+
+# Flash file system.	
+flashfs: $(FW_FILE_FS)
+	$(Q) tools/testsize.sh $(FW_FILE_FS) $(FS_MAX_SIZE)
+	$(Q) $(ECHO) File system uses $(FS_SIZE) bytes of ROM, $$(( $(FS_MAX_SIZE) - $(FS_SIZE) )) bytes free of $(FS_MAX_SIZE).
+	$(Q) $(ESPTOOL) --port $(ESPPORT) -b $(ESPSPEED) write_flash $(FS_FILE_ADDR) $(FW_FILE_FS)
+
+#### ESP firmware binary configuration stuff. ####
 ### Generate configuration data. ###
-$(FW_FILE_CONFIG): $(GEN_CONFIG) $(FW_BASE)
-	$(GEN_CONFIG) $(FW_FILE_CONFIG) $(FS_FILE_ADDR) $(NETWORK_MODE) $(HOSTNAME)
+$(FW_FILE_CONFIG): $(GEN_CONFIG) $(FW_FILE_1) $(FW_BASE)
+	$(Q) $(GEN_CONFIG) $(FW_FILE_CONFIG) $(FS_FILE_ADDR) $(NETWORK_MODE) $(HOSTNAME)
 
 # Flash configuration data.
 flashconfig: $(FW_FILE_CONFIG)
-	tools/testsize.sh $(FW_FILE_CONFIG) 12288
-	$(ESPTOOL) --port $(ESPPORT) -b $(ESPBAUD) write_flash $(FW_FILE_CONFIG_ADDR) $(FW_FILE_CONFIG)
+	$(Q) tools/testsize.sh $(FW_FILE_CONFIG) 12288
+	$(Q) $(ESPTOOL) --port $(ESPPORT) -b $(ESPBAUD) write_flash $(FW_FILE_CONFIG_ADDR) $(FW_FILE_CONFIG)
 
 $(FW_FILE_1) $(FW_FILE_2): $(PROGRAM_OUT) $(FW_BASE)
 	$(vecho) "FW $@"
 	$(Q) $(ESPTOOL) elf2image $(ESPTOOL_ARGS) $< -o $(FW_BASE)
 	
 #Override general flash rule.
-flash: $(FW_FILE_1) $(FW_FILE_2) $(FW_FILE_CONFIG)
-	$(ESPTOOL) -p $(ESPPORT) --baud $(ESPBAUD) write_flash $(ESPTOOL_ARGS) $(FW_ADDR_2) $(FW_FILE_2) $(FW_ADDR_1) $(FW_FILE_1) $(FW_FILE_CONFIG_ADDR) $(FW_FILE_CONFIG)
+flash: all
+	$(Q) $(ESPTOOL) -p $(ESPPORT) --baud $(ESPBAUD) write_flash $(ESPTOOL_ARGS) $(FW_ADDR_2) $(FW_FILE_2) $(FW_ADDR_1) $(FW_FILE_1) $(FW_FILE_CONFIG_ADDR) $(FW_FILE_CONFIG) $(FS_FILE_ADDR) $(FW_FILE_FS)
 
 #### Debugging. ####
 # Run minicom and save serial output in LOG_DIR.
 debug: $(LOG_DIR) all
 # Remove the old log
 	> ./debug.log
-	$(TERM_CMD)
+	$(Q) $(TERM_CMD)
 # Make a copy of the new log before with a saner name.
-	$(CP) ./debug.log $(LOG_DIR)/$(LOG_FILE)
+	$(Q) $(CP) ./debug.log $(LOG_DIR)/$(LOG_FILE)
 	
 # Clean rules.
 .PHONY: distclean clean
 
+clean:
+	$(Q) $(RM) -r $(BUILD_DIR)
+	$(Q) $(RM) -r $(FW_BASE)
+	$(Q) $(RM) -R $(FW_BASE) $(BUILD_DIR)
+	$(Q) $(RM) $(DBFFS_CREATE)
+	$(Q) $(RM) $(GEN_CONFIG)
+	$(Q) $(MAKE) -C fs clean
+
 # Clean everything
 distclean: clean
-	$(MAKE) -C tools/dbffs-tools clean
-	$(MAKE) -C tools/esp-config-tools clean
-	$(RM) $(DBFFS_CREATE)
-	$(RM) $(GEN_CONFIG)
-	$(MAKE) -C fs distclean
-	$(RM) -r $(BUILD_DIR)
-	$(RM) -r $(FW_BASE)
+	$(Q) $(MAKE) -C tools/dbffs-tools clean
+	$(Q) $(MAKE) -C tools/esp-config-tools clean
+	$(Q) $(RM) $(DBFFS_CREATE)
+	$(Q) $(RM) $(GEN_CONFIG)
+	$(Q) $(MAKE) -C fs distclean
+	$(Q) $(RM) -r $(BUILD_DIR)
+	$(Q) $(RM) -r $(FW_BASE)
