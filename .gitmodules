@@ -1,16 +1,7 @@
-[submodule "spiffs"]
-	path = spiffs
-	url = https://github.com/deadbok/spiffs
-[submodule "spiffy"]
-	path = spiffy
-	url = https://github.com/deadbok/spiffy
-[submodule "parson"]
-	path = parson
-	url = https://github.com/kgabis/parson
-[submodule "user/parson"]
-	path = user/parson
-	url = https://github.com/deadbok/parson
 [submodule "3rdparty/jsmn"]
 	path = 3rdparty/jsmn
 	url = https://github.com/deadbok/jsmn
 
+[submodule "3rdparty/esp-gdbstub"]
+	path = 3rdparty/esp-gdbstub
+	url = https://github.com/espressif/esp-gdbstub
