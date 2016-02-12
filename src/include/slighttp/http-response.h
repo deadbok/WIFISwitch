@@ -67,6 +67,10 @@
 /**
  * @brief HTTP 426 upgrade required response.
  */
+#define HTTP_STATUS_420 HTTP_STATUS_LINE("420", "I'm a pothead")
+/**
+ * @brief HTTP 426 upgrade required response.
+ */
 #define HTTP_STATUS_426 HTTP_STATUS_LINE("426", "Upgrade Required")
 /**
  * @brief HTTP 500 Internal server error..
