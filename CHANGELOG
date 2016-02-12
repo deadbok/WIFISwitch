@@ -1,3 +1,11 @@
+2016-02-12  deadbok  <oblivion@HAL-T60>
+
+ * src/include/slighttp/http-response.h: Add joke 420 I'm a pothead HTTP status.
+ * docs/esp8266/exception_causes.md: Short exception descriptions.
+ * docs/specs/rfc2131.txt: DHCP specs.
+
+
+
 2016-02-05  deadbok  <oblivion@HAL-T60>
 
  * user: Moved to src.
