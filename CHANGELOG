@@ -4,6 +4,12 @@
  * src/main.c (task_main): Comments.
 			  (task_main): MAIN_WIFI only send last message when there's something to say.
 			  (task_main): MAIN_NET Added, display active IP address.
+ * docs/specs/rfc951.txt: Added, BOOTP.
+ * .doxyfile: Reintroduced updates from the websocket branch.
+			  Nicer colours.
+ * Makefile: Added docs and doxygen.
+ * README.md: Reintroduced updates from the websocket branch.
+ * docs/lwIP/lwIP-1.4.1.pdf: lwIP API docs.
 
 
 2016-02-12  deadbok  <oblivion@HAL-T60>

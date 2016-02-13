@@ -100,3 +100,13 @@ distclean: clean
 	$(Q) $(MAKE) -C fs distclean
 	$(Q) $(RM) -r $(BUILD_DIR)
 	$(Q) $(RM) -r $(FW_BASE)
+	
+#### Documentation stuff. ####
+# Generate docs.
+docs: doxygen
+
+# Generate doxygen API docs.
+doxygen: .doxyfile
+	$(Q) doxygen .doxyfile
+	$(Q) $(MAKE) -C tools/dbffs-tools/ docs
+	$(Q) $(MAKE) -C tools/esp-config-tools docs
