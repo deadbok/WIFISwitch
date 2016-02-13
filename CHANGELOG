@@ -1,3 +1,11 @@
+2016-02-13  deadbok  <oblivion@HAL-T60>
+
+ * src/include/debug.h: Fixed zalloc definition when not in debug mode.
+ * src/main.c (task_main): Comments.
+			  (task_main): MAIN_WIFI only send last message when there's something to say.
+			  (task_main): MAIN_NET Added, display active IP address.
+
+
 2016-02-12  deadbok  <oblivion@HAL-T60>
 
  * src/include/slighttp/http-response.h: Add joke 420 I'm a pothead HTTP status.

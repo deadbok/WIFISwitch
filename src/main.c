@@ -137,6 +137,7 @@ static void status_task(void *pvParameters)
 static void main_task(void *pvParameters)
 {
 	uint8_t seconds = CONNECT_DELAY_SEC;
+	struct ip_info ipinfo;
 	uint32_t msg;
 	
 	debug("Main task.\n");  
@@ -198,18 +199,22 @@ static void main_task(void *pvParameters)
 					break;
 				case MAIN_WIFI:			
 					printf("Starting WiFi.\n");
+					//Init wifi.
 					if (!wifi_init())
 					{
+						//Firmware needs to change mode.
 						printf("Resetting to change WiFi mode.\n");
 						msg = MAIN_RESET;
 						xQueueSendToBack(main_queue, &msg, 1000);
 						break;
 						
 					}
+					//Wait for the wifi to connect.
 					while (seconds)
 					{
 						if (wifi_check_connection())
 						{
+							//Connected, go on.
 							printf("Connected.\n");
 							msg = MAIN_NET;
 							seconds = CONNECT_DELAY_SEC;
@@ -218,19 +223,36 @@ static void main_task(void *pvParameters)
 						}
 						else
 						{
+							//Not yet connected, wait some more.
 							vTaskDelay(1000 / portTICK_RATE_MS);
 							seconds--;
 						}
 					}
+					//If we got no connection, before time out.
 					if (!seconds)
 					{
 						printf("Connection failed, switching to Access Point mode, and resetting.\n");
+						//Switch to AP mode.
 						cfg->network_mode = STATIONAP_MODE;
-						write_cfg_flash(*cfg);	
-						wifi_init();				
+						write_cfg_flash(*cfg);
+						//Init wifi again to set mode.
+						wifi_init();
+						//Reset to change mode.
 						msg = MAIN_RESET;
+						xQueueSendToBack(main_queue, &msg, 1000);
 					}
-					xQueueSendToBack(main_queue, &msg, 1000);
+					break;
+				case MAIN_NET:
+					printf("Starting network services.\n");
+					if (cfg->network_mode > STATION_MODE)
+					{
+						sdk_wifi_get_ip_info(SOFTAP_IF, &ipinfo);
+					}
+					else
+					{
+						sdk_wifi_get_ip_info(STATION_IF, &ipinfo);
+					}
+					printf("IP address: " IPSTR ".\n", IP2STR(&ipinfo.ip));
 					break;
 				default:
 					warn("Unknown signal: %d.\n", signal);
