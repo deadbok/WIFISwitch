@@ -78,7 +78,7 @@ extern void db_mem_list(void);
 #define db_malloc(ARG, INFO) malloc(ARG)
 #define db_realloc(PTR, SIZE, INFO) realloc(PTR, SIZE)
 #define db_free(ARG) free(ARG)
-#define db_zalloc(ARG, INFO) zalloc(ARG)
+#define db_zalloc(ARG, INFO) calloc(1, ARG);
 
 //extern void *zalloc(size_t size);
 
