@@ -287,13 +287,16 @@ struct dbffs_file_hdr *dbffs_find_file_header(char *path, void *header)
 	return(NULL);
 }
 
+/**
+ * @todo return error.
+ */
 void  init_dbffs(void)
 {
     uint32_t signature;
 
     debug("Initialising DBBFS support.\n");
 	fs_addr = cfg->fs_addr;
-	debug(" File system at address 0x%x.\n", fs_addr + 0x40200000);
+	debug(" File system at address 0x%x.\n", fs_addr + FLASH_OFFSET);
 	signature = load_signature(0);
 	if (signature == DBFFS_FS_SIG)
 	{

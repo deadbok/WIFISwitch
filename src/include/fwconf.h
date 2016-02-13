@@ -49,7 +49,7 @@
 #define CONNECT_DELAY_SEC 10
 
 /**
- * @brief Password for the configuration AP.
+ * @brief Fallback password for the configuration AP.
  */
 #define SOFTAP_PASSWORD "0123456789"
 

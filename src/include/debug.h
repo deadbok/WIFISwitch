@@ -24,6 +24,7 @@
 #ifndef DEBUG_H
 #define DEBUG_H
 
+#include <stdio.h>
 #include "fwconf.h"
 
 /**
@@ -58,6 +59,7 @@ extern void db_hexdump(void *mem, unsigned int len);
 //Debug memory de-/allocation if enabled.
 #ifdef DEBUG_MEM
 #include <stddef.h>
+#include <stdbool.h>
 /**
  * @brief Maximum number of memory blocks to keep track of in debug mode.
  */

@@ -3,6 +3,8 @@
  *
  * @brief Interface between flash and dbffs.
  * 
+ * @todo Use stdint.h types.
+ * 
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
  * 
  * This program is free software; you can redistribute it and/or modify
@@ -57,6 +59,7 @@ size_t flash_size(void)
 	return(1 << size_id);
 }
 
+
 void flash_dump(unsigned int src_addr, size_t size)
 {
     size_t i;
@@ -89,47 +92,43 @@ void flash_dump_mem(unsigned int src_addr, size_t size)
     }
 }
 
-/**
- * @brief Do a 4 bit aligned copy.
- * 
- * @param d Destination memory.
- * @param s Source memory.
- * @param len Bytes to copy.
- * @return Bytes actually copied.
- */
-static size_t amemcpy(unsigned char *d, unsigned char *s, size_t len)
+size_t flash_memcpy_read(unsigned char *d, unsigned int s, size_t len)
 {
 	unsigned int i;
 	unsigned int temp;
 	unsigned int unaligned;
-	
-	debug("Copying %d bytes from %p to %p.\n", len, s, d);
+	unsigned char *p_src;
+
+	p_src = (unsigned char *)(FLASH_OFFSET + s);
+	debug("Copying %d bytes from %p to %p.\n", len, p_src, d);
 
 	for (i = 0; i < len; i++)
 	{
-		unaligned = (unsigned int)(s) & 0x03;
+		//Get the unaligned part of the address.
+		unaligned = (unsigned int)(p_src) & 0x03;
 		
 		//Aligned read.
-		temp = *((unsigned int *)((unsigned int)(s) - unaligned));
-		//debug(" %p (align %d), %p: 0x%x  - ", d, unaligned, s, temp);
+		temp = *((unsigned int *)((unsigned int)(p_src) - unaligned));
+		//debug(" %p (align %d), %p: 0x%x  - ", d, unaligned, p_src, temp);
 
-		*d = (temp >> (unaligned << 3));
-		
+		/* Calculate the offset of the unaligned byte. Shift it into
+		 * place, and isolate it. */
+		*d = (unsigned char)((temp >> (unaligned << 3)) & 0xFF);
 		//debug(" 0x%x.\n", *d);
 		
 		d++;
-		s++;
+		p_src++;
 	}
 	return(i);
 }
 
 bool flash_aread(const void *data, unsigned int read_addr, size_t size)
 {
-    unsigned int addr = 0x40200000 + fs_addr + read_addr;
+    unsigned int addr = fs_addr + read_addr;
     size_t ret;
 	
 	debug("Reading %d bytes from 0x%x to %p.\n", size, addr, data);
-	ret = amemcpy((unsigned char *)data, (unsigned char *)addr, size);
+	ret = flash_memcpy_read((unsigned char *)data, addr, size);
 	if (size == ret)
 	{
 		return(true);

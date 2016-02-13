@@ -29,6 +29,11 @@
 #include <stdbool.h>
 
 /**
+ * @brief Memory offset of the flash.
+ */
+#define FLASH_OFFSET 0x40200000
+
+/**
  *  @brief Highest address of the file system.
  */
 #define MAX_FS_ADDR 0x2E000
@@ -69,13 +74,24 @@ extern void flash_dump(unsigned int src_addr, size_t size);
  * 
  * Uses mapped access.
  * 
+ * @todo Maybe only have this in debug mode.
  * @param src_addr Start address.
  * @param size Number of bytes to dump.
  */
 extern void flash_dump_mem(unsigned int src_addr, size_t size);
 /**
- * @brief Read data from an arbitrary position in the FS portion of the flash.
+ * @brief Read from memory mapped flash.
  * 
+ * @param d Pointer to destination memory.
+ * @param s Source address, relative to the base flash offset.
+ * @param len Bytes to copy.
+ * @return Bytes actually copied.
+ */
+extern size_t flash_memcpy_read(unsigned char *d, unsigned int s, size_t len);
+/**
+ * @brief Read data from an arbitrary position in the FS portion of the flash.
+ *
+ * @todo Maybe only have this in debug mode. 
  * @param data Pointer to a buffer to place the data in.
  * @param read_addr Address to read from.
  * @param size Bytes to read.

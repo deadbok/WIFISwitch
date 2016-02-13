@@ -152,4 +152,24 @@ struct cfg_entry config_entries[CONFIG_ENTRIES] = {
 };
 #endif //DB_ESP8266
 
+/**
+ * @brief Calculate checksum by adding all bytes.
+ * 
+ * @param data Pointer to data.
+ * @param len Lenght of data.
+ * @return Checksum.
+ */
+static inline uint32_t calc_chksum(uint8_t *data, uint32_t len)
+{
+	uint32_t i;
+	uint32_t ret = 0;
+	
+	//Calculate sum
+	for (i = 0; i < len; i++)
+	{
+		ret += data[i];
+	}
+	return(ret);
+}
+
 #endif //CONFIG_H
