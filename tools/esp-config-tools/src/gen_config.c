@@ -120,26 +120,6 @@ static char *arg_parse_string(char *str, unsigned int entry)
 }
 
 /**
- * @brief Calculate checksum by adding all bytes.
- * 
- * @param data Pointer to data.
- * @param len Lenght of data.
- * @return Checksum.
- */
-static uint32_t calc_chksum(uint8_t *data, uint32_t len)
-{
-	uint32_t i;
-	uint32_t ret = 0;
-	
-	//Calculate sum
-	for (i = 0; i < len; i++)
-	{
-		ret += data[i];
-	}
-	return(ret);
-}
-
-/**
  * @brief Main program.
  */
 int main(int argc, char *argv[])

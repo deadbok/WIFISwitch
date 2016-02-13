@@ -81,19 +81,15 @@ void IRAM button_intr_handler(void)
 	//Get system time in ms.
 	start_time = sdk_system_get_time();
 	
-	debug(" GPIO states 0x%x.\n", GPIO.STATUS);
-	
 	//Check each GPIO for an interrupt.
 	for (i = 0; i < 16; i++)
 	{
 		pin_mask =  1 << i;
 		if (GPIO.STATUS & pin_mask)
 		{
-			debug(" Button: %d.\n", i);
 			if (buttons[i].enabled)
 			{
-				debug(" Activation time %d.\n", buttons[i].time);
-				debug(" Current time %d.\n", start_time);
+				debug(" Button: %d.\n", i);
 				if ((buttons[i].time == 0))
 				{
 					debug(" New press at %d.\n", start_time);
@@ -112,7 +108,7 @@ void IRAM button_intr_handler(void)
 				}
 				else
 				{
-					debug(" State change within de-bounce period, ignoring.\n");
+					debug(" In de-bounce period, ignoring.\n");
 					/* Wait for a positive edge (button release), even
 					 * though it may already have occurred.
 					 */

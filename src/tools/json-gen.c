@@ -23,11 +23,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-#include "c_types.h"
-#include "eagle_soc.h"
-#include "osapi.h"
-#include "user_interface.h"
-#include "user_config.h"
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include "debug.h"
 
 char *json_create_pair(char *string, char *value, bool quotes)
 {
@@ -55,15 +54,15 @@ char *json_create_pair(char *string, char *value, bool quotes)
 	ret = db_malloc(size, "json_create_member ret");
 	offset = ret;
 	*offset++ = '\"';
-	os_memcpy(offset, string, string_size);
+	memcpy(offset, string, string_size);
 	offset += string_size;
-	os_memcpy(offset, "\":", 2);
+	memcpy(offset, "\":", 2);
 	offset += 2;
 	if (quotes)
 	{
 		*offset++ = '\"';
 	}
-	os_memcpy(offset, value, value_size);
+	memcpy(offset, value, value_size);
 	offset += value_size;
 	if (quotes)
 	{
@@ -86,7 +85,7 @@ char *json_add_to_type(char *json_string, char *element, char *type)
 		warn("Nothing to add.\n");
 		return(json_string);
 	}
-	element_size = os_strlen(element);
+	element_size = strlen(element);
 	if (!json_string)
 	{
 		debug(" New object.\n");

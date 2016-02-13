@@ -24,11 +24,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
+#include <stdio.h>
 #include <stddef.h>
 #include <stdint.h>
+#include <string.h>
+#include <strings.h>
 #include <stdbool.h>
 #include <inttypes.h>
-#include "user_config.h"
+#include "debug.h"
 #include "tools/sha1.h"
 
 /**
@@ -87,20 +90,20 @@ static bool sha1_pad(struct sha1_context *context, uint64_t size)
 		context->buffer.b[offset++] = 0x80;
 		context->end_bit = false;
 		//Need another chunk to finish this.
-		os_bzero(context->buffer.b + offset, 64 - offset);
+		bzero(context->buffer.b + offset, 64 - offset);
 		return(false);
 	}
 	else
 	{
 		debug(" Need to add another chunk.\n");
 		//Need another chunk to finish this.
-		os_bzero(context->buffer.b + offset, 64 - offset);
+		bzero(context->buffer.b + offset, 64 - offset);
 		context->end_bit = true;
 		return(false);
 	}
 
 	//Zero padding, just do the rest of the block.
-	os_bzero(context->buffer.b  + offset, 64 - offset);
+	bzero(context->buffer.b  + offset, 64 - offset);
 	//Lengths.
 	context->buffer.qw[7] = SHA1_SWAP_64(context->length.qw[0]);
 	
@@ -170,7 +173,7 @@ static void sha1_process_chunk(struct sha1_context *context)
 	context->h.dw[3] += d;
 	context->h.dw[4] += e;
 	
-	os_bzero(context->buffer.b, 64);
+	bzero(context->buffer.b, 64);
 	debug("Done.\n");
 }
 
@@ -186,8 +189,8 @@ void sha1_init(struct sha1_context *context)
 	context->h.dw[4] = 0xC3D2E1F0; 	
 	
 	context->length.qw[0] = 0;
-	os_bzero(context->buffer.b, 80);
-	os_bzero(context->digest.b, 20);
+	bzero(context->buffer.b, 80);
+	bzero(context->digest.b, 20);
 	
 	//Makes padding a zero byte message work, padding by default.
 	context->pad = true;
@@ -199,7 +202,7 @@ void sha1_process(uint32_t w[16], uint64_t size, struct sha1_context *context)
 	debug(" Current length %" PRIu64 ".\n", context->length.qw[0]);
 	
 	//Copy the message into the buffer.
-	os_memcpy(context->buffer.b, w, size >> 3);
+	memcpy(context->buffer.b, w, size >> 3);
 	context->length.qw[0] += size;
 	if (size == 512)
 	{

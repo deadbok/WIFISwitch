@@ -3,7 +3,41 @@
  * src/include/slighttp/http-response.h: Add joke 420 I'm a pothead HTTP status.
  * docs/esp8266/exception_causes.md: Short exception descriptions.
  * docs/specs/rfc2131.txt: DHCP specs.
-
+ * src/config/config.c: Didn't actually work, should be fixed.
+ * src/fs/dbffs.c: Use FLASH_OFFSET.
+ * src/fs/int_flash.c: Todo added.
+					  (amemcpy): Renamed flash_memcpy_read and made a more readable.
+					  (flash_aread): Use flash_memcpy_read.
+ * src/include/config/config.h: Added inline calc_chksum function to calculate config checksum.
+ * src/include/debug.h: Added some missing includes.
+ * src/include/fs/int_flash.h (amemcpy): Renamed flash_memcpy_read.
+ * src/include/fwconf.h: Doxygen docs updated.
+ * Makefile: Compile src/tools, and src/net/wifi.c.
+			 Set esp-open_rtos flag FLAVOR to "debug" when DEBUG is defined.
+			 Target, flash, is now the esp-open-rtos version, that flashes only the firmware.
+			 New target, flashall, flashes both firmware, default configuration, and file system.
+ * README.md: Rearranged credits.
+			  Credited Richard A. Burton.
+ * docs/esp8266/4184091427252256850.jpg: Removed, info is available from Espressif.
+ * docs/esp8266/7604111427252194825.jpg: Removed, info is available from Espressif.
+ * docs/esp8266/gpio.png: Removed, info is available from Espressif.
+ * local.mk: Added some debug compile flags.
+ * src/debug.c (db_hexdump): Print addresses 8 digits wide.
+ * src/driver/button.c (button_intr_handler): Removed some debug messages.
+ * src/include/net/wifi.h: Reworked for esp-open-rtos.
+ * src/include/tools/strxtra.h (itoa): Removed, provided elsewhere.
+ * src/main.c: (main_task): Lots of update to handle WiFi.
+			   (user_init): Let esp-open-rtos handle the WiFi connection.
+			   (user_init): Upped the stack of the main task to 512 bytes to avoid crashes.
+ * src/net/wifi.c: Reworked for esp-open-rtos.
+ * src/tools/base64.c: Fixed includes.
+ * src/tools/ftoa.c: Fixed includes.
+ * src/tools/itoa.c: Removed, provided elsewhere.
+ * src/tools/json-gen.c: Fixed includes, and replace os_* functions with their newlib counterpart.
+ * src/tools/ring.c: Fixed includes, and replace os_* functions with their newlib counterpart.
+ * src/tools/sha1.c: Fixed includes, and replace os_* functions with their newlib counterpart.
+ * src/tools/strxtra.c: Fixed includes, and replace os_* functions with their newlib counterpart.
+ * tools/esp-config-tools/src/gen_config.c: Use inline calc_chksum function from config.h.
 
 
 2016-02-05  deadbok  <oblivion@HAL-T60>

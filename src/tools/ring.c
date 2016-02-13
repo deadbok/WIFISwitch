@@ -20,9 +20,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
- */ 
-#include "user_interface.h"
-#include "user_config.h"
+ */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+#include "debug.h"
 #include "tools/ring.h"
 
 void init_ring(struct ring_buffer *rb, size_t size, size_t capacity)
@@ -95,7 +98,7 @@ void *ring_pop_front(struct ring_buffer *rb)
 	rb->count--;
 	
 	ret = db_malloc(rb->item_size, "ret ring_pop_front");
-	os_memcpy(ret, rb->head, rb->item_size);
+	memcpy(ret, rb->head, rb->item_size);
 	debug(" Returning copy at %p.\n", ret);
 	//Point head at next item.
 	rb->head = new_head;

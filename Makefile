@@ -1,12 +1,15 @@
 PROGRAM = wifiswitch
 PROGRAM_DIR := ./
-PROGRAM_SRC_DIR = src src/driver src/config src/fs
+PROGRAM_SRC_DIR = src src/driver src/config src/fs src/tools
+PROGRAM_EXTRA_SRC_FILES = src/net/wifi.c
 
 FLASH_SIZE = 4
 
 ESPBAUD = 230400
 
-FLAVOR = debug
+ifdef DEBUG
+	FLAVOR := debug
+endif
 
 # C_CXX_FLAGS = -Wall -Wl,-EL -nostdlib $(EXTRA_C_CXX_FLAGS)
 
@@ -65,7 +68,7 @@ $(FW_FILE_1) $(FW_FILE_2): $(PROGRAM_OUT) $(FW_BASE)
 	$(Q) $(ESPTOOL) elf2image $(ESPTOOL_ARGS) $< -o $(FW_BASE)
 	
 #Override general flash rule.
-flash: all
+flashall: all
 	$(Q) $(ESPTOOL) -p $(ESPPORT) --baud $(ESPBAUD) write_flash $(ESPTOOL_ARGS) $(FW_ADDR_2) $(FW_FILE_2) $(FW_ADDR_1) $(FW_FILE_1) $(FW_FILE_CONFIG_ADDR) $(FW_FILE_CONFIG) $(FS_FILE_ADDR) $(FW_FILE_FS)
 
 #### Debugging. ####

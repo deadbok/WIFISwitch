@@ -70,15 +70,6 @@ extern unsigned short digits_f(float n, unsigned char fractional_digits);
  */
 extern char *strrpl(char *src, char *rpl, size_t pos);
 /**
- * @brief Convert an integer to a string.
- * 
- * @param value The value to be converted.
- * @param result A pointer to where the string is written.
- * @param base The base used to convert the value.
- * @return A pointer to #result, or NULL on error.
- */ 
-extern char *itoa(long value, char *result, const unsigned char base);
-/**
  * @brief Convert a base 10 float to a string.
  * 
  * @param value The value to be converted.

@@ -29,6 +29,7 @@
 
 #ifdef DEBUG
 #include <ctype.h>
+#include <stdio.h>
 /**
  * @brief Dump some mem as hex in a nice way.
  * 
@@ -48,7 +49,7 @@ void db_hexdump(void *mem, unsigned int len)
 		/* print offset */
 		if(i % cols == 0)
 		{
-			printf("0x%06x: ", i);
+			printf("0x%08x: ", i + (unsigned int)(mem));
 		}
 
 		/* print hex data */
@@ -88,8 +89,9 @@ void db_hexdump(void *mem, unsigned int len)
 #endif //DEBUG
 
 #ifdef DEBUG_MEM
-
 #include <string.h>
+#include <strings.h>
+
 /**
  * @brief Information for an allocated memory block.
  */

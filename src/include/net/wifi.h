@@ -20,47 +20,30 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */ 
-#ifndef WIFI_CONNECT_H
-#define WIFI_CONNECT_H
-
-#include "task.h"
-
-/**
- * @brief Button callback handler type.
- */
-typedef signal_handler_t wifi_handler_t;
-
-/**
- * @brief No connection status.
- */
-#define WIFI_MODE_NO_CONNECTION 0
-/**
- * @brief Connected to the configured AP.
- */
-#define WIFI_MODE_CLIENT 1
-/**
- * @brief In configuration mode acting as client and AP.
- */
-#define WIFI_MODE_AP 2
+#ifndef WIFI_H
+#define WIFI_H
 
 /**
  * @brief Intitialise WIFI connection, by waiting for auto
- * connection to succed, manually connecting to the default
- * configured AP, or creating an AP named ESP+$mac.
+ * connection to succeed.
  * 
- * @param hostname The desired host name used by the DHCP client.
- * @param connected Function to call when a connection is made.
- * @param disconnected Function to call when a disconnect happens.
+ * @return `true` is WiFi is initialised, `false` firmware needs a restart to set WiFi mode.
  */
-extern bool wifi_init(char *hostname, wifi_handler_t connected,
-					  wifi_handler_t disconnected);
+extern bool wifi_init(void);
 /**
  * @brief Check if we're connected to a WIFI.
  *
  * Both station mode with an IP address and AP mode count as connected.
  * 
- * @return `true`on connection.
+ * @return `true` on connection.
  */
 extern bool wifi_check_connection(void);
 
-#endif
+/**
+ * @brief Disconnect from an AP.
+ *
+ * @return `true` on success.
+ */
+extern bool wifi_disconnect(void);
+
+#endif //WIFI_H

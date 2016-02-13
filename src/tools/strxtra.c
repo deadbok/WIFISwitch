@@ -30,11 +30,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-#include <stdlib.h>
 #include <ctype.h>
+#include <stdlib.h>
+#include <string.h>
 #include <limits.h>
-#include "c_types.h"
-#include "osapi.h"
+#include "debug.h"
 
 char *strchrs(char *str, char *chrs)
 {
@@ -114,8 +114,8 @@ char *strrpl(char *src, char *rpl, size_t pos)
 {
 	size_t src_size, rpl_size;
 	
-	src_size = os_strlen(src);
-	rpl_size = os_strlen(rpl);
+	src_size = strlen(src);
+	rpl_size = strlen(rpl);
 	if ((!src_size) || (!rpl_size))
 	{
 		error("No string in either %p, %p, or both.\n", src, rpl);
@@ -128,6 +128,6 @@ char *strrpl(char *src, char *rpl, size_t pos)
 		//The new string is to long.
 		return(NULL);
 	}	
-	os_memcpy(src + pos, rpl, rpl_size);
+	memcpy(src + pos, rpl, rpl_size);
 	return(src);
 }

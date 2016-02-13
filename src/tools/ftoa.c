@@ -6,8 +6,8 @@
  * Nicked from http://www.jb.man.ac.uk/~slowe/cpp/itoa.html.
  * Simplified for my use case, and did some cosmetic changes to make it easier to understand.
  */
-#include "user_config.h" 
-#include "c_types.h"
+#include <stdbool.h>
+#include "debug.h" 
 
 char *ftoa(float value, char *result, unsigned char fractional_digits)
 {

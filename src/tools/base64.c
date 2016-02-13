@@ -22,7 +22,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
-#include "user_config.h"
+#include <stddef.h>
+#include <stdbool.h>
+#include "debug.h"
 #include "tools/base64.h"
 
 static const char base64_enc_map[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"

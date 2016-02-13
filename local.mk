@@ -17,7 +17,7 @@ BUILD_OS ?= linux
 # Name of the project target.
 TARGET = wifiswitch
 # Baud rate of the ESP8266 serial console.
-BAUD_RATE ?= 230400
+BAUD_RATE ?= 115200
 # Flash size, 512 or 1024.
 FLASH_SIZE ?= 512
 # Network mode to start in.
@@ -89,7 +89,7 @@ OTA ?= 0
 ### Add project defines to CFLAGS
 EXTRA_C_CXX_FLAGS += -DESP_CONFIG_SIG=$(ESP_CONFIG_SIG) -DDB_ESP8266 -DPROJECT_VERSION='"$(PROJECT_VERSION)"' -DPROJECT_NAME='"$(PROJECT_NAME)"' -DBAUD_RATE=$(BAUD_RATE) 
 ifdef DEBUG
-	EXTRA_C_CXX_FLAGS += -DDEBUG
+	EXTRA_C_CXX_FLAGS += -DDEBUG -Og -ggdb
 endif
 
 ### Build the file system tools. ###

@@ -30,12 +30,20 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
-#include "espressif/esp_common.h"
+
+#include "xtensa_ops.h"
 #include "esp/uart.h"
+#include "esp/rom.h"
+#include "esp/wdt_regs.h"
+
+#include "espressif/esp_common.h"
+#include "sdk_internal.h"
+
 #include "main.h"
 #include "fwconf.h"
 #include "debug.h"
 #include "fs/fs.h"
+#include "net/wifi.h"
 #include "driver/button.h"
 #include "config/config.h"
 
@@ -128,6 +136,7 @@ static void status_task(void *pvParameters)
  */
 static void main_task(void *pvParameters)
 {
+	uint8_t seconds = CONNECT_DELAY_SEC;
 	uint32_t msg;
 	
 	debug("Main task.\n");  
@@ -142,11 +151,17 @@ static void main_task(void *pvParameters)
 			{
 				case MAIN_HALT:
 					printf("Halting system...\n");
-					vTaskSuspendAll();
+					while (1)
+					{
+						vTaskDelay(1000 / portTICK_RATE_MS);
+					}
 					break;
 				case MAIN_RESET:
 					printf("Restarting...\n");
+					vTaskDelay(1000 / portTICK_RATE_MS);
 					sdk_system_restart();
+					msg = MAIN_HALT;
+					xQueueSendToBack(main_queue, &msg, 1000);
 					break;
 				case MAIN_INIT:
 					debug("Init...\n");
@@ -170,6 +185,9 @@ static void main_task(void *pvParameters)
 						//Create status task.
 						xTaskCreate(status_task, (signed char *)"status", 256, NULL, tskIDLE_PRIORITY, status_handle);
 						debug("Status handle %p.\n", status_handle);
+						
+						msg = MAIN_WIFI;
+						xQueueSendToBack(main_queue, &msg, 1000);
 					}
 					else
 					{
@@ -177,6 +195,42 @@ static void main_task(void *pvParameters)
 						msg = MAIN_HALT;
 						xQueueSendToBack(main_queue, &msg, 1000);
 					}
+					break;
+				case MAIN_WIFI:			
+					printf("Starting WiFi.\n");
+					if (!wifi_init())
+					{
+						printf("Resetting to change WiFi mode.\n");
+						msg = MAIN_RESET;
+						xQueueSendToBack(main_queue, &msg, 1000);
+						break;
+						
+					}
+					while (seconds)
+					{
+						if (wifi_check_connection())
+						{
+							printf("Connected.\n");
+							msg = MAIN_NET;
+							seconds = CONNECT_DELAY_SEC;
+							xQueueSendToBack(main_queue, &msg, 1000);
+							break;
+						}
+						else
+						{
+							vTaskDelay(1000 / portTICK_RATE_MS);
+							seconds--;
+						}
+					}
+					if (!seconds)
+					{
+						printf("Connection failed, switching to Access Point mode, and resetting.\n");
+						cfg->network_mode = STATIONAP_MODE;
+						write_cfg_flash(*cfg);	
+						wifi_init();				
+						msg = MAIN_RESET;
+					}
+					xQueueSendToBack(main_queue, &msg, 1000);
 					break;
 				default:
 					warn("Unknown signal: %d.\n", signal);
@@ -197,12 +251,12 @@ void user_init(void)
 	uint32_t msg = MAIN_INIT;
 	
     //Turn off auto connect.
-    sdk_wifi_station_set_auto_connect(false);
-    //Turn off auto reconnect.
-    //sdk_wifi_station_set_reconnect_policy(false);
+    if (!sdk_wifi_station_set_auto_connect(false))
+    {
+		error("Could turn off WiFi auto connect.\n");
+	}
 
     //Set baud rate of debug port
-    //uart_div_modify(0,UART_CLK_FREQ / BAUD_RATE);
     uart_set_baud(0, BAUD_RATE);
 
     //Print banner
@@ -214,7 +268,10 @@ void user_init(void)
     //Initialise task system.
     debug("Creating tasks...\n");
     main_queue = xQueueCreate(10, sizeof(uint32_t));
-    xTaskCreate(main_task, (signed char *)"main", 256, main_queue, PRIO_MAIN, main_handle);
+    /**
+     * @todo Might work with lees stack. 256 bytes seems to little.
+     */
+    xTaskCreate(main_task, (signed char *)"main", 512, main_queue, PRIO_MAIN, main_handle);
     debug("Status handle %p.\n", main_handle);
     
     //Map the button to set config mode.

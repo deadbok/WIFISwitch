@@ -29,29 +29,33 @@ not be a real IoT device, though spying has yet to be implemented.
 Seriously though, **do not put this thing on the internet in its current
 state.**
 
-Credits.
-========
+Credits (In order of appearance).
+=================================
 
-### Paul Sokolovsky (http://pfalcon-oe.blogspot.com/) ###
+#### Paul Sokolovsky (http://pfalcon-oe.blogspot.com/) ####
 
 esp-open-sdk, the toolchain I use to build this.
 
-### SuperHouse (http://superhouse.tv) ###
+#### Dave Hylands (http://www.davehylands.com/) ####
 
-esp-open-rtos, open implementation of the FreeRTOS SDK, that I use as
-the base framework.
+Suggested using a zip file, as file system image, and shared his code
 
-### Peter Scargill (http://tech.scargill.net/) ###
+#### Todd Motto (http://toddmotto.com/) ####
+
+Has a nice tutorial on AJAX and JavaScript.
+
+#### Peter Scargill (http://tech.scargill.net/) ####
 
 Last piece in the puzzle, that turns off the ESP8266 messages, namely
 ets_printf still works.
 
-### Dave Hylands (http://www.davehylands.com/) ###
+#### SuperHouse (http://superhouse.tv) ####
 
-Suggested using a zip file, as file system image, and shared his code
+esp-open-rtos, open implementation of the FreeRTOS SDK, that I use as
+the base framework.
 
-### Todd Motto (http://toddmotto.com/) ###
+#### Richard A. Burton (http://richard.burtons.org/) ####
 
-Has a nice tutorial on AJAX and JavaScript.
-
+Taught me to use critical section when writing to flash, by sharing his
+rboot code.
 
