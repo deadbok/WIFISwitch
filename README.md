@@ -42,6 +42,7 @@ following documents to help keep things on track.
  * [Roadmap](docs/roadmap.md)
  * [WebSocket implementation](docs/websocket.md)
  * [WebSocket protocol](docs/ws_proto.md)
+ * [Exceptions](docs/exception_causes.md)
 
 Credits (In order of appearance).
 =================================

@@ -1,3 +1,8 @@
+2016-02-14  deadbok  <oblivion@HAL-T60>
+
+ * docs/specs/rfc1533.txt: Added, DHCP Options and BOOTP Vendor Extensions.
+
+
 2016-02-13  deadbok  <oblivion@HAL-T60>
 
  * src/include/debug.h: Fixed zalloc definition when not in debug mode.

@@ -1,6 +1,6 @@
 /**
  *
- * @file user_main.c
+ * @file main.c
  *
  * @brief Main program file.
  * 
@@ -27,6 +27,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
  * MA 02110-1301, USA.
  */
+#include <stdint.h>
+
 #include "FreeRTOS.h"
 #include "task.h"
 #include "queue.h"
@@ -39,6 +41,8 @@
 #include "espressif/esp_common.h"
 #include "sdk_internal.h"
 
+#include "lwip/udp.h"
+
 #include "main.h"
 #include "fwconf.h"
 #include "debug.h"
@@ -46,6 +50,7 @@
 #include "net/wifi.h"
 #include "driver/button.h"
 #include "config/config.h"
+#include "net/dhcpserver.h"
 
 /**
  * @brief Linker symbol that points to the end of the ROM code in flash.
@@ -231,7 +236,8 @@ static void main_task(void *pvParameters)
 					//If we got no connection, before time out.
 					if (!seconds)
 					{
-						printf("Connection failed, switching to Access Point mode, and resetting.\n");
+						printf("Connection failed, switching to Access "
+							   "Point mode, and resetting.\n");
 						//Switch to AP mode.
 						cfg->network_mode = STATIONAP_MODE;
 						write_cfg_flash(*cfg);
@@ -252,7 +258,13 @@ static void main_task(void *pvParameters)
 					{
 						sdk_wifi_get_ip_info(STATION_IF, &ipinfo);
 					}
-					printf("IP address: " IPSTR ".\n", IP2STR(&ipinfo.ip));
+					printf("IP address: " IPSTR ".\n", IP2STR(&ipinfo.ip));	
+					//Start DHCP server in AP mode.
+					if (cfg->network_mode > STATION_MODE)
+					{
+						dhcpserver_init(&ipinfo.ip);
+					}		
+
 					break;
 				default:
 					warn("Unknown signal: %d.\n", signal);

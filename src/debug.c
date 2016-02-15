@@ -84,6 +84,7 @@ void db_hexdump(void *mem, unsigned int len)
 			printf("\n");
 		}
 	}
+	printf(" %d byte(s).\n", len);
 }
 
 #endif //DEBUG

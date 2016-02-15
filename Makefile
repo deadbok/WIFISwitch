@@ -1,7 +1,7 @@
 PROGRAM = wifiswitch
 PROGRAM_DIR := ./
-PROGRAM_SRC_DIR = src src/driver src/config src/fs src/tools
-PROGRAM_EXTRA_SRC_FILES = src/net/wifi.c
+PROGRAM_SRC_DIR = src src/driver src/config src/fs src/tools 
+PROGRAM_EXTRA_SRC_FILES = src/net/wifi.c src/net/dhcpserver.c
 
 FLASH_SIZE = 4
 
