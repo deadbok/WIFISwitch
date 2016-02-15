@@ -1,6 +1,12 @@
 2016-02-14  deadbok  <oblivion@HAL-T60>
 
  * docs/specs/rfc1533.txt: Added, DHCP Options and BOOTP Vendor Extensions.
+ * Makefile: Compile src/net/dhcpserver.c.
+ * README.md: Added exception list.
+ * src/debug.c (db_hexdump): Print number os bytes.
+ * src/main.c (main_task): Start DHCP server in AP mode.
+ * src/include/net/dhcpserver.h: Started implementation, receives messages.
+ * src/net/dhcpserver.c: Started implementation, receives messages.
 
 
 2016-02-13  deadbok  <oblivion@HAL-T60>
@@ -14,7 +20,7 @@
 			  Nicer colours.
  * Makefile: Added docs and doxygen.
  * README.md: Reintroduced updates from the websocket branch.
- * docs/lwIP/lwIP-1.4.1.pdf: lwIP API docs.
+ * docs/lwIP/lwIP-1.4.1.pdf: lwIP API docs. 
 
 
 2016-02-12  deadbok  <oblivion@HAL-T60>
