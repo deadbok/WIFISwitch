@@ -1,6 +1,8 @@
 Exception Causes (EXCCAUSE)
 ===========================================
 
+Original document at [https://github.com/esp8266/Arduino/tree/master/doc](https://github.com/esp8266/Arduino/tree/master/doc)
+
 | EXC-CAUSE Code | Cause Name                 | Cause Description                                                                                           | Required Option          | EXC-VADDR Loaded |
 |:--------------:|:---------------------------|:------------------------------------------------------------------------------------------------------------|:-------------------------|:----------------:|
 | 0              | IllegalInstructionCause    | Illegal instruction                                                                                         | Exception                | No               |
@@ -37,6 +39,5 @@ Exception Causes (EXCCAUSE)
 | 32..39         | CoprocessornDisabled       | Coprocessor n instruction when cpn disabled. n varies 0..7 as the cause varies 32..39                       | Coprocessor              | No               |
 | 40..63         | Reserved                   |                                                                                                             |                          |                  |
 
-
 Infos from Xtensa Instruction Set Architecture (ISA) Reference Manual.
-Original document at [https://github.com/esp8266/Arduino/tree/master/doc](https://github.com/esp8266/Arduino/tree/master/doc)
+

@@ -1350,7 +1350,7 @@ RFC 2131          Dynamic Host Configuration Protocol         March 1997
 
    Normally, DHCP servers and BOOTP relay agents attempt to deliver
    DHCPOFFER, DHCPACK and DHCPNAK messages directly to the client using
-   uicast delivery.  The IP destination address (in the IP header) is
+   unicast delivery.  The IP destination address (in the IP header) is
    set to the DHCP 'yiaddr' address and the link-layer destination
    address is set to the DHCP 'chaddr' address.  Unfortunately, some
    client implementations are unable to receive such unicast IP

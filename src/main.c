@@ -68,7 +68,7 @@ struct config *cfg = NULL;
 static bool config_mode = false;
 
 /**
- * @brief Config mode enabler.
+ * @brief Main task queue.
  */
 static xQueueHandle main_queue;
 
@@ -141,19 +141,17 @@ static void status_task(void *pvParameters)
  */
 static void main_task(void *pvParameters)
 {
-	uint8_t seconds = CONNECT_DELAY_SEC;
-	struct ip_info ipinfo;
-	uint32_t msg;
-	
 	debug("Main task.\n");  
     while(1)
     {
-        uint32_t signal;
+		uint8_t seconds = CONNECT_DELAY_SEC;
+		struct ip_info ipinfo;
+        uint32_t msg;
         
         debug(" Checking messages.\n");
-        if (xQueueReceive(main_queue, &signal, portMAX_DELAY))
+        if (xQueueReceive(main_queue, &msg, portMAX_DELAY))
         {
-			switch(signal)
+			switch(msg)
 			{
 				case MAIN_HALT:
 					printf("Halting system...\n");
@@ -262,12 +260,12 @@ static void main_task(void *pvParameters)
 					//Start DHCP server in AP mode.
 					if (cfg->network_mode > STATION_MODE)
 					{
-						dhcpserver_init(&ipinfo.ip);
+						dhcps_init(&ipinfo.ip);
 					}		
 
 					break;
 				default:
-					warn("Unknown signal: %d.\n", signal);
+					warn("Unknown message: %d.\n", msg);
 			}
         }
 		else
@@ -275,6 +273,7 @@ static void main_task(void *pvParameters)
 			debug("Nothing was received.\n");
 		}
     }
+    vTaskDelete(NULL);
 }
 
 /**

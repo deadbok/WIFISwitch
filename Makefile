@@ -106,6 +106,7 @@ distclean: clean
 docs: doxygen
 
 # Generate doxygen API docs.
+.PHONY: doxygen
 doxygen: .doxyfile
 	$(Q) doxygen .doxyfile
 	$(Q) $(MAKE) -C tools/dbffs-tools/ docs

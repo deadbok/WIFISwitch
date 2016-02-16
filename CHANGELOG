@@ -1,3 +1,20 @@
+2016-02-16  deadbok  <oblivion@HAL-T60>
+
+ * src/net/dhcpserver.c: Use client id as preferred lease key.
+						(find_by_hwaddr): Renamed find_lease.
+						(find_lease): Also find unused leases.
+ * docs/specs/rfc6842.txt: Added, Client Identifier Option in DHCP Server Replies.
+ * Makefile: Made `doxygen` target phony, like before esp-open-rtos.
+ * src/main.c (main_task): Minor optimisations.
+ 
+
+
+016-02-15  deadbok  <oblivion@HAL-T60>
+
+ * src/net/dhcpserver.c: Use lwIP netconn API.
+ * src/include/main.h: Added PRIO_DHCPS for the DHCP server task.
+
+
 2016-02-14  deadbok  <oblivion@HAL-T60>
 
  * docs/specs/rfc1533.txt: Added, DHCP Options and BOOTP Vendor Extensions.

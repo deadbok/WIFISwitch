@@ -31,7 +31,9 @@ enum task_prios
 {
 	PRIO_IDLE,
 	PRIO_MAIN, 
-	PRIO_BUTTON
+	PRIO_DHCPS,
+	PRIO_BUTTON,
+	N_PRIOS
 };
 
 enum main_signal

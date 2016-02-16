@@ -4,7 +4,11 @@
  * @brief DHCP Server, RFC2131, RFC1553, and RFC951.
  * 
  * This as everything in here only does the bare minimum of what
- * could be expected.
+ * could be expected. The implementation expect to be the only DHCP
+ * server on the network. The assigned addresses, starts at the
+ * IP after the server, and end at server IP + DHCPS_MAX_LEASES.
+ * 
+ * *Goto's has been harm-filtered.*
  * 
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -42,10 +46,12 @@
 
 #include "lwip/netif.h"
 #include "lwip/dhcp.h"
-#include "lwip/udp.h"
+//#include "lwip/udp.h"
+#include <lwip/api.h>
 
 #include "fwconf.h"
 #include "debug.h"
+#include "main.h"
 #include "tools/dl_list.h"
 #include "net/dhcpserver.h"
 
@@ -61,7 +67,7 @@
 /**
  * @brief Record of a client lease.
  */
-struct dhcpserver_lease
+struct dhcps_lease
 {
 	/**
 	 * @brief Hostname of the client.
@@ -76,114 +82,370 @@ struct dhcpserver_lease
 	 */
 	ip_addr_t ip;
 	/**
+	 * @brief Client-identifier, NULL if none was given.
+	 * 
+	 * *First byte is the length.*
+	 */
+	uint8_t *cid;
+
+	/**
+	 * @brief Server time, when the lease has expired.
+	 * 
+	 * Zero if the lease is unused.
+	 */
+	uint32_t expires;
+	/**
 	 * @brief List entries.
 	 */
-	DL_LIST_CREATE(struct dhcpserver_lease);
+	DL_LIST_CREATE(struct dhcps_lease);
 };
 
 /**
- * @brief List of DHCP leases-
+ * @brief Record of a client request.
+ * 
+ * **Pointers in this structure points into the data received.**
  */
-static struct dhcpserver_lease *dhcpserver_leases = NULL;
-/**
- * @brief number of DHCP leases.
- */
-uint8_t n_leases = 0;
+struct dhcps_request
+{
+	/**
+	 * @brief Requested IP address, IPADDR_ANY if none is requested.
+	 */
+	ip_addr_t *ip;
+	/**
+	 * @brief DHCP message type. Always set.
+	 */
+	uint8_t *type;
+	/**
+	 * @brief Requested hostname, NULL if none requested.
+	 * 
+	 * *First byte is the length.*
+	 */
+	uint8_t *hostname;
+	/**
+	 * @brief Client requested parameters.
+	 * @see http://www.iana.org/assignments/bootp-dhcp-parameters/bootp-dhcp-parameters.xhtml
+	 * 
+	 * *First byte is the length.*
+	 */
+	uint8_t *parm;
+	/**
+	 * @brief Client-identifier, NULL if none was given.
+	 * 
+	 * *First byte is the length.*
+	 */
+	uint8_t *cid;	
+};
 
 /**
- * @brief Find a lease by it's MAC.
+ * @brief Record of the state of the server between calls.
  */
-static struct dhcpserver_lease *find_by_hwaddr(uint8_t *hwaddr)
+struct dhcps_context
 {
-	struct dhcpserver_lease *cur = dhcpserver_leases;
-	
-	debug("Looking for lease with hwaddr: " MACSTR ".\n", 
-		  MAC2STR(hwaddr));
-	
-	while (cur != NULL)
+	/**
+	 * @brief List of DHCP leases.
+	 * 
+	 * Servers own lease is always the first.
+	 */
+	struct dhcps_lease *leases;
+	/**
+	 * @brief Number of DHCP leases.
+	 */
+	uint8_t n_leases;
+	/**
+	 * @brief The netconn connection.
+	 */
+	struct netconn *conn;
+	/**
+	 * @brief DHCP server task handle.
+	 */
+	xTaskHandle task;
+};
+/**
+ * @brief Global state of the server between calls.
+ */
+static struct dhcps_context *dhcps_ctx = NULL;
+
+
+#ifdef DEBUG
+static void print_id(uint8_t *cid)
+{
+	if (cid)
 	{
-		if (MACCMP(hwaddr, cur->hwaddr))
+		for (uint8_t i = 1; i < *cid; i++)
 		{
-			debug("Found.\n");
-			return(cur);
+			debug("0x%02x", cid[i]);
+			if (i < *cid)
+			{
+				debug(":");
+			}
 		}
-		cur = cur->next;
+	}
+	else
+	{
+		debug("none");
+	}
+	debug("\n");
+}
+
+	#define DHCPS_DEBUG_ID(cid) print_id(cid)
+#else
+	#define DHCPS_DEBUG_ID(id)
+#endif
+
+
+/**
+ * @brief Find a lease by it's MAC and/or client id.
+ * 
+ * Set either parameter to NULL if unused. If both parameters are NULL
+ * return an unused lease, if any.
+ */
+static struct dhcps_lease *find_lease(uint8_t *hwaddr, uint8_t *cid)
+{
+	struct dhcps_lease *cur = dhcps_ctx->leases;
+	
+	debug("Looking for lease.\n");
+	debug(" Client-identifier: ");
+	DHCPS_DEBUG_ID(cid);
+	if (hwaddr)
+	{
+		debug(" Hardware address: " MACSTR ".\n", MAC2STR(hwaddr));
+	}
+	
+	//Get an unused address.
+	if ((!hwaddr) && (!cid))
+	{
+		debug("First unused.\n");
+		while (cur != NULL)
+		{
+			if (cur->expires)
+			{
+				debug("Found.\n");
+				return(cur);
+			}
+			cur = cur->next;
+		}
+	}
+		
+	//Prefer client id, RFC2131 4.2 says so.
+	if (cid)
+	{
+		debug(" Searching for client id.\n");
+		while (cur != NULL)
+		{
+			//If client id's match.
+			if (!memcmp(cur->cid, cid, cid[0] + 1))
+			{
+				if ((!hwaddr) && (!cur->hwaddr))
+				{
+					debug("Found, no MAC.\n");
+					return(cur);
+				}
+				if (MACCMP(hwaddr, cur->hwaddr))
+				{
+					debug("Found with MAC.\n");
+					return(cur);
+				}
+			}
+			cur = cur->next;
+		}
+	}
+	
+	//No client id, go by MAC.
+	if (!cid)
+	{
+		debug(" Searching for MAC.\n");
+		while (cur != NULL)
+		{
+			if (MACCMP(hwaddr, cur->hwaddr) && (cur->cid = NULL))
+			{
+				debug("Found.\n");
+				return(cur);
+			}
+			cur = cur->next;
+		}
 	}
 	debug("Not found.\n");
 	return(NULL);
 }
 
 /**
- * @brief Get a lease for a MAC.
+ * @brief Get a lease for a MAC and/or client id.
  * 
- * If lease does not exist, a new one will be created.
+ * Both `hwaddr`and `cid` cannot be NULL.
+ * 
+ * Search order:
+ * 
+ *  * Existing lease, both active and expired ones.
+ *  * If all leases are taken, but some are unused, return the first one.
+ *  * New lease containing only the client id and the MAC supplied.
+ * 
+ * The IP address of the lease is set to IP_ADDR_ANY, when first created.
+ * 
+ * @param hwaddr Pointer to the MAC address, or NULL if unused.
+ * @param hwaddr Pointer to the client id, or NULL if unused.
+ * @return Pointer to a lease, or NULL on failure.
  */
-static struct dhcpserver_lease *get_lease(uint8_t *hwaddr)
+static struct dhcps_lease *get_lease(uint8_t *hwaddr, uint8_t *cid)
 {
-	struct dhcpserver_lease *lease = NULL;
+	struct dhcps_lease *lease = NULL;
 	
-	debug("Getting DHCP lease for " MACSTR ".\n", MAC2STR(hwaddr));
+	debug("Getting DHCP lease.\n");
+	if ((!hwaddr) && (!cid))
+	{
+		warn(" No usable identifier for the lease.\n");
+		return(NULL;
+	}
+	debug(" Client-identifier: ");
+	DHCPS_DEBUG_ID(cid);
+	if (hwaddr)
+	{
+		debug(" Hardware address: " MACSTR ".\n", MAC2STR(hwaddr));
+	}
+	if (dhcps_ctx->n_leases >= DHCPS_MAX_LEASES)
+	{
+		warn(" Address pool exhausted.\n");
+		return(NULL);
+	}
 	
-	lease = find_by_hwaddr(hwaddr);
+	//Check for an existing lease for the client.
+	lease = find_lease(hwaddr, cid);
 	if (lease)
 	{
-		debug(" Returning existing lease.\n");
+		debug(" Returning an existing lease.\n");
 		return(lease);
 	}
 	
-	debug("Creating new lease.\n");
-	lease = db_zalloc(sizeof(struct dhcpserver_lease), "lease get_lease");
-	memcpy(lease->hwaddr, hwaddr, 6);
+	//We did not find an existing lease, check for an unused one.
+	if (dhcps_ctx->n_leases >= DHCPS_MAX_LEASES)
+	{
+		lease = find_lease(NULL, NULL);
+		if (lease)
+		{
+			debug(" Returning an unused lease.\n");
+			return(lease);
+		}
+	}
 	
+	debug("Creating new lease.\n");
+	lease = db_zalloc(sizeof(struct dhcps_lease), "lease get_lease");
+	if (hwaddr)
+	{
+		memcpy(lease->hwaddr, hwaddr, 6);
+	}
+	if (cid)
+	{
+		lease->cid = db_malloc(cid[0] + 1, "lease->cid get_lease");
+		memcpy(lease->cid, cid, cid[0] + 1);
+	}
+	lease->
 	return(lease);
 }
 
 /**
  * @brief Add a lease.
  */
-static bool add_lease(struct dhcpserver_lease *lease)
+static bool add_lease(struct dhcps_lease *lease)
 {
-	struct dhcpserver_lease *leases = dhcpserver_leases;
+	struct dhcps_lease *leases = dhcps_ctx->leases;
 	
-	debug("Adding lease for " MACSTR ".\n", MAC2STR(lease->hwaddr));
-	
-	if (find_by_hwaddr(lease->hwaddr))
+	debug("Adding lease.\n");
+	debug(" Client-identifier: ");
+	DHCPS_DEBUG_ID(lease->cid);
+	if (lease->hwaddr)
+	{
+		debug(" Hardware address: " MACSTR ".\n", MAC2STR(lease->hwaddr));
+	}
+
+	if (!dhcps_ctx->leases)
+	{
+		error("Server has no lease.\n");
+		return(false);
+	}	
+	if (find_lease(lease->hwaddr, lease->cid))
 	{
 		warn("Lease exist.\n");
 		return(false);
 	}
-	if (dhcpserver_leases == NULL)
-	{
-		dhcpserver_leases = lease;
-		lease->prev = NULL;
-		lease->next = NULL;
-	}
-	else
-	{
-		DL_LIST_ADD_END(lease, leases);
-	}
-	n_leases++;
-	debug(" %d leases.\n", n_leases);
+
+	DL_LIST_ADD_END(lease, leases);
+	dhcps_ctx->n_leases++;
+	debug(" %d leases.\n", dhcps_ctx->n_leases);
 	return(true);
 }
 
-static void parse_options(struct dhcp_msg *msg)
+static void answer_discover(struct dhcps_request *request, struct dhcp_msg *msg)
 {
-	struct dhcpserver_lease *lease = NULL;
-	ip_addr_t *request_ip = IP_ADDR_ANY;
+	struct netbuf *buf;
+	struct dhcp_msg *reply;
+	struct dhcps_lease *lease;
+	 
+	debug("Replying to discover.\n");
+	
+	//Get a new buffer for the reply.
+	buf = netbuf_new();
+	//Point the DHCP message structure to the actual memory.
+	reply = (struct dhcp_msg *)netbuf_alloc(buf, DHCP_OPTIONS_LEN);
+	bzero(reply, DHCP_OPTIONS_LEN);
+	
+	reply->op = DHCP_BOOTREPLY;
+	reply->htype = DHCP_HTYPE_ETH;
+	reply->hlen = 6;
+	reply->xid = msg->xid;
+	reply->flags = msg->flags;
+	reply->giaddr = msg->giaddr;
+//'options'  options  
+
+	
+/*	  o The client's current address as recorded in the client's current
+        binding, ELSE
+
+      o The client's previous address as recorded in the client's (now
+        expired or released) binding, if that address is in the server's
+        pool of available addresses and not already allocated, ELSE
+
+      o The address requested in the 'Requested IP Address' option, if that
+        address is valid and not already allocated, ELSE
+
+      o A new address allocated from the server's pool of available
+        addresses; the address is selected based on the subnet from which
+        the message was received (if 'giaddr' is 0) or on the address of
+        the relay agent that forwarded the message ('giaddr' when not 0).*/
+     lease = get_lease(msg->hwaddr, request->cid);
+     if (lease->ip != IP_ADDR_ANY)
+     {
+		 ip_addr_set(&reply->yiaddr, lease->ip;
+	 }
+	//'yiaddr'   IP address offered to client
+	
+	debug(" Sending reply.\n");
+	/**
+	 * @todo Read RFC2131 chapter 4.1, 50 times more.
+	 * @todo Something about giaddr, and where to send this.
+	 * @todo Something about the BROADCAST bit and something about unicast.
+	 */
+	netconn_sendto(dhcps_ctx->conn, buf, IP_ADDR_BROADCAST, DHCPS_PORT);
+    netbuf_delete(buf);
+}
+
+/**
+ * @brief Parse the option field of a DHCP message.
+ */
+static struct dhcps_request *parse_options(struct dhcp_msg *msg)
+{
+	struct dhcps_request *request = NULL;
 	uint8_t *pos = msg->options;
 	uint8_t len, opt;
-	uint8_t *type = NULL;
-	uint8_t *requests = NULL;
 	
 	debug("Parsing options.\n");
 	
 	if (pos == NULL)
 	{
 		warn("No options.\n");
-		return;
+		goto error;
 	}
-	lease = get_lease(msg->chaddr);
+	//Create record for the request.
+	request = db_zalloc(sizeof(struct dhcps_request), 
+						"request parse_options");
 	
 	/* As far as I can tell from the standard, the message type is
 	 * required, but need not be the first option. */
@@ -194,15 +456,15 @@ static void parse_options(struct dhcp_msg *msg)
 
 		if (opt == DHCP_OPTION_MESSAGE_TYPE)
 		{
-			type = pos;
-			debug(" DHCP Message Type: %d.\n", *type);
+			request->type = pos;
+			debug(" DHCP Message Type: %d.\n", *request->type);
 			break;
 		}
 	}
-	if (!type)
+	if (!request->type)
 	{
 		warn("No message type.\n");
-		return;
+		goto error;
 	}
 	
 	pos = msg->options;
@@ -212,6 +474,7 @@ static void parse_options(struct dhcp_msg *msg)
 		opt = *pos++;
 		len = *pos++;
 		
+		//See: http://www.iana.org/assignments/bootp-dhcp-parameters/bootp-dhcp-parameters.xhtml
 		switch(opt)
 		{
 			case DHCP_OPTION_PAD:
@@ -222,49 +485,36 @@ static void parse_options(struct dhcp_msg *msg)
 				if (len < 1)
 				{
 					warn("Length cannot be zero.\n");
-					return;
+					return(NULL);
 				}
-				//Free old hostname.
-				if (lease->hostname)
-				{
-					db_free(lease->hostname);
-				}
-				lease->hostname = db_malloc(len +1,
-											"lease->hostname parse_option");
-				strncpy(lease->hostname, (char *)pos, len);
-				lease->hostname[len] = '\0';
-				debug(" Hostname for " MACSTR " set to %s.\n",
-					  MAC2STR(lease->hwaddr), lease->hostname);
+				//Set hostname, first byte is length.
+				request->hostname = pos - 1;
 				break;	
 			case DHCP_OPTION_REQUESTED_IP:
-				debug(" Requested IP Address: ");
+				debug(" Requested IP Address,\n");
 				if (len != 4)
 				{
 					warn("Unexpected length %d.\n", len);
-					return;
+					goto error;
 				}
-				request_ip = db_malloc(sizeof(ip_addr_t),
-									   "request_ip parse_option");
-				IP4_ADDR(request_ip, *pos, *(pos + 1), *(pos + 2),
-						 *(pos + 3));
-				debug(IPSTR ".\n", IP2STR(&request_ip));
+				/* ip_addr_t is a struct with a single member of type
+				 * uint32_t (u32_t), a pointer to the struct, should
+				 * point to the int as well. */
+				request->ip = (ip_addr_t *)pos;
 				break;
 			case DHCP_OPTION_MESSAGE_TYPE:
 				//Deja-vu.
 				break;
 			case DHCP_OPTION_PARAMETER_REQUEST_LIST:
-				debug(" Parameter Request List: ");
+				debug(" Parameter Request List.\n");
 				//Include the length at index 0.
-				requests = pos - 1;
-				while(len)
-				{
-					debug(" %d",
-						  *(requests + requests[0] - len));
-					len--;
-				}
-				len = requests[0];
-				debug(".\n");
+				request->parm = pos - 1;
 				break;
+			case DHCP_OPTION_CLIENT_ID:
+				debug(" Client-identifier,\n");
+				request->cid = pos - 1;
+				break;
+				
 			default:
 				debug(" Unknown option: %d.\n", opt);
 				break;
@@ -275,58 +525,117 @@ static void parse_options(struct dhcp_msg *msg)
 	{
 		warn("Never found the end option.\n");
 	}
-}
-
-//UDP receive callback
-static void dhcpserver_rcv(void *arg, struct udp_pcb *pcb, struct pbuf *buf, ip_addr_t *addr, u16_t port)
-{
-	struct dhcp_msg *msg = buf->payload;
+	return(request);
 	
-	debug("UDP received on from " IPSTR ":%d.\n", IP2STR(addr), port);
-	db_hexdump(buf->payload, buf->len);
-	
-	if (msg->op == BOOTP_OP_BOOTREQUEST)
+error:
+	if (request)
 	{
-		debug("Message from client.\n");
-		if (msg->cookie != ntohl(DHCP_MAGIC_COOKIE))
-		{
-			debug("Bad cookie: 0x%08x.\n", msg->cookie);
-			return;
-		}
-		debug("Nice cookie.\n");
-		if (msg->htype != DHCP_HTYPE_ETH)
-		{
-			warn("Unknown hardware type.\n");
-			return;
-		}		
-		parse_options(msg);
-		
-		return;
+		db_free(request);
 	}
-	debug("Message from server.\n");
-	pbuf_free(buf);
+	return(NULL);
 }
 
-bool dhcpserver_init(ip_addr_t *server_ip)
+/**
+ * @brief Task to handle reciving.
+ */
+static void dhcps_task(void *pvParameters)
 {
-	//protocol control block
-	struct udp_pcb *pcb;
+	while (1)
+	{
+		struct dhcps_request *request;
+		struct dhcp_msg *msg;
+		struct netbuf *buf;
+		err_t ret;
+		
+		if (!dhcps_ctx->leases)
+		{
+			error("Server has no lease.\n");
+			continue;
+		}
+
+        // Wait for data.
+        ret = netconn_recv(dhcps_ctx->conn, &buf);
+        if (ret != ERR_OK)
+        {
+			warn("Error receiving DHCP package.\n");
+			continue;
+		}
+		
+		/**
+		 * @todo Do something to check and handle the size of the options.
+		 */
+		msg = (struct dhcp_msg *)buf->p;
+	
+		debug("UDP received on from " IPSTR ":%d.\n", IP2STR(netbuf_fromaddr(buf)), netbuf_fromport(buf));
+		db_hexdump(buf->p->payload, buf->p->len);
+		
+		if (msg->op == DHCP_BOOTREQUEST)
+		{
+			debug("Message from client.\n");
+			if (msg->cookie != ntohl(DHCP_MAGIC_COOKIE))
+			{
+				warn("Bad cookie: 0x%08x.\n", msg->cookie);
+				continue;
+			}
+			debug("Nice cookie.\n");
+			if (msg->htype != DHCP_HTYPE_ETH)
+			{
+				warn("Unknown hardware type.\n");
+				continue;
+			}		
+			request = parse_options(msg);
+			if (!request)
+			{
+				warn("Could not parse request.\n");
+				continue;
+			}
+			switch (*request->type)
+			{
+				case DHCP_DISCOVER:
+					answer_discover(request, msg);
+					break;
+				case DHCP_REQUEST:
+					debug("DHCP request.\n");
+					break;
+				case DHCP_DECLINE:
+					debug("DHCP decline.\n");
+					break;
+				case DHCP_RELEASE:
+					debug("DHCP release.\n");
+					break;
+				case DHCP_INFORM:
+					debug("DHCP inform.\n");
+					break;
+			}
+		}
+		debug("Message from server.\n");
+	}
+	vTaskDelete(NULL);
+}
+
+bool dhcps_init(ip_addr_t *server_ip)
+{
 	uint8_t server_mac[NETIF_MAX_HWADDR_LEN];
-	struct dhcpserver_lease *server_lease = NULL;
+	err_t ret;
 	
 	debug("Starting DHCP server.\n");
-	pcb = udp_new();
-	if (!pcb)
+	if (dhcps_ctx)
+	{
+		error("Server running.\n");
+		return(false);
+	}
+	dhcps_ctx = db_malloc(sizeof(struct dhcps_context), "dhcps_ctx dhcps_init");
+	dhcps_ctx->conn = netconn_new(NETCONN_UDP);
+	if (!dhcps_ctx->conn)
 	{
 		error("Could not create UDP connection.\n");
 		return(false);
 	}
 	
-	int8_t ret;
-	ret = udp_bind(pcb, IP_ADDR_ANY, DHCPSERVER_PORT);
-	if (ret < 0)
+	ret = netconn_bind(dhcps_ctx->conn, IP_ADDR_ANY, DHCPS_PORT);
+	if (ret != ERR_OK)
 	{
-		error("Could not bind UDP connection to port 67: %d.\n", ret);
+		error("Could not bind UDP connection to port %d: %d.\n", DHCPS_PORT, ret);
 		return(false);
 	}
 	
@@ -336,16 +645,18 @@ bool dhcpserver_init(ip_addr_t *server_ip)
 	sdk_wifi_get_macaddr(SOFTAP_IF, server_mac);
 	
 	//Create a lease for the server.
-	server_lease = get_lease(server_mac);
-	if (!server_lease)
+	dhcps_ctx->leases = get_lease(server_mac, NULL);
+	if (!dhcps_ctx->leases)
 	{
 		error(" Could not save server lease.\n");
 		return(false);
 	}
-	memcpy(server_lease->hwaddr, server_mac, NETIF_MAX_HWADDR_LEN);
-	ip_addr_set(&server_lease->ip, server_ip);
-	add_lease(server_lease);
+	memcpy(dhcps_ctx->leases->hwaddr, server_mac, NETIF_MAX_HWADDR_LEN);
+	ip_addr_set(&dhcps_ctx->leases->ip, server_ip);
+	dhcps_ctx->n_leases++;
 	
-	udp_recv(pcb, dhcpserver_rcv, NULL);
+	debug(" Creating tasks...\n");
+    xTaskCreate(dhcps_task, (signed char *)"dhcps", 256, NULL, PRIO_DHCPS, dhcps_ctx->task);
+	
 	return(true);
 }

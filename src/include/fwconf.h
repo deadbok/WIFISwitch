@@ -100,7 +100,7 @@
  * @brief Baud rate of the serial console.
  */
 #ifndef BAUD_RATE
-	#define BAUD_RATE 115200
+	#define BAUD_RATE 230400
 #endif
 
 /************************ Flash configuration. ************************/

@@ -29,7 +29,7 @@
 /**
  * @brief Port that the DHCP server listens on.
  */
-#define DHCPSERVER_PORT 67
+#define DHCPS_PORT 67
 
 
 #if BYTE_ORDER == BIG_ENDIAN
@@ -64,9 +64,28 @@
 
 #endif
 
-#define BOOTP_OP_BOOTREQUEST 1
-#define BOOTP_BOOTREPLY 2
 
-extern bool dhcpserver_init(ip_addr_t *server_ip);
+/**
+ * @brief Default lease time in seconds.
+ */
+#ifndef DHCPS_LEASE_TIME
+#define DHCPS_LEASE_TIME 3600
+#endif
+
+/**
+ * @brief Maximum number of leases.
+ */
+#ifndef DHCPS_MAX_LEASES
+#define DHCPS_MAX_LEASES 10
+#endif
+
+/**
+ * @brief Maximum unused number of leases to keep around.
+ */
+#ifndef DHCPS_MAX_INACTIVE_LEASES
+#define DHCPS_MAX_INACTIVE_LEASES 5
+#endif
+
+extern bool dhcps_init(ip_addr_t *server_ip);
 
 #endif //DHCPSERVER_H
