@@ -3,6 +3,9 @@
  * @brief Doubly-linked list helpers.
  * 
  * Macros to make handling of doubly-linked lists easier.
+ * 
+ * @todo All these macros are bound to be replaced, they seemed like 
+ *       good idea at the time, but the side effects are treacherous.
  *
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>

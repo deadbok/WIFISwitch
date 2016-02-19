@@ -64,7 +64,6 @@
 
 #endif
 
-
 /**
  * @brief Default lease time in seconds.
  */
@@ -79,12 +78,6 @@
 #define DHCPS_MAX_LEASES 10
 #endif
 
-/**
- * @brief Maximum unused number of leases to keep around.
- */
-#ifndef DHCPS_MAX_INACTIVE_LEASES
-#define DHCPS_MAX_INACTIVE_LEASES 5
-#endif
 
 extern bool dhcps_init(ip_addr_t *server_ip);
 

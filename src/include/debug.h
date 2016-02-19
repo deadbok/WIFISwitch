@@ -27,17 +27,21 @@
 #include <stdio.h>
 #include "fwconf.h"
 
+#define STRINGIZE2(x) #x
+#define STRINGIZE(x) STRINGIZE2(x)
+#define LINE_STRING STRINGIZE(__LINE__)
+
 /**
  * @brief Print an error message.
  */
-#define error(...)     printf("ERROR(" __FILE__ "): " __VA_ARGS__ )
+#define error(...)     printf("ERROR (" __FILE__ ":" LINE_STRING "): " __VA_ARGS__)
 
 //Macro for debugging. Prints the message if warnings are enabled.
 #ifdef WARNINGS
 /**
  * @brief Print a warning message.
  */
-#define warn(...)     printf("WARNING (" __FILE__ "): " __VA_ARGS__)
+#define warn(...)     printf("WARNING (" __FILE__ ":" LINE_STRING "): " __VA_ARGS__)
 #else
 #define warn(...)
 #endif
@@ -64,9 +68,9 @@ extern void db_hexdump(void *mem, unsigned int len);
  * @brief Maximum number of memory blocks to keep track of in debug mode.
  */
 #define DBG_MEM_MAX_INFOS	200
-#define db_malloc(ARG, INFO)  _db_alloc(ARG, false, INFO __FILE__)
-#define db_zalloc(ARG, INFO)  _db_alloc(ARG, true, INFO __FILE__)
-#define db_realloc(PTR, SIZE, INFO)  _db_realloc(PTR, SIZE, INFO __FILE__)
+#define db_malloc(ARG, INFO)  _db_alloc(ARG, false, "(" __FILE__ ":" LINE_STRING ") " INFO)
+#define db_zalloc(ARG, INFO)  _db_alloc(ARG, true, "(" __FILE__ ":" LINE_STRING ") " INFO)
+#define db_realloc(PTR, SIZE, INFO)  _db_realloc(PTR, SIZE, "(" __FILE__ ":" LINE_STRING ") " INFO)
 #define db_free(ARG)    _db_dealloc(ARG)             
 
 extern void *_db_alloc(size_t size, bool zero, char *info);

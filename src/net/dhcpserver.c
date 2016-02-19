@@ -1,14 +1,21 @@
 /**
  * @file dhcpserver.c
  *
- * @brief DHCP Server, RFC2131, RFC1553, and RFC951.
+ * @brief DHCP Server, see RFC2131, RFC1553, and RFC951.
  * 
  * This as everything in here only does the bare minimum of what
- * could be expected. The implementation expect to be the only DHCP
- * server on the network. The assigned addresses, starts at the
- * IP after the server, and end at server IP + DHCPS_MAX_LEASES.
+ * could be expected. 
  * 
- * *Goto's has been harm-filtered.*
+ *  * The implementation expect to be the only DHCP
+ *    server on the network.
+ *  * The assigned addresses, starts at the IP after the server, and 
+ *    end at server IP + DHCPS_MAX_LEASES.
+ *  * The server only handles /24 networks.
+ *  * The server largely ignores anything BOOTP.
+ *  * The server has no notion of subnets.
+ *  * Dumps a lease when released, client may get a different IP.
+ *  * Address requests from the client are ignored.
+ *  * Lease time requests from client are ignored.
  * 
  * @copyright
  * Copyright 2015 Martin Bo Kristensen Grønholdt <oblivion@@ace2>
@@ -55,14 +62,15 @@
 #include "tools/dl_list.h"
 #include "net/dhcpserver.h"
 
+#define DHCP_CHADDR_LEN 16U
 			
-#define MACCMP(hwaddr1, hwaddr2)                                       \
-			((hwaddr1[0] == hwaddr2[0]) &&                             \
-			 (hwaddr1[1] == hwaddr2[1]) &&                             \
-			 (hwaddr1[2] == hwaddr2[2]) &&                             \
-			 (hwaddr1[3] == hwaddr2[3]) &&                             \
-			 (hwaddr1[4] == hwaddr2[4]) &&                             \
-			 (hwaddr1[5] == hwaddr2[5]))
+#define MACCMP(a, b)                                                   \
+			(((a)[0] == (b)[0]) &&                                     \
+			 ((a)[1] == (b)[1]) &&                                     \
+			 ((a)[2] == (b)[2]) &&                                     \
+			 ((a)[3] == (b)[3]) &&                                     \
+			 ((a)[4] == (b)[4]) &&                                     \
+			 ((a)[5] == (b)[5]))
 
 /**
  * @brief Record of a client lease.
@@ -76,18 +84,17 @@ struct dhcps_lease
 	/**
 	 * @brief MAC of the client.
 	 */
-	uint8_t hwaddr[NETIF_MAX_HWADDR_LEN];
+	uint8_t hwaddr[DHCP_CHADDR_LEN];
 	/**
 	 * @brief IP address.
 	 */
-	ip_addr_t ip;
+	ip_addr_t *ip;
 	/**
 	 * @brief Client-identifier, NULL if none was given.
 	 * 
 	 * *First byte is the length.*
 	 */
 	uint8_t *cid;
-
 	/**
 	 * @brief Server time, when the lease has expired.
 	 * 
@@ -95,45 +102,15 @@ struct dhcps_lease
 	 */
 	uint32_t expires;
 	/**
+	 * @brief State of the lease.
+	 * 
+	 * DHCPOFFER, DHCPACK, DHCPNAK.
+	 */
+	uint8_t state;
+	/**
 	 * @brief List entries.
 	 */
 	DL_LIST_CREATE(struct dhcps_lease);
-};
-
-/**
- * @brief Record of a client request.
- * 
- * **Pointers in this structure points into the data received.**
- */
-struct dhcps_request
-{
-	/**
-	 * @brief Requested IP address, IPADDR_ANY if none is requested.
-	 */
-	ip_addr_t *ip;
-	/**
-	 * @brief DHCP message type. Always set.
-	 */
-	uint8_t *type;
-	/**
-	 * @brief Requested hostname, NULL if none requested.
-	 * 
-	 * *First byte is the length.*
-	 */
-	uint8_t *hostname;
-	/**
-	 * @brief Client requested parameters.
-	 * @see http://www.iana.org/assignments/bootp-dhcp-parameters/bootp-dhcp-parameters.xhtml
-	 * 
-	 * *First byte is the length.*
-	 */
-	uint8_t *parm;
-	/**
-	 * @brief Client-identifier, NULL if none was given.
-	 * 
-	 * *First byte is the length.*
-	 */
-	uint8_t *cid;	
 };
 
 /**
@@ -196,8 +173,7 @@ static void print_id(uint8_t *cid)
 /**
  * @brief Find a lease by it's MAC and/or client id.
  * 
- * Set either parameter to NULL if unused. If both parameters are NULL
- * return an unused lease, if any.
+ * Set either parameter to NULL if unused.
  */
 static struct dhcps_lease *find_lease(uint8_t *hwaddr, uint8_t *cid)
 {
@@ -211,25 +187,16 @@ static struct dhcps_lease *find_lease(uint8_t *hwaddr, uint8_t *cid)
 		debug(" Hardware address: " MACSTR ".\n", MAC2STR(hwaddr));
 	}
 	
-	//Get an unused address.
 	if ((!hwaddr) && (!cid))
 	{
-		debug("First unused.\n");
-		while (cur != NULL)
-		{
-			if (cur->expires)
-			{
-				debug("Found.\n");
-				return(cur);
-			}
-			cur = cur->next;
-		}
+		warn(" No usable identifier for the lease.\n");
+		return(NULL);
 	}
 		
 	//Prefer client id, RFC2131 4.2 says so.
 	if (cid)
 	{
-		debug(" Searching for client id.\n");
+		debug(" Searching for client id");
 		while (cur != NULL)
 		{
 			//If client id's match.
@@ -246,21 +213,26 @@ static struct dhcps_lease *find_lease(uint8_t *hwaddr, uint8_t *cid)
 					return(cur);
 				}
 			}
+			printf(".");
 			cur = cur->next;
 		}
+		printf("Not found.\n");
 	}
 	
+	cur = dhcps_ctx->leases;
 	//No client id, go by MAC.
 	if (!cid)
 	{
-		debug(" Searching for MAC.\n");
+		debug(" Searching for MAC");
 		while (cur != NULL)
 		{
-			if (MACCMP(hwaddr, cur->hwaddr) && (cur->cid = NULL))
+			
+			if ((MACCMP(hwaddr, cur->hwaddr)) && (cur->cid == NULL))
 			{
 				debug("Found.\n");
 				return(cur);
 			}
+			printf(".");
 			cur = cur->next;
 		}
 	}
@@ -268,21 +240,171 @@ static struct dhcps_lease *find_lease(uint8_t *hwaddr, uint8_t *cid)
 	return(NULL);
 }
 
+/** 
+ * @brief Sort leases by IP address.
+ * 
+ * Sort the list of leases according to IP address, to make it easier
+ * to find an free address.
+ * 
+ * *This only works on /24 networks.*
+ */
+static void sort_leases(void)
+{
+	bool changed = true;
+	struct dhcps_lease *temp;
+	struct dhcps_lease *lease;
+	
+	debug("Sorting leases.\n");
+	//Keep swapping leases until sorted.
+	while (changed)
+	{
+		debug(" From the top.\n");
+		lease = dhcps_ctx->leases;
+		changed = false;
+		//Swap items until the last lease.
+		while (lease->next)
+		{
+			debug(" IP " IPSTR ".\n", IP2STR(lease->ip));
+			//Swap positions of the current and the next lease if needed.
+			if (ip4_addr4(lease->ip) > ip4_addr4(lease->next->ip))
+			{
+				debug(" Swapping " IPSTR " with " IPSTR ".\n", IP2STR(lease->ip), IP2STR(lease->next->ip));
+				
+				//Make previous lease point forward to the next lease.
+				if (lease->prev)
+				{
+					lease->prev->next = lease->next;
+				}
+				else
+				{
+					lease->next->prev = NULL;
+				}
+				temp = lease->next;
+				//Make next lease point back to the previous.
+				temp->prev = lease->prev;
+				//Make the item after the next point back to this lease.
+				if (temp)
+				{
+					temp->next->prev = lease;
+				}
+				//Make this lease point forward at the next next lease.
+				lease->next = temp->next;
+				//Make next lease point forward to this.
+				temp = lease;
+				//Make this lease point back at the next.
+				lease->prev = temp;
+				
+				changed = true;
+			}
+		}
+	}
+}							
+
+/**
+ * @brief Add a lease.
+ */
+static bool add_lease(struct dhcps_lease *lease)
+{
+	struct dhcps_lease *leases = dhcps_ctx->leases;
+	//This is here because of a the DL macros, not working in this case.
+	struct dhcps_lease *next;
+	
+	debug("Adding lease.\n");
+
+	if (!dhcps_ctx->leases)
+	{
+		error("Server has no lease.\n");
+		return(false);
+	}	
+	if (find_lease(lease->hwaddr, lease->cid))
+	{
+		warn("Lease exist.\n");
+		return(false);
+	}
+	//Since items are sorted, just insert when the IP is no longer higher than the lease in the list.
+	debug("%p %p.\n", leases->next, lease->next);
+	while (leases->next)
+	{
+		if (ip4_addr4(leases->next->ip) > ip4_addr4(lease->ip))
+		{
+			debug(" Adding before " IPSTR ".\n", IP2STR(leases->next->ip));
+			next = leases->next;
+			break;
+		}
+		leases = leases->next;
+	}
+	debug("%p %p.\n", leases->next, lease->next);
+	if (!leases->next)
+	{
+		debug(" Adding to end.\n");
+		lease->next = NULL;
+		next = NULL;
+	}
+	debug("%p %p.\n", next, lease->next);
+	DL_LIST_INSERT(lease, leases, next);
+	debug("%p %p.\n", next, lease->next);
+	dhcps_ctx->n_leases++;
+	debug(" Current leases:\n");
+	leases = dhcps_ctx->leases;
+	while (leases)
+	{
+		debug("  " IPSTR " next %p.\n", IP2STR(leases->ip), leases->next);
+		leases = leases->next;
+	}
+	debug(" %d leases.\n", dhcps_ctx->n_leases);
+	return(true);
+}
+
+/**
+ * @brief Free a lease.
+ */
+static void free_lease(struct dhcps_lease *lease)
+{
+	debug("Freeing lease.\n");
+	debug(" Client-identifier: ");
+	DHCPS_DEBUG_ID(lease->cid);
+	if (lease->hwaddr)
+	{
+		debug(" Hardware address: " MACSTR ".\n", MAC2STR(lease->hwaddr));
+	}
+	debug(" IP address: " IPSTR ".\n", IP2STR(lease->ip));
+
+	//Remove from leases if it is in there.
+	if (dhcps_ctx->leases)
+	{
+		if (find_lease(lease->hwaddr, lease->cid))
+		{
+			debug(" Removing from lease pool.\n");
+			DL_LIST_UNLINK(lease, dhcps_ctx->leases);
+			dhcps_ctx->n_leases--;
+		}
+	}
+	debug(" %d leases.\n", dhcps_ctx->n_leases);
+	
+	sort_leases();
+	if (lease->hostname)
+	{
+		db_free(lease->hostname);
+	}
+	if (lease->ip)
+	{
+		db_free(lease->ip);
+	}
+	
+	if (lease->cid)
+	{
+		db_free(lease->cid);
+	}
+}
+
 /**
  * @brief Get a lease for a MAC and/or client id.
  * 
  * Both `hwaddr`and `cid` cannot be NULL.
- * 
- * Search order:
- * 
- *  * Existing lease, both active and expired ones.
- *  * If all leases are taken, but some are unused, return the first one.
- *  * New lease containing only the client id and the MAC supplied.
- * 
  * The IP address of the lease is set to IP_ADDR_ANY, when first created.
  * 
  * @param hwaddr Pointer to the MAC address, or NULL if unused.
- * @param hwaddr Pointer to the client id, or NULL if unused.
+ * @param cid Pointer to the client id, or NULL if unused.
  * @return Pointer to a lease, or NULL on failure.
  */
 static struct dhcps_lease *get_lease(uint8_t *hwaddr, uint8_t *cid)
@@ -290,11 +412,6 @@ static struct dhcps_lease *get_lease(uint8_t *hwaddr, uint8_t *cid)
 	struct dhcps_lease *lease = NULL;
 	
 	debug("Getting DHCP lease.\n");
-	if ((!hwaddr) && (!cid))
-	{
-		warn(" No usable identifier for the lease.\n");
-		return(NULL;
-	}
 	debug(" Client-identifier: ");
 	DHCPS_DEBUG_ID(cid);
 	if (hwaddr)
@@ -307,21 +424,13 @@ static struct dhcps_lease *get_lease(uint8_t *hwaddr, uint8_t *cid)
 		return(NULL);
 	}
 	
-	//Check for an existing lease for the client.
-	lease = find_lease(hwaddr, cid);
-	if (lease)
+	if (dhcps_ctx->leases)
 	{
-		debug(" Returning an existing lease.\n");
-		return(lease);
-	}
-	
-	//We did not find an existing lease, check for an unused one.
-	if (dhcps_ctx->n_leases >= DHCPS_MAX_LEASES)
-	{
-		lease = find_lease(NULL, NULL);
+		//Check for an existing lease for the client.
+		lease = find_lease(hwaddr, cid);
 		if (lease)
 		{
-			debug(" Returning an unused lease.\n");
+			debug(" Returning an existing lease.\n");
 			return(lease);
 		}
 	}
@@ -337,215 +446,259 @@ static struct dhcps_lease *get_lease(uint8_t *hwaddr, uint8_t *cid)
 		lease->cid = db_malloc(cid[0] + 1, "lease->cid get_lease");
 		memcpy(lease->cid, cid, cid[0] + 1);
 	}
-	lease->
+	lease->ip = IP_ADDR_ANY;
 	return(lease);
 }
 
 /**
- * @brief Add a lease.
+ * @brief Helper function to get the next free IP.
+ * 
+ * *This only works for /24 networks.*
+ * /
+ * @return Pointer to IP, or NULL on error.
  */
-static bool add_lease(struct dhcps_lease *lease)
+static ip_addr_t *get_next_ip(void)
 {
 	struct dhcps_lease *leases = dhcps_ctx->leases;
+	ip_addr_t *ret = NULL;
 	
-	debug("Adding lease.\n");
-	debug(" Client-identifier: ");
-	DHCPS_DEBUG_ID(lease->cid);
-	if (lease->hwaddr)
+	debug("Getting next free IP address.\n");
+	
+	if (dhcps_ctx->n_leases >= DHCPS_MAX_LEASES)
 	{
-		debug(" Hardware address: " MACSTR ".\n", MAC2STR(lease->hwaddr));
+		warn(" Address pool exhausted.\n");
+		return(NULL);
+	}		
+
+	//Since items are sorted, just find a gap and use the first IP.
+	while (leases->next)
+	{
+		if (leases->ip->addr != (leases->ip->addr - 1))
+		{
+			break;
+		}
+		leases = leases->next;
 	}
 
-	if (!dhcps_ctx->leases)
-	{
-		error("Server has no lease.\n");
-		return(false);
-	}	
-	if (find_lease(lease->hwaddr, lease->cid))
-	{
-		warn("Lease exist.\n");
-		return(false);
-	}
-
-	DL_LIST_ADD_END(lease, leases);
-	dhcps_ctx->n_leases++;
-	debug(" %d leases.\n", dhcps_ctx->n_leases);
-	return(true);
+	ret = db_malloc(sizeof(ip_addr_t), "ret get_next_ip");
+	ip4_addr_set_u32(ret, leases->ip->addr);
+	ip4_addr4(ret)++;
+	return(ret);
+}
+			
+/**
+ * @brief Add an option tag to the DHCP options.
+ * 
+ * *No boundary checking is done.*
+ */
+static uint8_t *options_add_tag(uint8_t *options, uint8_t tag)
+{
+	*options++ = tag;
+	return(options);
 }
 
-static void answer_discover(struct dhcps_request *request, struct dhcp_msg *msg)
+/**
+ * @brief Add single byte data to the DHCP options.
+ *
+ * *No boundary checking is done.*
+ */
+static uint8_t *options_add_byte(uint8_t *options, uint8_t data)
+{
+	*options++ = 1;
+	*options++ = data;
+	return(options + 1);
+}
+
+/**
+ * @brief Add a multi-byte data to the DHCP options.
+ *
+ * *No boundary checking is done.*
+ */
+//static uint8_t *options_add_bytes(uint8_t *options, uint8_t len, uint8_t *data)
+//{
+	//*options++ = len;
+	//if (len)
+	//{
+		//memcpy(options, data, len);
+	//}
+	//return(options + len);
+//}
+
+/**
+ * @brief Find an option in the option field of a DHCP message.
+ */
+static uint8_t *find_option(uint8_t *options, uint8_t option)
+{
+	uint8_t *pos = options;
+	uint8_t type, len;
+	
+	debug("Looking for option %d.", option);
+	
+	if (pos == NULL)
+	{
+		warn("No options.\n");
+		return(NULL);;
+	}
+	
+	while ((*pos != DHCP_OPTION_END) && 
+		   (pos < (options + DHCP_OPTIONS_LEN)))
+	{
+		debug(".");
+		type = *pos++;
+		len = *pos++;
+		if (type == option)
+		{
+			debug("Found.\n");
+			return(pos - 2);
+		}
+		if (type == DHCP_OPTION_PAD)
+		{
+			pos++;
+		}
+		else
+		{
+			pos += len;
+		}
+	}
+	debug("Not found.\n");
+	return(NULL);
+}
+	
+/**
+ * @brief Send DHCPNAK.
+ */
+static void send_nak(struct dhcp_msg *msg)
 {
 	struct netbuf *buf;
 	struct dhcp_msg *reply;
-	struct dhcps_lease *lease;
-	 
-	debug("Replying to discover.\n");
+	struct ip_addr reply_ip;
+	uint8_t *options = NULL;
 	
 	//Get a new buffer for the reply.
 	buf = netbuf_new();
 	//Point the DHCP message structure to the actual memory.
-	reply = (struct dhcp_msg *)netbuf_alloc(buf, DHCP_OPTIONS_LEN);
+	reply = (struct dhcp_msg *)netbuf_alloc(buf, sizeof(struct dhcp_msg));
 	bzero(reply, DHCP_OPTIONS_LEN);
 	
+	//Fill in the reply.
 	reply->op = DHCP_BOOTREPLY;
 	reply->htype = DHCP_HTYPE_ETH;
 	reply->hlen = 6;
 	reply->xid = msg->xid;
 	reply->flags = msg->flags;
 	reply->giaddr = msg->giaddr;
-//'options'  options  
-
+	reply->ciaddr = msg->ciaddr;
 	
-/*	  o The client's current address as recorded in the client's current
-        binding, ELSE
+	//giaddr == 0: Broadcast any DHCPNAK message to 0cffffffff.
+	if (!msg->giaddr.addr)
+	{
+		ip4_addr_set_u32(&reply_ip, IPADDR_BROADCAST);
+	}
+	else
+	{
+		ip_addr_set(&reply_ip, &msg->giaddr);
+	}
 
-      o The client's previous address as recorded in the client's (now
-        expired or released) binding, if that address is in the server's
-        pool of available addresses and not already allocated, ELSE
-
-      o The address requested in the 'Requested IP Address' option, if that
-        address is valid and not already allocated, ELSE
-
-      o A new address allocated from the server's pool of available
-        addresses; the address is selected based on the subnet from which
-        the message was received (if 'giaddr' is 0) or on the address of
-        the relay agent that forwarded the message ('giaddr' when not 0).*/
-     lease = get_lease(msg->hwaddr, request->cid);
-     if (lease->ip != IP_ADDR_ANY)
-     {
-		 ip_addr_set(&reply->yiaddr, lease->ip;
-	 }
-	//'yiaddr'   IP address offered to client
+	//Add options cookie.
+	reply->cookie = ntohl(DHCP_MAGIC_COOKIE);
+	//Add DHCP message type DHCPNAK.
+	options = options_add_tag(reply->options, DHCP_OPTION_MESSAGE_TYPE);
+	options = options_add_byte(options, DHCP_NAK);
+	options = options_add_tag(options, DHCP_OPTION_END);
 	
+	//Send the message.
+	netconn_sendto(dhcps_ctx->conn, buf, &reply_ip, DHCPS_PORT);
+    netbuf_delete(buf);
+}
+			
+/**
+ * @brief Send a reply to a discover request.
+ * 
+ * @todo Read RFC2131 chapter 4.1, 50 times more.
+ * @todo Something about the BROADCAST bit and something about unicast.
+ */
+static void answer_discover(struct dhcp_msg *msg)
+{
+	struct netbuf *buf;
+	struct dhcp_msg *reply;
+	struct dhcps_lease *lease;
+	uint8_t *cid;
+	 
+	debug("Replying to discover.\n");
+		
+	if (msg->giaddr.addr != 0x0)
+	{
+		warn("I do not do subnets.\n");
+		send_nak(msg);
+		return;
+	}
+	
+	//Get a new buffer for the reply.
+	buf = netbuf_new();
+	//Point the DHCP message structure to the actual memory.
+	reply = (struct dhcp_msg *)netbuf_alloc(buf, sizeof(struct dhcp_msg));
+	bzero(reply, DHCP_OPTIONS_LEN);
+	
+	//Fill in the reply.
+	reply->op = DHCP_BOOTREPLY;
+	reply->htype = DHCP_HTYPE_ETH;
+	reply->hlen = 6;
+	reply->xid = msg->xid;
+	reply->flags = msg->flags;
+	reply->giaddr = msg->giaddr;
+	
+	cid = find_option(msg->options, DHCP_OPTION_CLIENT_ID);
+	if (cid)
+	{
+		//Get past the type.
+		cid++;
+	}
+	lease = get_lease(msg->chaddr, cid);
+	//Set lease state.
+	lease->state = DHCP_OFFER;
+	//If we got a lease with no IP.
+	if (lease->ip == IP_ADDR_ANY)
+	{
+		lease->ip = get_next_ip();
+		if (!lease->ip)
+		{
+			warn("Got no IP address.\n");
+			free_lease(lease);
+			send_nak(msg);
+			goto free_netbuf;
+		}
+	}
+	ip_addr_set(&reply->yiaddr, lease->ip);	
+	
+	if (!add_lease(lease))
+	{
+		warn("Could not add lease");
+		free_lease(lease);
+		send_nak(msg);
+		goto free_netbuf;
+	}
+	
+	//'options'  options  
+
 	debug(" Sending reply.\n");
-	/**
-	 * @todo Read RFC2131 chapter 4.1, 50 times more.
-	 * @todo Something about giaddr, and where to send this.
-	 * @todo Something about the BROADCAST bit and something about unicast.
-	 */
+	db_hexdump(buf->p->payload, buf->p->len);
 	netconn_sendto(dhcps_ctx->conn, buf, IP_ADDR_BROADCAST, DHCPS_PORT);
+	
+free_netbuf:
     netbuf_delete(buf);
 }
 
 /**
- * @brief Parse the option field of a DHCP message.
- */
-static struct dhcps_request *parse_options(struct dhcp_msg *msg)
-{
-	struct dhcps_request *request = NULL;
-	uint8_t *pos = msg->options;
-	uint8_t len, opt;
-	
-	debug("Parsing options.\n");
-	
-	if (pos == NULL)
-	{
-		warn("No options.\n");
-		goto error;
-	}
-	//Create record for the request.
-	request = db_zalloc(sizeof(struct dhcps_request), 
-						"request parse_options");
-	
-	/* As far as I can tell from the standard, the message type is
-	 * required, but need not be the first option. */
-	while ((*pos != DHCP_OPTION_END) && (pos < (msg->options + DHCP_OPTIONS_LEN)))
-	{
-		opt = *pos++;
-		len = *pos++;
-
-		if (opt == DHCP_OPTION_MESSAGE_TYPE)
-		{
-			request->type = pos;
-			debug(" DHCP Message Type: %d.\n", *request->type);
-			break;
-		}
-	}
-	if (!request->type)
-	{
-		warn("No message type.\n");
-		goto error;
-	}
-	
-	pos = msg->options;
-	while ((*pos != DHCP_OPTION_END) && 
-		   (pos < (msg->options + DHCP_OPTIONS_LEN)))
-	{
-		opt = *pos++;
-		len = *pos++;
-		
-		//See: http://www.iana.org/assignments/bootp-dhcp-parameters/bootp-dhcp-parameters.xhtml
-		switch(opt)
-		{
-			case DHCP_OPTION_PAD:
-				debug(" Padding.\n");
-				break;
-			case DHCP_OPTION_HOSTNAME:
-				debug(" Host Name Option.\n");
-				if (len < 1)
-				{
-					warn("Length cannot be zero.\n");
-					return(NULL);
-				}
-				//Set hostname, first byte is length.
-				request->hostname = pos - 1;
-				break;	
-			case DHCP_OPTION_REQUESTED_IP:
-				debug(" Requested IP Address,\n");
-				if (len != 4)
-				{
-					warn("Unexpected length %d.\n", len);
-					goto error;
-				}
-				/* ip_addr_t is a struct with a single member of type
-				 * uint32_t (u32_t), a pointer to the struct, should
-				 * point to the int as well. */
-				request->ip = (ip_addr_t *)pos;
-				break;
-			case DHCP_OPTION_MESSAGE_TYPE:
-				//Deja-vu.
-				break;
-			case DHCP_OPTION_PARAMETER_REQUEST_LIST:
-				debug(" Parameter Request List.\n");
-				//Include the length at index 0.
-				request->parm = pos - 1;
-				break;
-			case DHCP_OPTION_CLIENT_ID:
-				debug(" Client-identifier,\n");
-				request->cid = pos - 1;
-				break;
-				
-			default:
-				debug(" Unknown option: %d.\n", opt);
-				break;
-		}
-		pos += len;
-	}
-	if (*pos != DHCP_OPTION_END)
-	{
-		warn("Never found the end option.\n");
-	}
-	return(request);
-	
-error:
-	if (request)
-	{
-		db_free(request);
-	}
-	return(NULL);
-}
-
-/**
  * @brief Task to handle reciving.
- */
+ */	
 static void dhcps_task(void *pvParameters)
 {
 	while (1)
 	{
-		struct dhcps_request *request;
 		struct dhcp_msg *msg;
 		struct netbuf *buf;
 		err_t ret;
+		uint8_t *type;
 		
 		if (!dhcps_ctx->leases)
 		{
@@ -564,13 +717,15 @@ static void dhcps_task(void *pvParameters)
 		/**
 		 * @todo Do something to check and handle the size of the options.
 		 */
-		msg = (struct dhcp_msg *)buf->p;
-	
-		debug("UDP received on from " IPSTR ":%d.\n", IP2STR(netbuf_fromaddr(buf)), netbuf_fromport(buf));
+		msg = (struct dhcp_msg *)buf->p->payload;
+			
+		debug("UDP received from " IPSTR ":%d.\n", IP2STR(netbuf_fromaddr(buf)), netbuf_fromport(buf));
 		db_hexdump(buf->p->payload, buf->p->len);
 		
 		if (msg->op == DHCP_BOOTREQUEST)
 		{
+			struct dhcps_lease *leases = dhcps_ctx->leases;
+			
 			debug("Message from client.\n");
 			if (msg->cookie != ntohl(DHCP_MAGIC_COOKIE))
 			{
@@ -583,16 +738,16 @@ static void dhcps_task(void *pvParameters)
 				warn("Unknown hardware type.\n");
 				continue;
 			}		
-			request = parse_options(msg);
-			if (!request)
+			type = find_option(msg->options, DHCP_OPTION_MESSAGE_TYPE);
+			if (!type)
 			{
-				warn("Could not parse request.\n");
+				warn("Could find DHCP message type.\n");
 				continue;
 			}
-			switch (*request->type)
+			switch (type[2])
 			{
 				case DHCP_DISCOVER:
-					answer_discover(request, msg);
+					answer_discover(msg);
 					break;
 				case DHCP_REQUEST:
 					debug("DHCP request.\n");
@@ -607,15 +762,25 @@ static void dhcps_task(void *pvParameters)
 					debug("DHCP inform.\n");
 					break;
 			}
+			while (leases)
+			{
+				debug("  " IPSTR " next %p.\n", IP2STR(leases->ip), leases->next);
+				leases = leases->next;
+			}
+			debug(" %d leases.\n", dhcps_ctx->n_leases);
 		}
-		debug("Message from server.\n");
+		else
+		{
+			debug("Ignoring message from server.\n");
+		}
+		netbuf_free(buf);		
 	}
 	vTaskDelete(NULL);
 }
 
 bool dhcps_init(ip_addr_t *server_ip)
 {
-	uint8_t server_mac[NETIF_MAX_HWADDR_LEN];
+	uint8_t server_mac[DHCP_CHADDR_LEN];
 	err_t ret;
 	
 	debug("Starting DHCP server.\n");
@@ -624,7 +789,7 @@ bool dhcps_init(ip_addr_t *server_ip)
 		error("Server running.\n");
 		return(false);
 	}
-	dhcps_ctx = db_malloc(sizeof(struct dhcps_context), "dhcps_ctx dhcps_init");
+	dhcps_ctx = db_zalloc(sizeof(struct dhcps_context), "dhcps_ctx dhcps_init");
 	dhcps_ctx->conn = netconn_new(NETCONN_UDP);
 	if (!dhcps_ctx->conn)
 	{
@@ -642,6 +807,7 @@ bool dhcps_init(ip_addr_t *server_ip)
 	/* Uses the AP interface. Don't see any reason for a DHCP server on
 	 * a client, that has got its own address from somewhere reasonable,
 	 * but then again, I might be wrong. */
+	bzero(server_mac, DHCP_CHADDR_LEN);
 	sdk_wifi_get_macaddr(SOFTAP_IF, server_mac);
 	
 	//Create a lease for the server.
@@ -651,8 +817,9 @@ bool dhcps_init(ip_addr_t *server_ip)
 		error(" Could not save server lease.\n");
 		return(false);
 	}
-	memcpy(dhcps_ctx->leases->hwaddr, server_mac, NETIF_MAX_HWADDR_LEN);
-	ip_addr_set(&dhcps_ctx->leases->ip, server_ip);
+	memcpy(dhcps_ctx->leases->hwaddr, server_mac, DHCP_CHADDR_LEN);
+	dhcps_ctx->leases->ip = db_malloc(sizeof(ip_addr_t), "dhcps_ctx->leases->ip dhcps_init");
+	ip_addr_set(dhcps_ctx->leases->ip, server_ip);
 	dhcps_ctx->n_leases++;
 	
 	debug(" Creating tasks...\n");
